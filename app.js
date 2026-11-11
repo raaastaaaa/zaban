@@ -49,17 +49,17 @@ const POS = { n: 'اسم', v: 'فعل', adj: 'صفت', adv: 'قید', prep: 'ح�
 const DEFAULT_SETTINGS = {
   brain: 'gemini',
   prov: {
-    gemini: { key: '', model: 'gemini-2.5-flash' },
+    gemini: { key: '', model: 'gemini-3.1-flash-lite' },
     anthropic: { key: '', model: 'claude-haiku-5-5' },
     openai: { key: '', model: 'gpt-4.1-mini' },
     groq: { key: '', model: 'llama-3.3-70b-versatile' },
-    openrouter: { key: '', model: 'google/gemini-2.5-flash' },
+    openrouter: { key: '', model: 'google/gemini-3.1-flash-lite' },
     custom: { key: '', model: '', base: '' }
   },
   voiceEn: 'browser', voiceFa: 'gemini', listen: 'browser',
   accent: 'US', rate: 0.95,
-  geminiTtsModel: 'gemini-2.5-flash-preview-tts', geminiVoice: 'Kore', openaiVoice: 'nova',
-  teacher: 'سارا', img: 'ai', pixabayKey: '', passScore: 95, theme: 'auto', autoSpeak: true
+  geminiTtsModel: 'gemini-3.8-flash-tts', geminiVoice: 'Kore', openaiVoice: 'nova',
+  teacher: 'رستا', img: 'ai', pixabayKey: '', passScore: 95, theme: 'auto', autoSpeak: true
 };
 const G = { // سراسری (مشترک بین کاربران همین دستگاه)
   users: lsGet('zd:users', []),
@@ -73,6 +73,19 @@ const makeCode = () => 'ZD1.' + btoa(unescape(encodeURIComponent(JSON.stringify(
 function useCode(c) { const d = JSON.parse(decodeURIComponent(escape(atob(c.trim().replace(/^ZD1\./, ''))))); deepMerge(G.settings.prov, d.p || {}); if (d.b) G.settings.brain = d.b; if (d.v) G.settings.voiceFa = d.v; if (d.l) G.settings.listen = d.l; saveG('settings'); }
 function deepMerge(a, b) { for (const k in b) { if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k])) a[k] = deepMerge(a[k] || {}, b[k]); else a[k] = b[k]; } return a; }
 const saveG = k => lsSet('zd:' + k, G[k]);
+if (G.settings.teacher === 'سارا') { G.settings.teacher = 'رستا'; lsSet('zd:settings', G.settings); }
+if (G.settings.prov.gemini.model === 'gemini-2.5-flash') { G.settings.prov.gemini.model = 'gemini-3.1-flash-lite'; G.settings.geminiTtsModel = 'gemini-3.8-flash-tts'; saveG('settings'); }
+const GEM_FALLBACK = ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3.5-flash-lite'];
+const TTS_FALLBACK = ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-2.5-flash-preview-tts'];
+async function gemFetch(models, path, body, key) { // اگر مدلی شلوغ یا حذف شده بود، مدل بعدی
+  let last; for (const m of [...new Set(models)]) {
+    const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), 20000);
+    let r; try { r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:${path}`, { method: 'POST', signal: ac.signal, headers: { 'content-type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(body) }); }
+    catch (e) { clearTimeout(tm); if (e.name === 'AbortError') { last = new Error('پاسخ دیر شد'); continue; } throw e; }
+    clearTimeout(tm); const d = await r.json().catch(() => ({})); if (r.ok) return d;
+    last = new Error(d.error?.message || r.status); if (![404, 429, 500, 503].includes(r.status)) throw last;
+  } throw last;
+}
 
 let U = null; // داده‌های کاربر فعال
 const blankUser = () => ({ srs: {}, units: {}, mistakes: [], mem: [], log: {}, xp: 0, badges: [], convos: {}, plan: null, placement: null, custom: [] });
@@ -180,9 +193,7 @@ async function ai({ system, messages, json = true, images = [], max = 1400, temp
     const contents = messages.map((m, i) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }, ...(i === messages.length - 1 ? images.map(im => ({ inlineData: { mimeType: im.mime, data: im.b64 } })) : [])] }));
     const gc = { temperature: temp, maxOutputTokens: max };
     if (json) gc.responseMimeType = 'application/json';
-    if (/2\.5-flash/.test(c.model)) gc.thinkingConfig = { thinkingBudget: 0 }; // سرعت بیشتر
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(c.model)}:generateContent`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': c.key }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents, generationConfig: gc }) });
-    const d = await r.json(); if (!r.ok) throw new Error(d.error?.message || r.status);
+    const d = await gemFetch([c.model, ...GEM_FALLBACK], 'generateContent', { systemInstruction: { parts: [{ text: sys }] }, contents, generationConfig: gc }, c.key);
     text = d.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
   } else if (pv === 'anthropic') {
     const msgs = messages.map((m, i) => ({ role: m.role, content: i === messages.length - 1 && images.length ? [...images.map(im => ({ type: 'image', source: { type: 'base64', media_type: im.mime, data: im.b64 } })), { type: 'text', text: m.content }] : m.content }));
@@ -222,10 +233,11 @@ function learnerContext(unit) {
   const mistakes = U.mistakes.slice(-10).map(m => `${m.wrong} → ${m.right}`).join('; ');
   const mem = U.mem.slice(-25).map(m => '- ' + m.t).join('\n');
   return `LEARNER PROFILE
-Name: ${u?.name || ''}. Native language: Persian. Lives in Oman.
+Name: ${u?.name || ''} (always write this name exactly as given, never change its spelling). Native language: Persian. Lives in Oman.
 Current unit: ${cur.en} (${cur.levelFa || ''}), units mastered: ${p.mastered}/${ALL_UNITS.length}, study streak: ${streakOf(U)} days, pace: ${p.perWeek} units/week, total study ${p.minutes} minutes${p.eta ? ', predicted finish of B1+ path: ' + p.eta : ''}.
 Words from previous units to recycle naturally: ${prevWords || '-'}
 Words from previous units the learner FORGOT (mention this humanly, e.g. "I didn't expect you to forget this one from unit X", then re-teach briefly): ${forgot || '-'}
+Study plan: ${U.plan ? `target ${U.plan.target === 'l1' ? 'Intro+Level 1' : 'up to B1+'} by ${addDays(U.plan.start, U.plan.dayCount - 1)}, ${U.plan.minutes} min/day, behind by ${planGap()} units (if behind, firmly but kindly push the learner to catch up today)` : 'none yet (encourage making one)'}.
 Weak words: ${weak || '-'}
 Recent mistakes: ${mistakes || '-'}
 Long-term memory about the learner:
@@ -259,7 +271,9 @@ function browserSay(text, lang, rate) {
   });
 }
 function pcmToWav(b64, rate = 24000) {
-  const bin = atob(b64); const len = bin.length; const buf = new ArrayBuffer(44 + len); const v = new DataView(buf);
+  const bin = atob(b64);
+  if (bin.startsWith('RIFF')) { const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Blob([u], { type: 'audio/wav' }); } // خروجی جدید Gemini خودش WAV است
+  const len = bin.length; const buf = new ArrayBuffer(44 + len); const v = new DataView(buf);
   const w = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
   w(0, 'RIFF'); v.setUint32(4, 36 + len, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
   v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, len, true);
@@ -277,8 +291,7 @@ async function cloudTTS(engine, text, lang, emotion) {
   if (!blob) {
     if (engine === 'gemini') {
       const c = G.settings.prov.gemini; if (!c.key) throw new Error('NOKEY');
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${G.settings.geminiTtsModel}:generateContent`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': c.key }, body: JSON.stringify({ contents: [{ parts: [{ text: `${style}:\n${text}` }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: G.settings.geminiVoice } } } } }) });
-      const d = await r.json(); if (!r.ok) throw new Error(d.error?.message || r.status);
+      const d = await gemFetch([G.settings.geminiTtsModel, ...TTS_FALLBACK], 'generateContent', { contents: [{ parts: [{ text: `${style}:\n${text}` }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: G.settings.geminiVoice } } } } }, c.key);
       const part = d.candidates?.[0]?.content?.parts?.find(p => p.inlineData); if (!part) throw new Error('صدا ساخته نشد');
       const m = /rate=(\d+)/.exec(part.inlineData.mimeType || ''); blob = pcmToWav(part.inlineData.data, m ? +m[1] : 24000);
     } else {
@@ -307,6 +320,33 @@ async function say(text, lang = 'en', emotion = 'cheerful', btn) {
     for (const p of parts) { if (tok !== speakToken) break; const en = /^[A-Za-z]/.test(p); if (en) await browserSay(p, 'en'); else if (faOk) await browserSay(p, 'fa', 1); }
     if (!faOk) toast('صدای فارسی روی این دستگاه نیست؛ در تنظیمات «صدای فارسی» را روی Gemini بگذار.');
   } finally { btn?.classList.remove('on'); }
+}
+
+/* ───────── صوت کامل درس/فصل برای دانلود و آفلاین ───────── */
+async function pcmOf(blob) { const b = new Uint8Array(await blob.arrayBuffer()); let i = 12; while (i < b.length - 8) { const id = String.fromCharCode(...b.slice(i, i + 4)); const sz = b[i + 4] | b[i + 5] << 8 | b[i + 6] << 16 | b[i + 7] << 24; if (id === 'data') return b.slice(i + 8, i + 8 + sz); i += 8 + sz; } return b.slice(44); }
+async function joinWavs(blobs, rate = 24000) {
+  const gap = new Uint8Array(rate * 2 * 0.8); const parts = []; for (const b of blobs) { parts.push(await pcmOf(b), gap); }
+  const len = parts.reduce((s, p) => s + p.length, 0); let bin = ''; const all = new Uint8Array(len); let o = 0; parts.forEach(p => { all.set(p, o); o += p.length; });
+  const h = new DataView(new ArrayBuffer(44)); const w = (k, t) => [...t].forEach((c, j) => h.setUint8(k + j, c.charCodeAt(0)));
+  w(0, 'RIFF'); h.setUint32(4, 36 + len, true); w(8, 'WAVE'); w(12, 'fmt '); h.setUint32(16, 16, true); h.setUint16(20, 1, true); h.setUint16(22, 1, true); h.setUint32(24, rate, true); h.setUint32(28, rate * 2, true); h.setUint16(32, 2, true); h.setUint16(34, 16, true); w(36, 'data'); h.setUint32(40, len, true);
+  return new Blob([h.buffer, all], { type: 'audio/wav' });
+}
+/* chunks: [{text, lang}] → یک فایل صوتی؛ هر تکه یک بار ساخته و ذخیره می‌شود */
+async function buildAudio(key, chunks, onProgress) {
+  const done = await idb.get(key); if (done) return done;
+  const eng = G.settings.prov.gemini.key ? 'gemini' : G.settings.prov.openai.key ? 'openai' : null; if (!eng) throw new Error('NOKEY');
+  const blobs = []; for (let i = 0; i < chunks.length; i++) { onProgress?.(i, chunks.length); blobs.push(await cloudTTS(eng, chunks[i].text, chunks[i].lang, chunks[i].emo || 'calm')); }
+  const out = eng === 'gemini' ? await joinWavs(blobs) : new Blob(blobs, { type: 'audio/mpeg' }); await idb.set(key, out); return out;
+}
+function audioBox(el, blob, name) {
+  const url = URL.createObjectURL(blob); const ext = blob.type.includes('wav') ? 'wav' : 'mp3';
+  el.innerHTML = `<audio controls src="${url}" style="width:100%"></audio><a class="btn ghost sm" href="${url}" download="${esc(name)}.${ext}">⬇ دانلود فایل صوتی</a>`;
+}
+function unitAudioChunks(u) {
+  const words = unitWords(u); const chunks = [{ lang: 'fa', emo: 'cheerful', text: `درس «${u.fa}». بیایید واژه‌ها را با هم مرور کنیم. هر واژه را بشنو و تکرار کن.` }];
+  for (let i = 0; i < words.length; i += 8) chunks.push({ lang: 'fa', emo: 'calm', text: words.slice(i, i + 8).map(w => `${w.w} ... یعنی ${w.fa} ... ${w.ex || ''}`).join('\n') });
+  const d = G.cache['dlg:' + u.id]; if (d?.lines) chunks.push({ lang: 'en', emo: 'cheerful', text: 'Now listen to the conversation.\n' + d.lines.map(l => `${l.name || l.who}: ${l.en}`).join('\n') });
+  return chunks;
 }
 
 /* ───────── شنیدن (تشخیص گفتار) ───────── */
@@ -340,14 +380,58 @@ async function transcribe(blob, lang) {
   if (eng === 'gemini') {
     const c = G.settings.prov.gemini; if (!c.key) throw new Error('NOKEY');
     const b64 = await blobB64(blob);
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${c.model}:generateContent`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': c.key }, body: JSON.stringify({ contents: [{ parts: [{ text: `Transcribe this audio exactly as spoken (language: ${lang}). Output only the transcript, keep the learner's mistakes.` }, { inlineData: { mimeType: blob.type.split(';')[0], data: b64 } }] }], generationConfig: { thinkingConfig: { thinkingBudget: 0 } } }) });
-    const d = await r.json(); if (!r.ok) throw new Error(d.error?.message || r.status);
+    const d = await gemFetch([c.model, ...GEM_FALLBACK], 'generateContent', { contents: [{ parts: [{ text: `Transcribe this audio exactly as spoken (language: ${lang}). Output only the transcript, keep the learner's mistakes.` }, { inlineData: { mimeType: blob.type.split(';')[0], data: b64 } }] }] }, c.key);
     return d.candidates?.[0]?.content?.parts?.map(p => p.text).join('').trim() || '';
   }
   const c = G.settings.prov[eng]; if (!c?.key) throw new Error('NOKEY');
   const fd = new FormData(); fd.append('file', blob, 'speech.' + ext); fd.append('model', eng === 'groq' ? 'whisper-large-v3-turbo' : 'whisper-1'); fd.append('language', lang.slice(0, 2));
   const r = await fetch((eng === 'groq' ? 'https://api.groq.com/openai/v1' : 'https://api.openai.com/v1') + '/audio/transcriptions', { method: 'POST', headers: { authorization: 'Bearer ' + c.key }, body: fd });
   const d = await r.json(); if (!r.ok) throw new Error(d.error?.message || r.status); return (d.text || '').trim();
+}
+function recordAudio() {
+  let mr, stream, chunks = [], stopFn; const promise = (async () => {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac'].find(m => window.MediaRecorder?.isTypeSupported?.(m)) || '';
+    mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined); mr.ondataavailable = e => e.data.size && chunks.push(e.data);
+    const done = new Promise(r => { mr.onstop = r; }); mr.start(); stopFn = () => { try { mr.stop(); } catch { } }; setTimeout(stopFn, 30000); await done; stream.getTracks().forEach(t => t.stop());
+    return new Blob(chunks, { type: mr.mimeType || 'audio/webm' });
+  })(); return { promise, stop: () => stopFn && stopFn() };
+}
+/* مربی تلفظ: صدای واقعی کاربر را با لهجهٔ انتخابی مقایسه می‌کند و علت خطا و روش درست گفتن را توضیح می‌دهد */
+function pronCoach(el, target) {
+  const acc = G.settings.accent === 'UK' ? 'British (RP)' : 'General American';
+  el.innerHTML = `<div class="card stack"><b>🎯 مربی تلفظ (${G.settings.accent === 'UK' ? 'بریتانیایی' : 'آمریکایی'})</b><span class="small muted">دکمه را بزن، «<span class="en">${esc(target)}</span>» را بگو و دوباره بزن تا ضبط تمام شود.</span><div class="row"><button class="btn" id="pc">🎙 ضبط و ارزیابی</button><button class="btn ghost" id="pl">🔊 الگو</button></div><div id="pr"></div></div>`;
+  $('#pl', el).onclick = e => say(target, 'en', 'calm', e.currentTarget);
+  let job = null; const btn = $('#pc', el);
+  btn.onclick = async () => {
+    if (job) { job.stop(); return; } if (!G.settings.prov.gemini.key) return toast('مربی تلفظ با کلید Gemini کار می‌کند؛ در تنظیمات بگذارش.');
+    stopSpeak(); job = recordAudio(); btn.textContent = '⏹ تمام شد'; btn.classList.add('bad');
+    try {
+      const blob = await job.promise; job = null; btn.textContent = '🎙 ضبط و ارزیابی'; btn.classList.remove('bad'); $('#pr', el).innerHTML = loading('در حال گوش دادن به تلفظت…');
+      const b64 = await blobB64(blob);
+      const d = await gemFetch([G.settings.prov.gemini.model, ...GEM_FALLBACK], 'generateContent', { contents: [{ parts: [{ text: `You are an expert ${acc} pronunciation coach for Persian (Farsi) speakers. The learner tried to say: "${target}". Listen carefully to the audio. Judge against ${acc}. Detect specific errors: wrong phonemes (e.g. /w/→/v/, /θ/→/t/ or /s/, /ð/→/d/ or /z/, /æ/ vs /e/, /ɪ/ vs /iː/, /ʊ/ vs /uː/), extra vowel before or inside consonant clusters (e.g. "espeak", "estreet"), wrong word stress, flat intonation, final consonants dropped, ${acc.startsWith('British') ? 'pronounced r after vowels (should be silent in RP)' : 'missing r-coloring or flap t'}. Also note if the learner sounds unnatural because they pronounce every word separately instead of natural connected speech (linking, weak forms, flap t, yod coalescence). Explain WHY a Persian speaker makes each error and exactly HOW to place tongue/lips. JSON {"heard":"what you heard","score":0-100,"verdict":"Persian one sentence, human and encouraging","errors":[{"sound":"the sound or word part","you":"what learner did","correct":"IPA target","why":"Persian: why (Persian L1 influence)","how":"Persian: mouth/tongue instructions","practice":"English minimal pairs or drill words"}],"stress":"Persian note about stress/intonation or empty"}` }, { inlineData: { mimeType: blob.type.split(';')[0], data: b64 } }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.2 } }, G.settings.prov.gemini.key);
+      const r = parseJSON(d.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '{}');
+      $('#pr', el).innerHTML = `<div class="stack"><div class="row"><span class="score" style="font-size:36px">${faNum(r.score ?? 0)}</span><div class="grow small">شنیدم: <b class="en">${esc(r.heard || '')}</b><br>${esc(r.verdict || '')}</div></div>
+      ${(r.errors || []).map(x => `<div class="card stack small" style="box-shadow:inset 0 0 0 1px var(--line)"><div><b class="en">${esc(x.sound)}</b> — تو گفتی <span class="en">${esc(x.you)}</span>، درستش <b class="en">/${esc(x.correct)}/</b></div><div><b>چرا:</b> ${esc(x.why)}</div><div><b>چطور:</b> ${esc(x.how)}</div>${x.practice ? `<div><b>تمرین:</b> <span class="en">${esc(x.practice)}</span> <button class="pill" data-p="${esc(x.practice)}">🔊</button></div>` : ''}</div>`).join('')}
+      ${r.stress ? `<div class="notice soft small">${esc(r.stress)}</div>` : ''}</div>`;
+      $$('[data-p]', el).forEach(b => b.onclick = () => say(b.dataset.p, 'en', 'calm'));
+      addXP(r.score >= 85 ? 8 : 4); if (r.errors?.length) logMistakes(r.errors.map(x => ({ wrong: `${target}: ${x.you}`, right: `/${x.correct}/`, why: x.why })), 'pron'); saveU();
+      if (r.verdict) say(r.verdict, 'fa', r.score >= 85 ? 'proud' : 'encouraging');
+    } catch (e) { job = null; btn.textContent = '🎙 ضبط و ارزیابی'; btn.classList.remove('bad'); $('#pr', el).innerHTML = ''; aiErr(e); }
+  };
+}
+/* «نیتیوها واقعاً چطور می‌گویند؟» — گفتار پیوسته: حذف، اتصال، t نرم، ادغام صداها */
+async function nativeSay(el, text) {
+  const acc = G.settings.accent === 'UK' ? 'British (RP) casual speech' : 'General American casual speech';
+  const key = 'native:' + G.settings.accent + ':' + text.toLowerCase(); const show = r => {
+    el.innerHTML = `<div class="card stack small" style="box-shadow:inset 0 0 0 1px var(--line)"><b>🗣 نیتیوها در مکالمهٔ روزمره چطور می‌گویند (${G.settings.accent === 'UK' ? 'بریتانیایی' : 'آمریکایی'})</b>
+    <div>شمرده: <span class="en">/${esc(String(r.careful).replace(/\//g, ''))}/</span></div><div>طبیعی و سریع: <b class="en">/${esc(String(r.natural).replace(/\//g, ''))}/</b></div><div>تقریباً به این شکل: <b>«${esc(r.fa)}»</b></div>
+    ${(r.rules || []).map(x => `<div>• <b>${esc(x.rule)}</b>: ${esc(x.explain)}</div>`).join('')}<div class="row"><button class="btn ghost sm" data-n="0.75">🐢 آهسته</button><button class="btn ghost sm" data-n="1">▶ سرعت طبیعی</button></div></div>`;
+    $$('[data-n]', el).forEach(b => b.onclick = () => { const r0 = G.settings.rate; G.settings.rate = +b.dataset.n; say(text, 'en', 'cheerful', b).finally(() => G.settings.rate = r0); });
+  };
+  if (G.cache[key]) return show(G.cache[key]); if (needAI(el)) return; el.innerHTML = loading();
+  try { const r = await ai({ temp: 0.2, system: 'You are a phonetics expert in connected speech for Persian-speaking learners. Be precise and honest; do not exaggerate reductions that natives do not really make.', messages: [{ role: 'user', content: `How do native speakers really say "${text}" in ${acc}? Explain connected-speech processes actually used (linking, elision, flap/tap t, yod coalescence like "meet you"→"meechu", weak forms like "to"→/tə/, contractions, gonna/wanna where natural). JSON {"careful":"IPA careful speech","natural":"IPA natural fast speech","fa":"approximate pronunciation written in Persian script","rules":[{"rule":"English name","explain":"Persian: what happens and why"}]}` }] }); G.cache[key] = r; saveG('cache'); show(r); }
+  catch (e) { el.innerHTML = ''; aiErr(e); }
 }
 const blobB64 = b => new Promise(r => { const f = new FileReader(); f.onload = () => r(String(f.result).split(',')[1]); f.readAsDataURL(b); });
 const enLang = () => G.settings.accent === 'UK' ? 'en-GB' : 'en-US';
@@ -431,7 +515,7 @@ function router() {
   if (!G.users.length || !G.active || !G.users.some(u => u.id === G.active)) { if (!G.users.length) return viewWelcome(); loadUser(G.users[0].id); }
   if (!U) loadUser(G.active);
   const [r, ...args] = (location.hash.slice(1) || 'home').split('/');
-  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', settings: 'me', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat' }[r] || r)));
+  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', settings: 'me', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat' }[r] || r)));
   (routes[r] || routes.home)(...args.map(decodeURIComponent));
 }
 addEventListener('hashchange', router);
@@ -462,6 +546,12 @@ routes.users = () => {
 };
 
 /* ───────── صفحهٔ اول ───────── */
+function planGap() { // چند درس عقب‌تر از برنامه
+  const P = U?.plan; if (!P) return 0; const days = Object.keys(P.days).filter(d => d <= isoDay()).sort().reverse(); const d = days.find(x => P.days[x].unit); if (!d) return 0;
+  return Math.max(0, unitById(P.days[d].unit).idx - currentUnit().idx);
+}
+function catchUpPlan() { const P = U.plan; const end = addDays(P.start, P.dayCount - 1); const left = Math.max(7, Math.round((parseDay(end) - parseDay(isoDay())) / DAY) + 1); const gap = planGap();
+  U.plan = buildPlan({ ...P, start: isoDay(), days: left, minutes: clamp(P.minutes + gap * 10, P.minutes, 180) }); U.plan.dayCount = left; U.plan.catchUp = (U.plan.catchUp || 0) + 1; saveU(); }
 function todayPlan() { const p = U.plan; if (!p) return null; return p.days?.[isoDay()] || null; }
 routes.home = () => {
   setTop('زبان دوم');
@@ -475,6 +565,7 @@ routes.home = () => {
     <ul class="tasks">${tasks.map(t => `<li class="${taskDone(t) ? 'done' : ''}"><span class="chk">${taskDone(t) ? '✓' : ''}</span>${esc(t.t)}</li>`).join('')}</ul>
     <div class="row"><a class="btn" href="#unit/${cur.id}">ادامهٔ یادگیری</a>${due ? `<a class="btn ghost" style="background:transparent;color:inherit;box-shadow:inset 0 0 0 1.5px currentColor" href="#cards/due">مرور ${faNum(due)} واژه</a>` : ''}</div>
   </div>
+  ${planGap() > 0 ? `<div class="notice stack"><b>⚠ ${faNum(planGap())} درس از برنامه‌ات عقبی</b><span class="small">هدفت عقب نمی‌افتد: برنامهٔ جبرانی همان تاریخ پایان را نگه می‌دارد و وقت روزانه را کمی بیشتر می‌کند.</span><button class="btn sm" id="cu" style="align-self:flex-start">ساخت برنامهٔ جبرانی</button></div>` : ''}
   ${!hasAI() && !firstKeyed() ? `<div class="notice">برای فعال شدن معلم صوتی و گفتگو، در <a href="#settings">تنظیمات</a> یک کلید رایگان Gemini بگذار.</div>` : ''}
   <div class="sec">رقابت این هفته <small>امتیاز هفت روز اخیر</small></div>
   <div class="users">${board.map((x, i) => `<button class="ucard${x.u.id === G.active ? ' on' : ''}" data-u="${x.u.id}"><div class="row"><span style="font-weight:900;width:20px">${['🥇', '🥈', '🥉'][i] || faNum(i + 1)}</span><span class="avatar">${esc(x.u.avatar)}</span><b class="grow">${esc(x.u.name)}</b><span class="pill acc num">${faNum(x.w)}</span></div>
@@ -491,6 +582,8 @@ routes.home = () => {
   ${!U.placement ? `<a class="btn ghost wide" href="#placement">تعیین سطح با هوش مصنوعی</a>` : ''}
   </div>`;
   $$('[data-u]').forEach(b => b.onclick = () => { loadUser(b.dataset.u); router(); });
+  $('#cu') && ($('#cu').onclick = () => { catchUpPlan(); toast(`برنامهٔ جبرانی ساخته شد: روزی ${faNum(U.plan.minutes)} دقیقه تا همان تاریخ هدف.`, 5000); go('plan'); });
+  if (!U.plan && !lsGet('zd:planAsked:' + G.active, false)) { lsSet('zd:planAsked:' + G.active, true); setTimeout(() => { const bg = sheet(`<div class="stack"><div class="big-ic">🗓️</div><b>برنامهٔ شخصی‌ات را بسازیم؟</b><span class="small muted">بگو تا کی می‌خواهی به کجا برسی و روزی چقدر وقت داری؛ برنامه روی تقویم شمسی چیده می‌شود، یادآوری می‌کند و اگر عقب بیفتی برنامهٔ جبرانی می‌دهد.</span><a class="btn" href="#plan" onclick="this.closest('.sheet-bg').remove()">بله، بسازیم</a><button class="btn ghost" onclick="this.closest('.sheet-bg').remove()">بعداً</button></div>`); }, 800); }
 };
 function unitCard(u) {
   const open = isOpen(u), m = u.idx < 1000 || u.track === 'ws' ? isMastered(u) : false, cur = !m && open && (u.track === 'ws' ? u.id === currentWS().id : u.idx === currentUnit().idx);
@@ -527,7 +620,7 @@ routes.unit = (id, sub) => {
   <div class="row small"><span class="pill">${faNum(words.length)} واژه</span>${st.mastered ? `<span class="pill ok">قبول با نمرهٔ ${faNum(st.best.exam)}</span>` : st.best.exam ? `<span class="pill bad">بهترین نمره: ${faNum(st.best.exam)}</span>` : ''}</div></div></div>
   <div class="card stack"><div class="small"><b>گرامر این درس:</b> ${esc(u.gram || '—')}</div><div class="small"><b>هدف گفتاری:</b> ${esc(u.talk || '—')}</div>
   <div id="why">${G.cache['why:' + u.id] ? `<div class="notice soft small">${esc(G.cache['why:' + u.id])}</div>` : `<button class="btn ghost sm" id="whyb">این درس به چه دردم می‌خورد؟</button>`}</div>
-  <div id="ua"></div></div>
+  <div id="ua"></div><div class="stack" id="ub"><button class="btn ghost sm" id="mkaudio">🎧 صوت کامل درس (واژه‌ها + مکالمه) برای گوش دادن آفلاین و دانلود</button></div></div>
   ${!words.length ? `<div class="notice">لغات این سرفصل هنوز ساخته نشده. با یک دکمه هوش مصنوعی همهٔ واژه‌ها و افعال کاربردی‌اش را می‌سازد.</div>` : ''}
   <ul class="steps">${STEPS.map((s, i) => `<li><a class="step${st.steps[s.k] || (s.k === 'exam' && st.mastered) ? ' done' : ''}" href="#${s.k === 'words' ? 'unit/' + u.id + '/w' : s.k + '/' + u.id}"><span class="n">${st.steps[s.k] || (s.k === 'exam' && st.mastered) ? '✓' : faNum(i + 1)}</span><span class="grow"><b>${s.ic} ${s.fa}</b><br><span class="small muted">${s.d}</span></span></a></li>`).join('')}</ul>
   <div class="sec">واژه‌ها و افعال <small>${faNum(words.length)} مورد</small><span class="grow"></span><button class="btn ghost sm" id="more">${words.length ? '+ تکمیل لغات با هوش مصنوعی' : 'ساخت لغات این درس'}</button></div>
@@ -536,6 +629,8 @@ routes.unit = (id, sub) => {
   bindWordRows(u); autoImages(view());
   $('#whyb') && ($('#whyb').onclick = async () => { if (needAI($('#why'))) return; $('#why').innerHTML = loading(); try { const r = await ai({ system: 'You are a motivating Persian-speaking English teacher.', messages: [{ role: 'user', content: `${learnerContext(u)}\n\nIn Persian, in 3 short sentences, tell this learner why the unit "${u.en}" (grammar: ${u.gram}) is useful for their real life in Oman and how it moves them toward fluent speaking. JSON {"why":"..."}` }] }); G.cache['why:' + u.id] = r.why; saveG('cache'); $('#why').innerHTML = `<div class="notice soft small">${esc(r.why)}</div>`; say(r.why, 'fa', 'encouraging'); } catch (e) { aiErr(e); $('#why').innerHTML = ''; } });
   $('#more').onclick = () => expandWords(u);
+  idb.get('unitwav:' + u.id).then(b => { if (b) audioBox($('#ub'), b, 'zaban-' + u.id); });
+  $('#mkaudio') && ($('#mkaudio').onclick = async () => { if (!unitWords(u).length) return toast('اول لغات این درس را بساز.'); const box = $('#ub'); try { const b = await buildAudio('unitwav:' + u.id, unitAudioChunks(u), (i, n) => box.innerHTML = loading(`در حال ساخت صوت درس… ${faNum(i + 1)} از ${faNum(n)}`)); audioBox(box, b, 'zaban-' + u.id); } catch (e) { box.innerHTML = ''; aiErr(e); } });
   $('#playall').onclick = async e => { const tok = speakToken + 1; for (const w of words) { await say(w.w, 'en', 'calm'); if (speakToken !== tok) break; await sleep(350); } };
   idb.get('unitaudio:' + u.id).then(b => { $('#ua').innerHTML = `${b ? `<audio controls src="${URL.createObjectURL(b)}" style="width:100%"></audio>` : ''}<label class="btn line sm" style="margin-top:6px">${b ? 'جایگزینی' : 'افزودن'} فایل صوتی درس (مثلاً از NotebookLM)<input type="file" accept="audio/*" hidden id="uaf"></label>`; $('#uaf').onchange = async e => { const f = e.target.files[0]; if (f) { await idb.set('unitaudio:' + u.id, f); routes.unit(id); } }; });
   if (sub === 'w') { markStep(u, 'words'); setTimeout(() => $('#wl')?.scrollIntoView({ behavior: 'smooth' }), 100); }
@@ -557,7 +652,7 @@ async function expandWords(u) {
   const have = unitWords(u).map(w => w.w);
   const bg = sheet(loading('هوش مصنوعی در حال ساخت فهرست کامل واژه‌ها و افعال کاربردی است…'));
   try {
-    const r = await ai({ max: 6000, temp: 0.4, system: 'You are an expert ESL syllabus designer for Persian speakers. Accuracy is critical: correct IPA (General American), correct and natural Persian meanings, natural example sentences.', messages: [{ role: 'user', content: `Unit topic: "${u.en}" (${u.fa}), level ${u.levelFa || 'any'}, grammar focus: ${u.gram}.\nAlready included: ${have.join(', ') || 'none'}.\nGive the remaining MOST USEFUL everyday words for this topic so the learner can talk about it fluently: nouns, VERBS, adjectives, and common phrases/collocations (aim for 25-35 new items, no duplicates, no rare words). JSON {"words":[{"w":"","ipa":"without slashes","fa":"Persian meaning","img":"one emoji","pos":"n|v|adj|adv|prep|phr","ex":"short natural example sentence"}]}` }] });
+    const r = await ai({ max: 6000, temp: 0.4, system: 'You are an expert ESL syllabus designer for Persian speakers. Accuracy is critical: correct IPA (General American), correct and natural Persian meanings, natural example sentences.', messages: [{ role: 'user', content: `Unit topic: "${u.en}" (${u.fa}), level ${u.levelFa || 'any'}, grammar focus: ${u.gram}.\nAlready included: ${have.join(', ') || 'none'}.\nGive the remaining MOST USEFUL everyday vocabulary for this topic so the learner never meets a common word or expression in this situation that they don't know: nouns, VERBS, adjectives, AND every common set expression natives really say in this situation (formal and informal variants, typical questions and typical answers, e.g. for greetings: How's it going? / Not bad / Long time no see / Take care…). Aim for 30-45 new items, no duplicates, no rare words. JSON {"words":[{"w":"","ipa":"without slashes","fa":"Persian meaning","img":"one emoji","pos":"n|v|adj|adv|prep|phr","ex":"short natural example sentence"}]}` }] });
     const list = (r.words || []).filter(w => w.w && w.fa); const ex = G.extra[u.id] || (G.extra[u.id] = { words: [] });
     const seen = new Set(have.map(x => x.toLowerCase())); list.forEach(w => { if (!seen.has(w.w.toLowerCase())) { ex.words.push(w); seen.add(w.w.toLowerCase()); } });
     saveG('extra'); bg.remove(); toast(`${faNum(list.length)} واژهٔ تازه اضافه شد.`); routes.unit(u.id);
@@ -574,7 +669,8 @@ function imageSheet(u, w) {
   $('#i4', bg).onclick = () => set(null);
 }
 async function askWord(u, w) {
-  const bg = sheet(`<div class="stack"><div class="row">${picHTML(u, w)}<div class="grow"><b class="en" style="font-size:22px">${esc(w.w)}</b><div class="en muted">/${esc(w.ipa)}/</div><div>${esc(w.fa)}</div></div><button class="icon-btn" id="sp">${I.spk}</button></div><div id="aw">${loading()}</div><div class="card stack"><b>تلفظ‌سنج</b><span class="small muted">دکمهٔ میکروفون را بزن و واژه را بگو.</span><div class="row" id="pr"></div></div></div>`);
+  const bg = sheet(`<div class="stack"><div class="row">${picHTML(u, w)}<div class="grow"><b class="en" style="font-size:22px">${esc(w.w)}</b><div class="en muted">/${esc(w.ipa)}/</div><div>${esc(w.fa)}</div></div><button class="icon-btn" id="sp">${I.spk}</button></div><div class="row"><a class="btn ghost sm" href="#dict/${encodeURIComponent(w.w)}" onclick="this.closest('.sheet-bg').remove()">📕 دیکشنری کامل</a><a class="btn ghost sm" target="_blank" rel="noopener" href="https://www.ldoceonline.com/dictionary/${encodeURIComponent(w.w.toLowerCase().replace(/\s+/g, '-'))}">لانگمن ↗</a></div><div id="aw">${loading()}</div><button class="btn ghost sm" id="nat">🗣 نیتیوها واقعاً چطور می‌گویند؟</button><div id="natv"></div><div id="pcw"></div><div class="card stack"><b>تلفظ‌سنج سریع</b><span class="small muted">دکمهٔ میکروفون را بزن و واژه را بگو.</span><div class="row" id="pr"></div></div></div>`);
+  pronCoach($('#pcw', bg), w.w); $('#nat', bg).onclick = () => nativeSay($('#natv', bg), w.ex || w.w);
   $('#sp', bg).onclick = e => say(w.w, 'en', 'calm', e.currentTarget);
   const pr = $('#pr', bg); const res = document.createElement('span'); res.className = 'grow small';
   pr.append(micButton(t => { const s = similarity(t, w.w); res.innerHTML = `شنیدم: <b class="en">${esc(t)}</b> — شباهت ${faNum(s)}٪ ${s >= 85 ? '👏 عالی' : s >= 60 ? '👍 نزدیک بود، دوباره' : '🔁 دوباره گوش بده و تکرار کن'}`; if (s >= 85) addXP(3); saveU(); }), res);
@@ -690,7 +786,7 @@ function convo(el, { key, system, intro, parse, speakLang = 'en', placeholder = 
   if (!hist.length && intro) send('', intro); else scroll();
   return { send, hist };
 }
-const TEACHER_STYLE = () => `You are ${G.settings.teacher}, a warm, witty, emotionally expressive Iranian English teacher who talks like a real human (not a robot): you laugh, you get excited about progress, you show gentle disappointment when the learner forgets something they should know ("I didn't expect you to forget X from the family lesson!"), you encourage and you celebrate. You speak natural, fluent, conversational Tehrani Persian; English only for the English examples. Keep every turn short (max ~80 words) and always end with ONE small question or task for the learner, then wait. Use the learner profile: recycle words from earlier units, re-teach forgotten ones, refer back to past mistakes, praise fast progress and mention the predicted date for fluent speaking when it motivates. Accent for English examples: ${G.settings.accent === 'UK' ? 'British' : 'American'}.`;
+const TEACHER_STYLE = () => `You are ${G.settings.teacher}, a warm, witty, emotionally expressive Iranian English teacher who talks like a real human (not a robot): you are NEVER dry or robotic: you laugh, you joke lightly, you get genuinely excited about progress, you give specific praise ("you used the past tense perfectly there!"), you motivate by connecting each lesson to the learner's real life goals and how close they are to speaking fluently, you show gentle disappointment when the learner forgets something they should know ("I didn't expect you to forget X from the family lesson!"), you encourage and you celebrate. You speak natural, fluent, conversational Tehrani Persian; English only for the English examples. If the learner drifts off-topic, react warmly for a moment, tell them kindly it's outside today's lesson, and cleverly bridge back to the lesson topic (e.g. turn their off-topic remark into a practice sentence). Keep every turn short (max ~80 words) and always end with ONE small question or task for the learner, then wait. Use the learner profile: recycle words from earlier units, re-teach forgotten ones, refer back to past mistakes, praise fast progress and mention the predicted date for fluent speaking when it motivates. Accent for English examples: ${G.settings.accent === 'UK' ? 'British' : 'American'}.`;
 
 /* معلم صوتی */
 routes.teach = id => {
@@ -716,7 +812,7 @@ routes.talk = id => {
   const c = convo(v, {
     key: 'talk:' + u.id, intro: 'Start a friendly conversation about the unit topic with a simple question.',
     extraTop: `<div class="notice soft small">به انگلیسی حرف بزن؛ اشتباه‌هایت همان لحظه با توضیح فارسی زرد می‌شوند. هدف: ${esc(u.talk)}</div>`,
-    system: () => `You are a friendly English conversation partner for a Persian-speaking learner (level ${u.levelFa}). Topic: "${u.en}". Use and recycle these unit words: ${unitWords(u).map(w => w.w).join(', ')}. Use the grammar: ${u.gram}. Speak simple natural English suited to the level, max 45 words, always ask a follow-up question. If the learner writes Persian, help them say it in English.
+    system: () => `You are a friendly English conversation partner for a Persian-speaking learner (level ${u.levelFa}). Topic: "${u.en}". Use and recycle these unit words: ${unitWords(u).map(w => w.w).join(', ')}. Use the grammar: ${u.gram}. Speak simple natural English suited to the level, max 45 words, always ask a follow-up question. Be warm, curious and encouraging, react with real emotion to what they say. If they drift off the unit topic, acknowledge it briefly, say it's off-topic in a friendly way, and smoothly steer back to the topic. If the learner writes Persian, help them say it in English.
 ${learnerContext(u)}
 JSON {"reply":"your English reply","fa":"Persian translation of your reply","fixes":[{"wrong":"exact wrong part from learner","right":"natural correct version","why":"short Persian explanation"}],"emotion":"cheerful|calm|excited|encouraging|empathetic|surprised","memory":"durable fact about learner or empty"}`,
     parse: r => ({ show: r.reply, fa: r.fa, lang: 'en', fixes: r.fixes, after: () => { if (c.hist.filter(m => m.role === 'user').length >= 8) markStep(u, 'talk'); } })
@@ -775,12 +871,12 @@ routes.dialog = async id => {
   const render = d => {
     v.innerHTML = `<div class="stack"><div class="card"><b>${esc(d.title)}</b><div class="small muted">${esc(d.setting || '')}</div></div>
     <div class="row"><button class="btn" id="pa">${I.spk} پخش کل مکالمه</button><button class="btn ghost" id="nw">مکالمهٔ تازه</button></div>
-    <div class="stack" id="ln">${d.lines.map((l, i) => `<div class="card stack" data-i="${i}"><div class="row"><span class="pill ${l.who === 'A' ? 'acc' : 'mark'}">${esc(l.name || l.who)}</span><span class="grow"></span><button class="icon-btn" data-p>${I.spk}</button><span data-m></span></div><div class="en" style="font-size:16px">${esc(l.en)}</div><div class="small muted">${esc(l.fa)}</div><div class="small" data-r></div></div>`).join('')}</div>
+    <div class="stack" id="ln">${d.lines.map((l, i) => `<div class="card stack" data-i="${i}"><div class="row"><span class="pill ${l.who === 'A' ? 'acc' : 'mark'}">${esc(l.name || l.who)}</span><span class="grow"></span><button class="icon-btn" data-p>${I.spk}</button><button class="icon-btn" data-nat title="نیتیوها چطور می‌گویند">🗣</button><span data-m></span></div><div class="en" style="font-size:16px">${esc(l.en)}</div><div class="small muted">${esc(l.fa)}</div><div class="small" data-r></div><div data-nv></div></div>`).join('')}</div>
     ${d.phrases?.length ? `<div class="card stack"><b>عبارت‌های کلیدی برای حفظ</b>${d.phrases.map(p => `<div class="small"><span class="en"><b>${esc(p.en)}</b></span> — ${esc(p.fa)}</div>`).join('')}</div>` : ''}
     <div class="notice soft small">سایه‌خوانی: هر جمله را گوش بده، میکروفون را بزن و همان را تکرار کن. وقتی نصف جمله‌ها را با شباهت ۷۵٪ به بالا گفتی، این قدم کامل می‌شود.</div></div>`;
     let ok = new Set();
     $$('[data-i]', v).forEach(card => {
-      const l = d.lines[+card.dataset.i]; card.querySelector('[data-p]').onclick = e => say(l.en, 'en', l.emotion || 'cheerful', e.currentTarget);
+      const l = d.lines[+card.dataset.i]; card.querySelector('[data-nat]').onclick = () => nativeSay(card.querySelector('[data-nv]'), l.en); card.querySelector('[data-p]').onclick = e => say(l.en, 'en', l.emotion || 'cheerful', e.currentTarget);
       card.querySelector('[data-m]').append(micButton(t => { const s = similarity(t, l.en); card.querySelector('[data-r]').innerHTML = `گفتی: <span class="en">${esc(t)}</span> · ${faNum(s)}٪ ${s >= 75 ? '✅' : '🔁'}`; if (s >= 75) { ok.add(card.dataset.i); addXP(3); if (ok.size >= Math.ceil(d.lines.length / 2)) markStep(u, 'dialog'); saveU(); } }));
     });
     $('#pa', v).onclick = async () => { const tok = speakToken + 1; for (const l of d.lines) { await say(l.en, 'en', l.emotion); if (speakToken !== tok) break; await sleep(300); } };
@@ -790,7 +886,7 @@ routes.dialog = async id => {
   if (needAI(v)) return; v.innerHTML = loading('در حال نوشتن مکالمهٔ درس…');
   try {
     const prev = ALL_UNITS.filter(x => x.idx < u.idx).slice(-3).flatMap(x => pick(unitWords(x), 3).map(w => w.w));
-    const r = await ai({ system: 'You write natural, realistic ESL dialogues for adults living in Oman. Correct, idiomatic English.', messages: [{ role: 'user', content: `Write a natural dialogue (10-12 lines) for unit "${u.en}", level ${u.levelFa}, practicing grammar "${u.gram}". Use many of these words: ${unitWords(u).map(w => w.w).join(', ')}. Also naturally reuse a few words from earlier units: ${prev.join(', ')}. Setting in everyday life in Oman. JSON {"title":"","setting":"Persian one line","lines":[{"who":"A|B","name":"","en":"","fa":"Persian translation","emotion":"cheerful|calm|surprised|excited|serious"}],"phrases":[{"en":"key useful phrase","fa":""}]}` }] });
+    const r = await ai({ system: 'You write natural, realistic ESL dialogues for adults living in Oman. Correct, idiomatic English.', messages: [{ role: 'user', content: `Write a natural dialogue (10-12 lines), using a wide variety of the real everyday expressions natives use in this situation (not just one standard phrase each), for unit "${u.en}", level ${u.levelFa}, practicing grammar "${u.gram}". Use many of these words: ${unitWords(u).map(w => w.w).join(', ')}. Also naturally reuse a few words from earlier units: ${prev.join(', ')}. Setting in everyday life in Oman. JSON {"title":"","setting":"Persian one line","lines":[{"who":"A|B","name":"","en":"","fa":"Persian translation","emotion":"cheerful|calm|surprised|excited|serious"}],"phrases":[{"en":"key useful phrase","fa":""}]}` }] });
     if (!Array.isArray(r.lines) || !r.lines.length) throw new Error('مکالمه کامل ساخته نشد؛ دوباره امتحان کن.');
     G.cache[key] = r; saveG('cache'); render(r);
   } catch (e) { v.innerHTML = ''; aiErr(e); }
@@ -919,14 +1015,14 @@ routes.plan = (mOffset = '0') => {
   v.innerHTML = `<div class="stack">
   <div class="card stack"><div class="row"><b class="grow">هدف: ${P.target === 'l1' ? 'پایان سطح ۱' : 'پایان سطح متوسط'} تا ${jLabel(addDays(P.start, P.dayCount - 1), true)}</b><span class="pill">${faNum(P.minutes)} دقیقه در روز</span></div>
   <div class="small">${gap > 0 ? `<span class="pill bad">${faNum(gap)} درس عقب‌تر از برنامه</span>` : gap < 0 ? `<span class="pill ok">${faNum(-gap)} درس جلوتر از برنامه 👏</span>` : '<span class="pill ok">طبق برنامه</span>'} · روزهای ازدست‌رفته: ${faNum(behind)}</div>
-  <div class="row"><button class="btn sm" id="upd">به‌روزرسانی برنامه از امروز</button><button class="btn ghost sm" id="aiu">تنظیم با هوش مصنوعی</button><button class="btn ghost sm" id="ics">افزودن یادآورها به تقویم گوشی</button><button class="btn ghost sm" id="ntf">اعلان در برنامه</button><button class="btn line sm" id="rst">برنامهٔ تازه</button></div><div id="aim"></div></div>
+  <div class="row"><button class="btn sm" id="upd">${gap > 0 ? 'برنامهٔ جبرانی (همان تاریخ هدف)' : 'به‌روزرسانی برنامه از امروز'}</button><button class="btn ghost sm" id="aiu">تنظیم با هوش مصنوعی</button><button class="btn ghost sm" id="ics">افزودن یادآورها به تقویم گوشی</button><button class="btn ghost sm" id="ntf">اعلان در برنامه</button><button class="btn line sm" id="rst">برنامهٔ تازه</button></div><div id="aim"></div></div>
   <div class="card stack"><div class="row"><button class="icon-btn" onclick="routes.plan(${off - 1})">${I.back}</button><b class="grow" style="text-align:center">${J_MONTHS[jm.m - 1]} ${faNum(jm.y)}</b><button class="icon-btn" style="transform:scaleX(-1)" onclick="routes.plan(${off + 1})">${I.back}</button></div>
   <div class="cal">${J_WEEK.map(w => `<span class="h">${w}</span>`).join('')}${Array(weekdayIdx(first)).fill('<span class="d empty"></span>').join('')}${cells.map(c => { const p = P.days[c]; const u = p?.unit && unitById(p.unit); return `<button class="d ${status(c)} ${c === isoDay() ? 'today' : ''}" data-d="${c}"><span class="num">${faNum(toJ(c).d)}</span><span class="e">${p ? (p.review ? '🔁' : u?.icon || '') : ''}</span></button>`; }).join('')}</div>
   <div class="row tiny muted"><span class="pill ok">انجام شد</span><span class="pill bad">جا ماند</span><span class="pill acc">روز مرور</span></div></div>
   <div id="dd"></div></div>`;
   const showDay = day => { const p = P.days[day]; $$('.cal .d').forEach(b => b.classList.toggle('sel', b.dataset.d === day)); $('#dd').innerHTML = p ? `<div class="card stack"><b>${jLabel(day, true)}${p.unit ? ' · ' + esc(unitById(p.unit).fa) : ' · روز مرور'}</b><ul class="list">${p.tasks.map(t => `<li>${day === isoDay() && taskDone(t) ? '✅ ' : ''}${esc(t.t)}</li>`).join('')}</ul>${U.log[day] ? `<span class="small muted">مطالعه: ${faNum(Math.round(U.log[day].min))} دقیقه · ${faNum(U.log[day].xp)} امتیاز</span>` : ''}${day === isoDay() && p.unit ? `<a class="btn sm" href="#unit/${cu.id}">شروع کار امروز</a>` : ''}</div>` : '<div class="card small muted">برای این روز برنامه‌ای نیست.</div>'; };
   $$('.cal .d[data-d]').forEach(b => b.onclick = () => showDay(b.dataset.d)); showDay(isoDay());
-  $('#upd').onclick = () => { const left = P.dayCount - Math.round((parseDay(isoDay()) - parseDay(P.start)) / DAY); U.plan = buildPlan({ ...P, start: isoDay(), days: Math.max(14, left) }); U.plan.dayCount = U.plan.days ? Object.keys(U.plan.days).length : left; saveU(); toast('برنامه از امروز و بر اساس پیشرفت واقعی‌ات دوباره چیده شد.'); routes.plan(); };
+  $('#upd').onclick = () => { catchUpPlan(); toast('برنامهٔ جبرانی تا همان تاریخ هدف ساخته شد.'); routes.plan(); }; $('#upd_old') && ($('#upd_old').onclick = () => { const left = P.dayCount - Math.round((parseDay(isoDay()) - parseDay(P.start)) / DAY); U.plan = buildPlan({ ...P, start: isoDay(), days: Math.max(14, left) }); U.plan.dayCount = U.plan.days ? Object.keys(U.plan.days).length : left; saveU(); toast('برنامه از امروز و بر اساس پیشرفت واقعی‌ات دوباره چیده شد.'); routes.plan(); });
   $('#rst').onclick = () => { U.plan = null; saveU(); routes.plan(); };
   $('#aiu').onclick = async () => {
     if (needAI($('#aim'))) return; $('#aim').innerHTML = loading();
@@ -963,16 +1059,17 @@ setInterval(() => { // یادآور درون‌برنامه‌ای
 /* ───────── ابزارها ───────── */
 routes.tools = () => {
   setTop('ابزارها'); const T = [
+    ['dict', '📕', 'دیکشنری کامل', 'انگلیسی↔فارسی با تلفظ آمریکایی و بریتانیایی، معانی، همنشین‌ها، اصطلاحات و اشتباه‌های رایج.'],
     ['howto', '🤔', '«چطور بگم؟»', 'جملهٔ فارسی بنویس؛ انگلیسی طبیعی در دو حالت رسمی و خودمانی بگیر.'],
     ['fix', '📝', 'اصلاح نوشته', 'متن انگلیسی‌ات با توضیح فارسی هر اشتباه اصلاح می‌شود.'],
     ['story', '📖', 'داستان با لغت‌های ضعیفم', 'داستانی کوتاه با همان واژه‌هایی که در فلش‌کارت یادت نمی‌ماند.'],
     ['mistakes', '🔍', 'تحلیل اشتباه‌هایم', 'الگوی اشتباه‌هایت را توضیح می‌دهد و تمرین تازه می‌دهد.'],
     ['photo', '📷', 'عکس بگیر، یاد بگیر', 'از هر چیزی دور و برت عکس بگیر؛ نامش را به انگلیسی یاد بگیر و به فلش‌کارت‌ها اضافه کن.'],
-    ['shadow', '🎧', 'تلفظ‌سنج جمله', 'هر جمله‌ای بنویس، بشنو، تکرار کن و درصد شباهت بگیر.'],
+    ['shadow', '🎯', 'مربی تلفظ و لهجه', 'صدایت را ضبط کن؛ می‌گوید کدام صدا را اشتباه گفتی، چرا (تأثیر فارسی) و زبان و لب را چطور بگذاری.'],
     ['import', '📥', 'درس از کتاب خودم', 'لغت‌های هر درس کتابت را وارد کن یا با AI درس تازه بساز.'],
     ['role', '🎭', 'نقش‌آفرینی عمان', 'موقعیت‌های واقعی زندگی در عمان.']
   ];
-  view().innerHTML = `<div class="tools">${T.map(([k, ic, t, d]) => `<a class="tool" href="#${k === 'role' ? 'role' : 'tool/' + k}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>`;
+  view().innerHTML = `<div class="tools">${T.map(([k, ic, t, d]) => `<a class="tool" href="#${k === 'role' ? 'role' : k === 'dict' ? 'dict' : 'tool/' + k}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>`;
 };
 routes.tool = k => (TOOLS[k] || routes.tools)();
 const TOOLS = {
@@ -1040,7 +1137,9 @@ const TOOLS = {
   },
   shadow() {
     setTop('تلفظ‌سنج جمله', true); const v = view();
-    v.innerHTML = `<div class="stack"><div class="card stack"><textarea id="q" class="in" dir="ltr">Could you turn on the air conditioner, please?</textarea><div class="row"><button class="btn" id="pl">${I.spk} بشنو</button><button class="btn ghost" id="sl">🐢 آهسته</button><span id="mc"></span></div><div id="r" class="small"></div></div></div>`;
+    v.innerHTML = `<div class="stack"><div class="card stack"><textarea id="q" class="in" dir="ltr">Could you turn on the air conditioner, please?</textarea><div class="row"><button class="btn" id="pl">${I.spk} بشنو</button><button class="btn ghost" id="sl">🐢 آهسته</button><span id="mc"></span></div><div id="r" class="small"></div></div><div id="pcs"></div></div>`;
+    pronCoach($('#pcs'), $('#q').value); $('#q').onchange = () => pronCoach($('#pcs'), $('#q').value);
+    $('#pcs').insertAdjacentHTML('beforebegin', '<button class="btn ghost" id="nat2">🗣 نیتیوها این جمله را چطور می‌گویند؟</button><div id="nv2"></div>'); $('#nat2').onclick = () => nativeSay($('#nv2'), $('#q').value);
     $('#pl').onclick = () => say($('#q').value, 'en', 'calm'); $('#sl').onclick = () => browserSay($('#q').value, 'en', 0.65);
     $('#mc').append(micButton(t => { const s = similarity(t, $('#q').value); $('#r').innerHTML = `شنیدم: <b class="en">${esc(t)}</b><br>شباهت: <b>${faNum(s)}٪</b> ${s >= 90 ? '🌟 عالی' : s >= 70 ? '👍 خوب' : '🔁 دوباره'}`; addXP(s >= 70 ? 3 : 1); saveU(); }));
   },
@@ -1117,7 +1216,7 @@ routes.settings = () => {
   <label class="f">ظاهر</label>${seg('theme', [['auto', 'خودکار'], ['light', 'روشن'], ['dark', 'تیره']], S.theme)}</div>
   <button class="btn" id="sv">ذخیرهٔ تنظیمات</button></div>`;
   $$('[data-seg]').forEach(g => g.onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('button', g).forEach(x => x.classList.remove('on')); b.classList.add('on'); S[g.dataset.seg] = b.dataset.v; if (g.dataset.seg === 'theme') applyTheme(); saveG('settings'); });
-  const collect = () => { S.brain = $('#brain').value; $$('[data-k]').forEach(i => S.prov[i.dataset.k].key = i.value.trim()); $$('[data-m]').forEach(i => S.prov[i.dataset.m].model = i.value.trim()); S.prov.custom.base = $('[data-b]').value.trim(); S.geminiVoice = $('#gv').value; S.openaiVoice = $('#ov').value; S.rate = +$('#rate').value; S.autoSpeak = $('#as').checked; S.pixabayKey = $('#pk').value.trim(); S.teacher = $('#tn').value.trim() || 'سارا'; S.passScore = clamp(+$('#ps').value || 95, 60, 100); saveG('settings'); };
+  const collect = () => { S.brain = $('#brain').value; $$('[data-k]').forEach(i => S.prov[i.dataset.k].key = i.value.trim()); $$('[data-m]').forEach(i => S.prov[i.dataset.m].model = i.value.trim()); S.prov.custom.base = $('[data-b]').value.trim(); S.geminiVoice = $('#gv').value; S.openaiVoice = $('#ov').value; S.rate = +$('#rate').value; S.autoSpeak = $('#as').checked; S.pixabayKey = $('#pk').value.trim(); S.teacher = $('#tn').value.trim() || 'رستا'; S.passScore = clamp(+$('#ps').value || 95, 60, 100); saveG('settings'); };
   $('#rate').oninput = e => $('#rv').textContent = e.target.value;
   $('#mkc').onclick = async () => { collect(); if (!firstKeyed()) return toast('اول یک کلید وارد کن.'); const c = makeCode(); $('#cc').value = c; try { await navigator.clipboard.writeText(c); toast('کد اتصال کپی شد؛ در واتساپ یا تلگرام بفرست.'); } catch { $('#cc').select(); toast('کد را از کادر زیر کپی کن.'); } };
   $('#usc').onclick = () => { try { useCode($('#cc').value); toast('هوش مصنوعی وصل شد ✓'); routes.settings(); } catch { toast('کد اتصال درست نیست.'); } };
