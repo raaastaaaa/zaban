@@ -213,7 +213,7 @@ routes.news = async () => {
     v.innerHTML = loading('خبرهای امروز را پیدا و ساده می‌کنم…');
     try { N = await fetchNews(lv); lsSet(ck, N); draw(); }
     catch (e) {
-      if (e.message === 'NOGEM') v.innerHTML = `<div class="card stack"><b>خبر سادهٔ امروز به کلید رایگان Gemini نیاز دارد</b><span class="small muted">خبرها از جستجوی زندهٔ گوگل گرفته می‌شوند تا واقعی باشند. کلید را در تنظیمات بگذار یا کد اتصال را از مدیر برنامه بگیر.</span><a class="btn" href="#settings">رفتن به تنظیمات</a><a class="btn ghost" href="#listen">فعلاً رادیو گوش می‌دهم</a></div>`;
+      if (e.message === 'NOGEM') v.innerHTML = `<div class="card stack"><b>خبرهای امروز به اینترنت نیاز دارد</b><span class="small muted">به اینترنت وصل شو و دوباره امتحان کن. تا آن موقع رادیو و درس‌ها در دسترس است.</span><button class="btn" onclick="router()">دوباره</button></div>`;
       else { v.innerHTML = `<div class="card stack"><b>الان خبر نیامد</b><span class="small muted">${esc(e.message || '')}</span><button class="btn" id="re">دوباره</button><a class="btn ghost" href="#listen">رادیو</a></div>`; $('#re').onclick = load; }
     }
   };

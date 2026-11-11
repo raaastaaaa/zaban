@@ -86,18 +86,20 @@ if (G.settings.img !== 'photo' && G.settings.img !== 'set') { G.settings.img = '
 for (const k in G.img) if (/pollinations/.test(G.img[k])) delete G.img[k]; saveG('img');
 if (G.settings.teacher === 'سارا') { G.settings.teacher = 'رستا'; lsSet('zd:settings', G.settings); }
 if (G.settings.prov.gemini.model === 'gemini-2.5-flash') { G.settings.prov.gemini.model = 'gemini-3.1-flash-lite'; G.settings.geminiTtsModel = 'gemini-3.8-flash-tts'; saveG('settings'); }
-const GEM_FALLBACK = ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3.5-flash-lite'];
+const GEM_FALLBACK = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-3.6-flash', 'gemini-3-flash-preview', 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.7-flash', 'gemini-3.8-flash'];
 const TTS_FALLBACK = ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-2.5-flash-preview-tts'];
 /* سرور واسط: کلیدهای مدیر روی سرور (Supabase Edge Function) است؛ کاربر هیچ کلیدی وارد نمی‌کند */
-const serverOK = () => !!window.supabase && typeof SB_URL !== 'undefined' && lsGet('zd:noServer', 0) < Date.now();
+const serverOK = () => typeof SB_URL !== 'undefined' && lsGet('zd:noServer', 0) < Date.now();
+try { localStorage.removeItem('zd:noServer'); } catch { }
 const gemKey = () => G.settings.prov.gemini.key || (serverOK() ? 'server' : '');
 async function serverGem(models, path, body) {
   let s = await session(); if (!s) { const { error } = await sb().auth.signInAnonymously(); if (error) throw new Error('NOKEY'); s = await session(); }
   const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), 60000);
   let r; try { r = await fetch(SB_URL + '/functions/v1/ai', { method: 'POST', signal: ac.signal, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + s.access_token, apikey: SB_KEY }, body: JSON.stringify({ models: [...new Set(models)], path, payload: body }) }); }
-  catch (e) { clearTimeout(tm); if (e.name === 'AbortError') throw new Error('پاسخ دیر شد'); lsSet('zd:noServer', Date.now() + 10 * 60000); throw new Error('NOKEY'); }
+  catch (e) { clearTimeout(tm); if (e.name === 'AbortError') throw new Error('پاسخ دیر شد'); throw new Error('اتصال به اینترنت برقرار نشد؛ دوباره امتحان کن.'); }
   clearTimeout(tm); const d = await r.json().catch(() => ({}));
-  if (r.ok) return d; if (r.status === 402) throw new Error('BUDGET'); if (r.status === 403 && /AI_OFF/.test(d.error || '')) throw new Error('AIOFF'); if (r.status === 404 || (r.status === 503 && /no server key/.test(d.error || ''))) { lsSet('zd:noServer', Date.now() + 60 * 60000); throw new Error('NOKEY'); }
+  if (r.ok) return d; if (r.status === 402) throw new Error('BUDGET'); if (r.status === 403 && /AI_OFF/.test(d.error || '')) throw new Error('AIOFF'); if (r.status === 404 || (r.status === 503 && /no server key/.test(d.error || ''))) { lsSet('zd:noServer', Date.now() + 2 * 60000); throw new Error('هوش مصنوعی برنامه لحظه‌ای در دسترس نیست؛ چند دقیقهٔ دیگر امتحان کن.'); }
+  if (r.status === 503 || r.status === 429) throw new Error('هوش مصنوعی الان شلوغ است؛ چند دقیقهٔ دیگر دوباره امتحان کن.');
   throw new Error(d.error || r.status);
 }
 async function gemFetch(models, path, body, key) { // اگر مدلی شلوغ یا حذف شده بود، مدل بعدی
@@ -271,7 +273,7 @@ function parseJSON(t) {
 function aiErr(e) {
   if (e.message === 'AIOFF') { toast('دسترسی هوش مصنوعی برای حساب تو فعلاً بسته است؛ با مدیر برنامه تماس بگیر.', 6000); return; }
   if (e.message === 'BUDGET') { toast('سهمیهٔ هوش مصنوعی امروزت تمام شد 🙂 فردا دوباره پر می‌شود؛ تا آن موقع فلش‌کارت، تمرین آفلاین و رادیو در دسترس است.', 6000); return; }
-  if (e.message === 'NOKEY') { toast('اول در «تنظیمات» یک کلید هوش مصنوعی بگذار (Gemini رایگان است).'); return; }
+  if (e.message === 'NOKEY') { toast('هوش مصنوعی برنامه الان در دسترس نیست؛ اینترنت را بررسی کن و چند دقیقهٔ دیگر دوباره امتحان کن.', 5000); return; }
   if (/failed to fetch|networkerror|load failed|location is not supported|not available in your country/i.test(e.message)) { toast('اتصال به هوش مصنوعی برقرار نشد. اگر در ایران هستی، VPN را روشن کن و دوباره امتحان کن.', 6000); return; }
   toast('خطای هوش مصنوعی: ' + e.message);
 }
@@ -479,7 +481,7 @@ function pronCoach(el, target) {
   $('#pl', el).onclick = e => say(target, 'en', 'calm', e.currentTarget);
   let job = null; const btn = $('#pc', el);
   btn.onclick = async () => {
-    if (job) { job.stop(); return; } if (!gemKey()) return toast('مربی تلفظ با کلید Gemini کار می‌کند؛ در تنظیمات بگذارش.');
+    if (job) { job.stop(); return; } if (!gemKey()) return toast('مربی تلفظ به اینترنت نیاز دارد؛ وصل شو و دوباره امتحان کن.');
     stopSpeak(); job = recordAudio(); btn.textContent = '⏹ تمام شد'; btn.classList.add('bad');
     try {
       const blob = await job.promise; job = null; btn.textContent = '🎙 ضبط و ارزیابی'; btn.classList.remove('bad'); $('#pr', el).innerHTML = loading('در حال گوش دادن به تلفظت…');
@@ -519,7 +521,7 @@ function micButton(onText, lang) {
     if (job) { job.stop(); return; }
     stopSpeak(); b.classList.add('rec');
     try { job = listen(lang || enLang()); const t = await job.promise; if (t) onText(t); else toast('صدایی شنیده نشد؛ دوباره امتحان کن.'); }
-    catch (e) { if (e.message === 'NOKEY') toast('برای ضبط روی این دستگاه، کلید Groq (رایگان) یا Gemini لازم است.'); else toast('میکروفون: ' + e.message); }
+    catch (e) { if (e.message === 'NOKEY') toast('تبدیل صدا به متن الان در دسترس نیست؛ از 🎤 روی کیبورد گوشی استفاده کن یا چند دقیقهٔ دیگر امتحان کن.'); else toast('میکروفون: ' + e.message); }
     finally { job = null; b.classList.remove('rec'); }
   };
   return b;
@@ -585,7 +587,7 @@ function go(h) { location.hash = h; }
 const view = () => $('#view');
 function sheet(html) { const bg = document.createElement('div'); bg.className = 'sheet-bg'; bg.innerHTML = `<div class="sheet" role="dialog"><div class="grab"></div>${html}</div>`; bg.onclick = e => { if (e.target === bg) bg.remove(); }; document.body.appendChild(bg); return bg; }
 const loading = (t = 'در حال فکر کردن…') => `<div class="card row"><span class="typing"><i></i><i></i><i></i></span><span class="muted">${t}</span></div>`;
-function needAI(el) { if (hasAI() || firstKeyed()) return false; el.innerHTML = `<div class="card stack"><b>این بخش با هوش مصنوعی کار می‌کند.</b><span class="muted">یک کلید رایگان Gemini بگیر و در تنظیمات بگذار؛ دو دقیقه طول می‌کشد.</span><a class="btn" href="#settings">رفتن به تنظیمات</a></div>`; return true; }
+function needAI(el) { if (hasAI() || firstKeyed()) return false; el.innerHTML = `<div class="card stack"><b>این بخش به اینترنت نیاز دارد.</b><span class="muted">هوش مصنوعی برنامه آنلاین کار می‌کند. به اینترنت وصل شو و دوباره امتحان کن. درس‌ها، صداها، واژه‌ها، فعل‌ها و رادیو بدون اینترنت هم کار می‌کنند.</span><button class="btn" onclick="router()">دوباره امتحان کن</button></div>`; return true; }
 
 /* ───────── نصب برنامه (آیکن روی صفحهٔ گوشی و کامپیوتر) ───────── */
 let installEvt = null;
@@ -763,7 +765,7 @@ routes.home = () => {
   <div id="online-home"></div>
   ${(() => { if (!U.plan) return ''; let md = missedDays(); if (md && U.plan.lastCatch !== isoDay()) { catchUpPlan(); U.plan.lastCatch = isoDay(); U.plan.missedNote = md; saveU(); } else if (U.plan.lastCatch === isoDay()) md = U.plan.missedNote || 0; if (!md) return ''; const end = addDays(U.plan.start, U.plan.dayCount - 1); return `<div class="notice stack"><b>⏰ ${faNum(md)} روز است که طبق برنامه درس نخوانده‌ای</b><span class="small">برای اینکه باز هم تا <b>${jLabel(end, true)}</b> به هدفت برسی، برنامه خودکار جبرانی شد: از امروز روزی <b>${faNum(U.plan.minutes)} دقیقه</b> لازم است. کارهای جامانده به روزهای بعد پخش شد.</span><div class="row"><a class="btn sm" href="#coach/advisor">🧭 مشورت با مشاور</a><a class="btn ghost sm" href="#plan">دیدن تقویم</a></div></div>`; })()}
   ${planGap() > 0 && !(U.plan?.lastCatch === isoDay() && U.plan?.missedNote) ? `<div class="notice stack"><b>⚠ ${faNum(planGap())} درس از برنامه‌ات عقبی</b><span class="small">هدفت عقب نمی‌افتد: برنامهٔ جبرانی همان تاریخ پایان را نگه می‌دارد و وقت روزانه را کمی بیشتر می‌کند.</span><button class="btn sm" id="cu" style="align-self:flex-start">ساخت برنامهٔ جبرانی</button></div>` : ''}
-  ${!hasAI() && !firstKeyed() ? `<div class="notice">برای فعال شدن معلم صوتی و گفتگو، در <a href="#settings">تنظیمات</a> یک کلید رایگان Gemini بگذار.</div>` : ''}
+  ${''}}
   ${G.users.length > 1 ? `<div class="sec">رقابت این هفته <small>کاربران این دستگاه</small></div>
   <div class="users">${board.map((x, i) => `<button class="ucard${x.u.id === G.active ? ' on' : ''}" data-u="${x.u.id}"><div class="row"><span style="font-weight:900;width:20px">${['🥇', '🥈', '🥉'][i] || faNum(i + 1)}</span><span class="avatar">${avHTML(x.u)}</span><b class="grow">${esc(x.u.name)}</b><span class="pill acc num">${faNum(x.w)}</span></div>
     <div class="small muted">درس ${faNum((ALL_UNITS.find(u => !x.d.units[u.id]?.mastered)?.idx ?? 0) + 1)} از ${faNum(ALL_UNITS.length)} · ${faNum(Object.values(x.d.srs).filter(s => s.box >= 4).length)} واژهٔ تثبیت‌شده · ${rankOf(x.d.xp)}</div>
