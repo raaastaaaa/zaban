@@ -290,6 +290,10 @@ function liveStop(ui, silent) {
 routes.live = (mode = 'lesson') => {
   if (!LIVE_MODES[mode]) mode = 'lesson'; setTop('کلاس زنده با معلم', true); const v = view(); const L = todayLog();
   v.innerHTML = `<div class="stack">
+  <div class="card stack gpt-card"><b>🎙 کلاس صوتی با ChatGPT (رایگان)</b>
+    <ol class="small gpt-steps"><li>اگر خواستی، پایین همین صفحه انتخاب کن چه چیزی یاد بگیری (درس، واژه، گرامر یا موضوع دلخواه).</li><li>دکمهٔ سبز را بزن؛ طرح کامل درس کپی می‌شود و ChatGPT باز می‌شود.</li><li>در ChatGPT نگه دار و «Paste / چسباندن» را بزن و بفرست.</li><li>بعد دکمهٔ حالت صوتی 🎙 (کنار جای نوشتن) را بزن و حرف بزن. غلط‌های نوشتاری‌ات را با خط‌خوردگی ❌ و شکل درست ✅ تصحیح می‌کند.</li></ol>
+    <div class="row"><button class="btn" id="gpt">🚀 شروع کلاس در ChatGPT</button><button class="btn line sm" id="gptc">فقط کپی دستور</button></div>
+    <span class="tiny muted">${mode === 'group' ? 'برای کلاس گروهی: یک نفر ChatGPT را روی بلندگو باز کند و همه کنار هم باشید؛ هر کس قبل از حرف زدن اسمش را بگوید.' : 'برنامهٔ امروز، اشتباه‌های قبلی و حافظهٔ کلاس‌هایت هم به ChatGPT داده می‌شود.'}</span></div>
   <div class="live-card"><div class="live-av" id="lav"><span>👩‍🏫</span><i></i></div><b id="lst">${esc(G.settings.teacher)} آماده است</b><span class="small" id="lclk">${faNum(Math.round(L.live || 0))} دقیقه کلاس زندهٔ امروز</span>
     <div class="row" style="justify-content:center"><button class="btn live-go" id="lgo">📞 شروع کلاس</button></div>
     <span class="tiny" style="opacity:.8">مثل تماس تلفنی حرف بزن؛ وسط حرف معلم هم می‌توانی بپری. هدفون بهتر است.</span></div>
@@ -314,8 +318,7 @@ routes.live = (mode = 'lesson') => {
   <div class="card stack live-board" id="lboard" hidden></div>
   <div class="card stack lt-box" id="ltx" hidden><div class="row"><input class="in grow en" id="lti" dir="auto" placeholder="${mode === 'group' ? 'اسمت: پیام به انگلیسی… (مثلاً ملیحه: I goed home)' : 'به انگلیسی بنویس؛ معلم غلط‌ها را تصحیح می‌کند…'}"><button class="btn sm" id="ltb">ارسال</button></div><div id="lfix"></div></div>
   <div class="card stack live-log" id="llog"><span class="small muted">متن گفتگو اینجا نوشته می‌شود.</span></div>
-  <div class="card stack"><b>🎙 تمرین رایگان با ChatGPT</b><span class="small muted">اگر حساب ChatGPT داری (رایگان هم کافی است)، این دکمه ChatGPT را با دستور آمادهٔ درس امروز، برنامه و اشتباه‌هایت باز می‌کند؛ بعد در ChatGPT دکمهٔ حالت صوتی را بزن.</span>
-    <div class="row"><button class="btn ghost" id="gpt">باز کردن در ChatGPT</button><button class="btn line sm" id="gptc">کپی دستور</button></div></div></div>`;
+  <div class="card stack" id="lgptcard" style="display:none"></div></div>`;
   const log = $('#llog'); let cur = null, who = null;
   const ui = {
     board: (t, items) => { const b = $('#lboard'); if (!b) return; b.hidden = false; b.innerHTML = `<b>🧑‍🏫 ${esc(t)}</b>${(items || []).map((x, i) => `<div class="lb-i" data-bi="${i}"><span class="en">${esc(x.en || '')}</span>${x.fa ? `<span class="small"> — ${esc(x.fa)}</span>` : ''}${x.note ? `<div class="tiny muted">🧭 ${esc(x.note)}</div>` : ''}</div>`).join('')}`; b.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); },
@@ -407,8 +410,20 @@ routes.live = (mode = 'lesson') => {
   $('#lgo').onclick = () => Live.starting ? null : Live.on ? liveStop(ui) : liveStart(mode, ui);
   $$('[data-lm]', v).forEach(b => b.onclick = () => { if (Live.on) liveStop(ui, true); go('live/' + b.dataset.lm); });
   liveLessonText();
-  const gptPrompt = () => `${livePrompt(mode)}\n\nIMPORTANT: This is a voice conversation in the ChatGPT app. Start right now by greeting me in Persian and beginning.`;
-  $('#gpt').onclick = () => { const p = gptPrompt(); try { navigator.clipboard.writeText(p); } catch { } window.open('https://chatgpt.com/?q=' + encodeURIComponent(p.slice(0, 6000)), '_blank'); };
-  $('#gptc').onclick = async () => { try { await navigator.clipboard.writeText(gptPrompt()); toast('دستور کپی شد؛ در ChatGPT بچسبان و بفرست.'); } catch { toast('کپی نشد.'); } };
+  const GPT_ADAPT = `
+=== YOU ARE RUNNING INSIDE THE ChatGPT APP (voice mode or chat) — NO TOOLS ARE AVAILABLE. Adapt every instruction above: ===
+- Wherever it says to call a tool, do it yourself instead: show_board → write the items as a short clear list in the chat; play_conversation → perform the lesson conversation yourself, reading both characters with clearly different voices and names; guest_say → play Emma (British) and Jake (American) yourself with their accents; call_on / give_points / set_activity / give_homework → simply say it out loud (keep a running score in your head in group classes); ask_brain → think carefully and answer yourself; mark_done → skip.
+- CORRECTING WRITTEN MESSAGES: for EVERY mistake in what the student types, write a correction block exactly like this:
+  ❌ ~~wrong words~~ → ✅ **correct words**
+  💡 short Persian reason why
+  then praise what was right and ask them to write it again correctly.
+- Keep the lesson interactive at all times: short turns, questions, games, role-plays; never lecture for long.
+- Start RIGHT NOW: greet me warmly in Persian by my name, say today's topic and the plan in one or two sentences, and begin step 1.`;
+  const gptPrompt = async () => { if (mode === 'lesson' || mode === 'group') { try { await liveLessonText(); } catch { } } return livePrompt(mode) + '\n' + GPT_ADAPT; };
+  let GPT_P = ''; const gptRefresh = () => gptPrompt().then(p => GPT_P = p).catch(() => { }); gptRefresh(); setInterval(() => { if ($('#gpt')) gptRefresh(); }, 4000);
+  $('#gpt').onclick = () => { const p = GPT_P || (livePrompt(mode) + '\n' + GPT_ADAPT); let ok = true; try { navigator.clipboard.writeText(p).catch(() => { ok = false; }); } catch { ok = false; }
+    const url = p.length < 7000 ? 'https://chatgpt.com/?q=' + encodeURIComponent(p) : 'https://chatgpt.com/';
+    if (!window.open(url, '_blank')) location.href = url; setTimeout(() => toast(ok ? '✅ طرح درس کپی شد. در ChatGPT «چسباندن» را بزن، بفرست و بعد دکمهٔ صدا 🎙 را بزن.' : 'در ChatGPT دستور را بچسبان («فقط کپی دستور»).', 8000), 50); };
+  $('#gptc').onclick = async () => { try { await navigator.clipboard.writeText(await gptPrompt()); toast('دستور کپی شد؛ در ChatGPT بچسبان و بفرست.'); } catch { toast('کپی نشد.'); } };
   const myHash = location.hash; addEventListener('hashchange', function h() { if (location.hash !== myHash) { if (Live.on && Live.hash === myHash) liveStop(null, true); if (window.VR?.on && !/^#live\/group/.test(location.hash)) vrLeave(); removeEventListener('hashchange', h); } });
 };
