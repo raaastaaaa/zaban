@@ -559,7 +559,7 @@ const I = {
   lock: '🔒'
 };
 function toast(t, ms = 3200) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, ms); }
-function setTop(title, back) { $('#top').innerHTML = `${back ? `<button class="back" aria-label="بازگشت" onclick="history.length>1?history.back():go('home')">${I.back}</button>` : ''}<h1>${esc(title)}</h1>${U && !U.online && window.loginSheet ? `<button class="btn sm" style="margin-inline-start:auto" onclick="loginSheet(()=>router())">ورود / ثبت‌نام</button>` : ''}${me() ? `<button class="userchip" onclick="go('users')"><span class="avatar">${avHTML(me())}</span>${esc(me().name)}</button>` : ''}`; }
+function setTop(title, back) { if (!back && !['home', 'plan', 'library', 'chat', 'tools', 'me', ''].includes((location.hash.slice(1).split('/')[0]))) back = true; $('#top').innerHTML = `${back ? `<button class="back" aria-label="بازگشت" onclick="history.length>1?history.back():go('home')">${I.back}</button>` : ''}<h1>${esc(title)}</h1>${U && !U.online && window.loginSheet ? `<button class="btn sm" style="margin-inline-start:auto" onclick="loginSheet(()=>router())">ورود / ثبت‌نام</button>` : ''}${me() ? `<button class="userchip" onclick="go('users')"><span class="avatar">${avHTML(me())}</span>${esc(me().name)}</button>` : ''}`; }
 function go(h) { location.hash = h; }
 const view = () => $('#view');
 function sheet(html) { const bg = document.createElement('div'); bg.className = 'sheet-bg'; bg.innerHTML = `<div class="sheet" role="dialog"><div class="grab"></div>${html}</div>`; bg.onclick = e => { if (e.target === bg) bg.remove(); }; document.body.appendChild(bg); return bg; }
@@ -591,7 +591,7 @@ function router() {
   stopSpeak(); window.scrollTo(0, 0); view().onclick = null; $('nav.bottom').hidden = false; $$('.sheet-bg').forEach(x => x.remove()); document.body.classList.toggle('session', /^#(cards|quiz|exam|guide)\b/.test(location.hash));
   if (!G.users.length || !G.active || !G.users.some(u => u.id === G.active)) { if (!G.users.length) return viewWelcome(); loadUser(G.users[0].id); }
   if (!U) loadUser(G.active);
-  if (!U.online && !sessionStorage.getItem('zd:askedLogin') && !location.hash.replace('#', '')) { sessionStorage.setItem('zd:askedLogin', '1'); return viewWelcome('in', true); }
+  if (!U.online && !window.TEST_MODE && !/access_token|type=recovery/.test(location.hash)) return viewWelcome('in', true); // بدون حساب نمی‌شود وارد برنامه شد
   routeGen++; const [r, ...args] = (location.hash.slice(1) || 'home').split('/');
   if (['unit', 'lesson', 'cards', 'quiz', 'teach', 'talk', 'dialog', 'exam', 'practice', 'sleep', 'myradio'].includes(r) && args[0]) { const gu = unitById(decodeURIComponent(args[0])); if (!gu) { location.hash = 'home'; return; } if (gu.idx < 1000 && !isOpen(gu)) { toast(`این درس هنوز قفل است؛ اول درس قبلی را با نمرهٔ ${faNum(G.settings.passScore)} قبول شو.`); location.hash = 'home'; return; } }
   if (['role', 'gclass'].includes(r) && !args[0]) { location.hash = r === 'role' ? 'chat' : 'grammar'; return; }
@@ -646,9 +646,10 @@ function viewWelcome(tab = 'in', returning = false) {
   let av = AVATARS[0]; $$('#av button').forEach(b => b.onclick = () => { $$('#av button').forEach(x => x.classList.remove('on')); b.classList.add('on'); av = b.dataset.a; });
   const code = () => { const c = $('#cd').value.trim(); if (!c) return true; try { useCode(c); toast('هوش مصنوعی وصل شد ✓'); return true; } catch { toast('کد اتصال درست نیست؛ دوباره کپی کن.'); return false; } };
   const enter = (n, a, h = 'guide') => { addUser(n, a); $('nav.bottom').hidden = false; go(h); router(); };
+  $('#go2').hidden = !window.TEST_MODE; // ورود بدون حساب ممنوع
   if (window._wReturning && G.users.length) { $('#go2').textContent = `ادامه با ${me()?.name || 'همین دستگاه'} بدون ورود`; $('#go2').onclick = () => { window._wReturning = false; $('nav.bottom').hidden = false; go('home'); router(); }; }
   else $('#go2').onclick = () => { if (!code()) return; enter('کاربر', AVATARS[0], 'guide'); };
-  $('#ml') && ($('#ml').onclick = () => { if (!code()) return; enter('کاربر', AVATARS[0], 'home'); setTimeout(() => window.loginSheet && loginSheet(p => { if (p?.display_name) { me().name = p.display_name; if (p.avatar) me().avatar = p.avatar; saveG('users'); router(); } }), 300); });
+  $('#ml') && ($('#ml').onclick = () => { if (!code()) return; if (!G.users.length) addUser('کاربر', AVATARS[0]); else if (!U) loadUser(G.active || G.users[0].id); window.loginSheet && loginSheet(p => { if (p?.display_name) { me().name = p.display_name; if (p.avatar) me().avatar = p.avatar; saveG('users'); } $('nav.bottom').hidden = false; go('home'); router(); }); });
   $('#fg') && ($('#fg').onclick = () => window.forgotPassword && forgotPassword($('#un').value.trim()));
   $('#go').onclick = async () => {
     if (!window.authSignUp) return toast('بخش آنلاین بارگذاری نشد؛ اینترنت را بررسی کن.');
