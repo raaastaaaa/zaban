@@ -2,7 +2,9 @@
    هر درس یک بار (توسط مدیر) با هوش مصنوعی ساخته و روی سرور منتشر می‌شود؛ بقیه بدون هوش مصنوعی و آفلاین می‌خوانند. */
 const LESSON_V = 1;
 async function lessonGet(u, { build = false } = {}) {
-  const key = 'lesson:' + u.id; let L = await idb.get(key); if (L?.v === LESSON_V) return L;
+  const key = 'lesson:' + u.id; let L;
+  try { const r = await fetch('lessons/' + u.id + '.json'); if (r.ok) { L = await r.json(); L.static = true; return L; } } catch { } // درس آماده و همراه برنامه (آفلاین)
+  L = await idb.get(key); if (L?.v === LESSON_V) return L;
   try { if (window.sb && sb()) { const { data } = await sb().from('lessons').select('data').eq('id', u.id).maybeSingle(); if (data?.data?.v === LESSON_V) { await idb.set(key, data.data); return data.data; } } } catch { }
   if (!build) return null;
   L = await lessonBuild(u); await idb.set(key, L);
@@ -41,12 +43,15 @@ routes.lesson = async id => {
   const tw = s => esc(s).replace(/([A-Za-z][A-Za-z'’-]*)/g, '<span class="tw">$1</span>');
   const sec = (ic, t, body, open = true) => `<details class="card stack lsec"${open ? ' open' : ''}><summary><b>${ic} ${t}</b></summary><div class="stack" style="margin-top:10px">${body}</div></details>`;
   const P = L.practice || [];
+  const TP = L.teach ? [...(L.teach.intro || []), ...(L.teach.conversation || []), ...(L.teach.words || []), ...(L.teach.grammar || []), ...(L.teach.outro || [])] : (L.teacher || []); L.teacher = TP;
+  const au = (f, t) => L.audio ? `<div class="stack" style="gap:4px"><span class="small"><b>${t}</b></span><audio controls preload="none" src="audio/${u.id}/${f}.m4a" style="width:100%"></audio></div>` : '';
   v.innerHTML = `<div class="stack">
   <div class="card stack" style="background:var(--hero);color:var(--hero-ink)"><span class="small" style="opacity:.8">${esc(u.levelFa)} · سطح ${esc(u.cefr)} · درس ${faNum(u.n || 1)}</span><b style="font-size:21px">${esc(L.title || u.en)}</b><span class="en" style="opacity:.85">${esc(u.en)}</span></div>
+  ${L.audio ? `<div class="card stack"><b>🎧 کلاس صوتی کامل (سه‌بعدی؛ با هدفون و چشم بسته)</b><span class="small muted">همهٔ درس از اول تا آخر: معلم، مکالمه، واژه‌ها و گرامر. حتی فقط با گوش دادن، قبل از خواب.</span>${au('full', '')}<a class="btn ghost sm" href="audio/${u.id}/full.m4a" download="rasta-lesson-${u.n}.m4a">⬇ دانلود برای گوش دادن آفلاین</a></div>` : ''}
   ${sec('🌱', 'شروع', `<p style="margin:0;line-height:1.9">${esc(L.warmup?.fa || '')}</p>${(L.warmup?.questions || []).map(q => `<div class="row" style="flex-wrap:nowrap">${sp(q)}<span class="en">${tw(q)}</span></div>`).join('')}`)}
-  ${sec('👩‍🏫', `کلاس با ${esc(G.settings.teacher)}`, `<button class="btn" id="teachall">▶ پخش کل درسِ معلم</button>${(L.teacher || []).map((p, i) => `<div class="row tp" data-i="${i}" style="flex-wrap:nowrap;align-items:flex-start;padding:6px;border-radius:10px">${sp(p, 'fa', 'warm')}<p style="margin:0;line-height:1.9">${bidi(p)}</p></div>`).join('')}`)}
+  ${sec('👩‍🏫', `کلاس با ${esc(G.settings.teacher)}`, `${L.audio ? au('conversation', '🎧 درس صوتی مکالمه (معرفی، مکالمه، توضیح خط‌به‌خط)') + au('words', '🎧 درس صوتی واژه‌ها') + au('grammar', '🎧 درس صوتی گرامر') : '<button class="btn" id="teachall">▶ پخش کل درسِ معلم</button>'}${(L.teacher || []).map((p, i) => `<div class="row tp" data-i="${i}" style="flex-wrap:nowrap;align-items:flex-start;padding:6px;border-radius:10px">${sp(p, 'fa', 'warm')}<p style="margin:0;line-height:1.9">${bidi(p.replace(/\[PAUSE\]/g, ' ⏳ '))}</p></div>`).join('')}`)}
   ${sec('📖', 'متن درس', `<div class="row" style="justify-content:space-between"><b class="en">${esc(L.reading?.title || '')}</b>${sp(L.reading?.en || '')}</div><p class="en" style="margin:0;font-size:16px;line-height:1.9">${tw(L.reading?.en || '')}</p><details><summary class="small">ترجمهٔ فارسی</summary><p class="small" style="line-height:1.9">${esc(L.reading?.fa || '')}</p></details>`)}
-  ${sec('💬', 'مکالمه', `<span class="small muted">${esc(L.conversation?.setting || '')}</span><button class="btn ghost sm" id="dlgall">▶ پخش کل مکالمه</button>${(L.conversation?.lines || []).map((l, i) => `<div class="row cl" data-i="${i}" style="flex-wrap:nowrap;align-items:flex-start;padding:6px;border-radius:10px">${sp(l.en, 'en', 'cheerful')}<div><b class="small">${esc(l.who)}:</b> <span class="en">${tw(l.en)}</span><div class="small muted">${esc(l.fa)}</div></div></div>`).join('')}
+  ${sec('💬', 'مکالمه', `<b class="en">${esc(L.conversation?.title || '')}</b><span class="small muted">${esc(L.conversation?.setting || '')}</span>${L.audio ? au('dialog', 'پخش مکالمه (سه‌بعدی)') + au('shadow', 'تکرار کن: هر جمله و بعد نوبت تو') : '<button class="btn ghost sm" id="dlgall">▶ پخش کل مکالمه</button>'}${(L.conversation?.lines || []).map((l, i) => `<div class="row cl" data-i="${i}" style="flex-wrap:nowrap;align-items:flex-start;padding:6px;border-radius:10px">${sp(l.en, 'en', 'cheerful')}<div><b class="small">${esc(l.who)}:</b> <span class="en">${tw(l.en)}</span><div class="small muted">${esc(l.fa)}</div></div></div>`).join('')}
     ${(L.conversation?.expressions || []).length ? `<div class="notice soft small stack"><b>عبارت‌های کاربردی</b>${L.conversation.expressions.map(e => `<span><b class="en">${esc(e.en)}</b> — ${esc(e.fa)}</span>`).join('')}</div>` : ''}`)}
   ${sec('🗂️', 'واژه‌های درس', `<span class="small muted">${faNum(unitWords(u).length)} واژه و عبارت با تصویر، تلفظ و مثال.</span><a class="btn ghost" href="#unit/${u.id}/w">دیدن و شنیدن واژه‌ها</a><a class="btn ghost" href="#cards/${u.id}">فلش‌کارت</a>`, false)}
   ${sec('📐', 'گرامر: ' + esc(L.grammar?.title || ''), `<p style="margin:0;line-height:1.9">${bidi(L.grammar?.explain || '')}</p>
@@ -86,3 +91,22 @@ async function buildAllLessons(box) {
   }
   box.innerHTML = `<div class="notice soft">${faNum(made)} درس تازه ساخته و منتشر شد، ${faNum(skip)} درس از قبل آماده بود${fail ? `، ${faNum(fail)} درس ساخته نشد (دوباره بزن تا کامل شود)` : ''}. حالا همهٔ کاربران این درس‌ها را بدون هوش مصنوعی و آفلاین می‌خوانند.</div>`;
 }
+
+/* ───── کلاس صوتی فعل‌های کاربردی (موقعیت‌محور، سه‌بعدی، آفلاین) ───── */
+const VERB_CLASSES = [['morning', '🌅', 'صبح تا بیرون رفتن'], ['chores', '🧹', 'کارهای خونه'], ['kitchen', '🍳', 'آشپزخونه و آشپزی'], ['clothes', '👕', 'لباس و خرید'], ['outside', '🚕', 'بیرون از خونه و رفت‌وآمد'], ['work', '💼', 'کار و درس'], ['body', '🙆', 'بدن و حرکت'], ['feelings', '💬', 'حرف زدن و احساسات'], ['evening', '🌙', 'عصر و شب'], ['weekend', '🎉', 'آخر هفته و تفریح']];
+routes.vclass = async id => {
+  if (!id) {
+    setTop('کلاس صوتی فعل‌ها', true);
+    view().innerHTML = `<div class="stack"><div class="card stack"><b>🎧 فعل‌های کاربردی، با صدای معلم</b><span class="small muted">معلم موقعیت رو می‌گه («می‌خوای لباساتو تا کنی…»)، فعل انگلیسی رو چند بار و به شکل‌های مختلف تکرار می‌کنه، باهاش جمله‌های کوتاه می‌سازه و ازت می‌خواد حدس بزنی. با هدفون، صدا سه‌بعدیه.</span></div>
+      <div class="tools">${VERB_CLASSES.map(([k, ic, t]) => `<a class="tool" href="#vclass/${k}"><span class="ic">${ic}</span><b>${t}</b><span>کلاس صوتی + فهرست فعل‌ها و مثال‌ها</span></a>`).join('')}</div></div>`;
+    return;
+  }
+  const c = VERB_CLASSES.find(x => x[0] === id); if (!c) return go('vclass'); setTop(c[2], true); const v = view(); v.innerHTML = loading();
+  let L = null; try { const r = await fetch('lessons/verbs/' + id + '.json'); if (r.ok) L = await r.json(); } catch { }
+  if (!L) { v.innerHTML = `<div class="card stack"><b>این کلاس به‌زودی اضافه می‌شود</b><a class="btn ghost" href="#verbs">فهرست فعل‌ها</a></div>`; return; }
+  v.innerHTML = `<div class="stack"><div class="card stack"><b>🎧 ${esc(L.title || c[2])}</b><audio controls preload="none" src="audio/verbs/${id}.m4a" style="width:100%"></audio><a class="btn ghost sm" href="audio/verbs/${id}.m4a" download="rasta-verbs-${id}.m4a">⬇ دانلود برای گوش دادن آفلاین</a></div>
+    <div class="card stack">${(L.verbs || []).map(x => `<div class="stack" style="gap:2px;border-bottom:1px solid var(--line);padding-bottom:8px"><div class="row" style="flex-wrap:nowrap"><button class="icon-btn" data-say="${esc(x.en)}">${I.spk}</button><b class="en">${esc(x.en)}</b><span class="muted">— ${esc(x.fa)}</span></div>${(x.ex || []).map(e => `<div class="small" style="padding-inline-start:44px"><span class="en">${esc(e.en)}</span> <span class="muted">${esc(e.fa)}</span></div>`).join('')}</div>`).join('')}
+    <button class="btn ghost" id="addv">+ افزودن همهٔ این فعل‌ها به لایتنر</button></div>
+    <details class="card"><summary><b>متن کلاس</b></summary><div class="stack" style="margin-top:8px">${[...(L.intro || []), ...(L.teach || []), ...(L.outro || [])].map(p => `<p style="margin:0;line-height:1.9">${bidi(p.replace(/\[PAUSE\]/g, ' ⏳ '))}</p>`).join('')}</div></details></div>`;
+  v.onclick = e => { const s = e.target.closest('[data-say]'); if (s) say(s.dataset.say, 'en', 'calm', s); if (e.target.id === 'addv') { (L.verbs || []).forEach(x => addDictWord({ word: x.en, ipa_us: '', senses: [{ fa: x.fa || '—', examples: (x.ex || []).map(e => e.en) }] })); toast('فعل‌ها به لایتنر اضافه شدند.'); } };
+};

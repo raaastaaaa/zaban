@@ -182,6 +182,7 @@ routes.verbs = (cat = 'همه') => {
   setTop('افعال کاربردی', true); const v = view(); let only = lsGet('zd:virr', false);
   const list = VERBS.filter(x => (cat === 'همه' || x.cat === cat) && (!only || x.irr));
   v.innerHTML = `<div class="stack"><div class="today"><b style="font-size:18px">🔁 ${faNum(VERBS.length)} فعل پرکاربرد انگلیسی</b><span class="muted">دسته‌بندی‌شده بر اساس موضوع، با سه شکل فعل (حال، گذشته، اسم مفعول)، معنی، مثال و تلفظ. برای افعال هر درس هم بانک لغات همان درس را ببین.</span></div>
+  <a class="card row" href="#vclass" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span style="font-size:26px">🎧</span><div class="grow"><b>کلاس صوتی فعل‌ها</b><div class="small muted">معلم موقعیت‌محور یاد می‌ده: «می‌خوای تختتو مرتب کنی…» + جمله‌های کوتاه و حدس زدن</div></div><span>›</span></a>
   <div class="row">${['همه', ...VCATS].map(c => `<button class="pill ${c === cat ? 'acc' : ''}" style="font-size:13px;padding:5px 12px" data-c="${c}">${c}</button>`).join('')}</div>
   <div class="row"><label class="small row" style="gap:6px"><input type="checkbox" id="irr"${only ? ' checked' : ''}> فقط افعال بی‌قاعده</label><span class="grow"></span><button class="btn sm" id="qz">🎯 آزمون سه شکل فعل</button><button class="btn ghost sm" id="add">+ همه به فلش‌کارت</button></div>
   <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px;min-width:560px"><thead><tr style="color:var(--muted);text-align:right"><th></th><th>فعل</th><th>گذشته</th><th>اسم مفعول</th><th>معنی</th><th>مثال</th></tr></thead><tbody>

@@ -570,7 +570,7 @@ function router() {
   routeGen++; const [r, ...args] = (location.hash.slice(1) || 'home').split('/');
   if (['unit', 'lesson', 'cards', 'quiz', 'teach', 'talk', 'dialog', 'exam', 'practice', 'sleep', 'myradio'].includes(r) && args[0]) { const gu = unitById(decodeURIComponent(args[0])); if (!gu) { location.hash = 'home'; return; } if (gu.idx < 1000 && !isOpen(gu)) { toast(`این درس هنوز قفل است؛ اول درس قبلی را با نمرهٔ ${faNum(G.settings.passScore)} قبول شو.`); location.hash = 'home'; return; } }
   if (['role', 'gclass'].includes(r) && !args[0]) { location.hash = r === 'role' ? 'chat' : 'grammar'; return; }
-  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', theater: 'library', practice: 'home', vision: 'home', rooms: 'chat', path: 'home', u: 'home', admin: 'me', dm: 'chat', grammar: 'tools', gclass: 'tools', verbs: 'tools', leitner: 'tools', lesson: 'home', listen: 'tools', news: 'tools', sleep: 'home', myradio: 'chat', music: 'tools', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat' }[r] || r)));
+  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', theater: 'library', practice: 'home', vision: 'home', rooms: 'chat', path: 'home', u: 'home', admin: 'me', dm: 'chat', grammar: 'tools', gclass: 'tools', verbs: 'tools', leitner: 'tools', lesson: 'home', listen: 'tools', vclass: 'tools', news: 'tools', sleep: 'home', myradio: 'chat', music: 'tools', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat', coach: 'chat' }[r] || r)));
   (routes[r] || routes.home)(...args.map(decodeURIComponent));
 }
 addEventListener('hashchange', router);
@@ -953,14 +953,31 @@ JSON {"reply":"your English reply","fa":"Persian translation of your reply","fix
 
 /* گپ آزاد */
 routes.chat = () => {
-  setTop('گپ آزاد'); const v = view();
+  setTop('گفتگو با هوش مصنوعی'); const v = view();
   v.innerHTML = `<div class="stack"><div class="tools">
-    <a class="tool" href="#dm"><span class="ic">💬</span><b>پیام خصوصی</b><span>ببین چه کسی آنلاین است (چراغ سبز) و به هر زبان‌آموز یا مدیر پیام بده.</span></a>
-    <a class="tool" href="#rooms"><span class="ic">🗣️</span><b>انجمن و چت‌روم</b><span>با بقیهٔ زبان‌آموزها گپ بزن؛ معلم ناظر نقش می‌دهد و اشتباه‌ها را درست می‌کند.</span></a>
+    ${Object.entries(COACH).map(([k, m]) => `<a class="tool" href="#coach/${k}"><span class="ic">${m[0]}</span><b>${m[1]}</b><span>${m[2]}</span></a>`).join('')}
     <a class="tool" href="#talkfree"><span class="ic">💬</span><b>گپ آزاد</b><span>دربارهٔ هر موضوعی حرف بزن؛ اشتباه‌ها همان لحظه به فارسی گفته می‌شوند.</span></a>
     <a class="tool" href="#role"><span class="ic">🎭</span><b>نقش‌آفرینی موقعیت‌های واقعی</b><span>تاکسی، داروخانه، مصاحبه، صاحبخانه… با نمره و جملهٔ بهتر.</span></a>
     <a class="tool" href="#teach/${currentUnit().id}"><span class="ic">👩‍🏫</span><b>کلاس با ${esc(G.settings.teacher)}</b><span>ادامهٔ درس فعلی با معلم صوتی.</span></a>
-    <a class="tool" href="#exam/${currentUnit().id}"><span class="ic">🎙️</span><b>آزمون شفاهی درس</b><span>سؤال‌ها یکی‌یکی پرسیده می‌شوند و آخرش نمره می‌گیری.</span></a></div></div>`;
+    <a class="tool" href="#exam/${currentUnit().id}"><span class="ic">🎙️</span><b>آزمون شفاهی درس</b><span>سؤال‌ها یکی‌یکی پرسیده می‌شوند و آخرش نمره می‌گیری.</span></a>
+    <a class="tool" href="#dm"><span class="ic">💬</span><b>پیام خصوصی</b><span>ببین چه کسی آنلاین است (چراغ سبز) و به هر زبان‌آموز یا مدیر پیام بده.</span></a>
+    <a class="tool" href="#rooms"><span class="ic">🗣️</span><b>انجمن و چت‌روم</b><span>با بقیهٔ زبان‌آموزها گپ بزن؛ معلم ناظر نقش می‌دهد و اشتباه‌ها را درست می‌کند.</span></a></div></div>`;
+};
+/* تمرین با هوش مصنوعی: کوییز شفاهی، نقش دادن، سؤال پرسیدن */
+const COACH = {
+  quiz: ['🧩', 'ازم کوییز بگیر', 'سؤال‌های کوتاه از واژه‌ها و گرامر درس‌هایی که خوانده‌ای؛ جواب بده، نمره و توضیح بگیر.', 'You are a lively quiz master. Ask ONE short quiz question at a time about the learner\'s studied words and grammar (mix: meaning, fill the gap, choose the right form, translate a short Persian sentence, say it in English). After each answer: say if it is right, give the correct answer, a one-line Persian tip, a running score like "Score: 3/4", then ask the next question. Keep it fun and fast.'],
+  role: ['🎭', 'بهم نقش بده', 'معلم یک موقعیت واقعی می‌سازد (فروشگاه، فرودگاه، مهمانی…) و نقش طرف مقابل را بازی می‌کند.', 'Pick a realistic everyday situation matching the learner\'s level and topics (e.g. a cafe, a hotel check-in, meeting a new neighbor). First tell the learner in Persian (fa field) who they are and what their goal is, then play the other person. Stay in role, keep lines short, and gently recast mistakes. After about 8 exchanges, step out of role and give a short Persian review with 3 better sentences.'],
+  ask: ['🙋', 'ازم سؤال بپرس', 'معلم دربارهٔ زندگی، روز و علاقه‌هایت سؤال می‌پرسد تا راحت صحبت کردن را تمرین کنی.', 'Interview the learner like a warm friend: ask ONE personal question at a time about their life, day, family, work, hobbies and plans, using the grammar and words of their current unit. React with real interest, recast mistakes naturally, then ask a follow-up question.'],
+  story: ['📚', 'با هم داستان بسازیم', 'یک جمله تو، یک جمله معلم؛ داستانی خنده‌دار با واژه‌های خودت.', 'Build a funny story together, one or two sentences at a time, alternating with the learner. Use their studied words, keep the English at their level, gently fix their sentences, and keep the plot surprising.'],
+};
+routes.coach = mode => {
+  const m = COACH[mode]; if (!m) return go('chat'); setTop(m[1], true); const v = view(); if (needAI(v)) return;
+  convo(v, {
+    key: 'coach:' + mode, intro: 'Start now: greet me by name in one short line and begin.',
+    extraTop: `<div class="notice soft small">${esc(m[2])} می‌توانی بنویسی یا با میکروفون جواب بدهی.</div>`,
+    system: () => `${m[3]}\nThe learner is a Persian speaker; current unit: ${currentUnit().en} (CEFR ${currentUnit().cefr || 'A1'}), grammar: ${currentUnit().gram}. Studied words: ${unitWords(currentUnit()).slice(0, 30).map(w => w.w).join(', ')}. Keep English simple for their level. Max 60 words per reply.\n${learnerContext()}\nJSON {"reply":"English","fa":"Persian translation or instruction","fixes":[{"wrong":"","right":"","why":"Persian"}],"emotion":"cheerful|calm|excited|encouraging|empathetic|surprised","memory":"durable fact or empty"}`,
+    parse: r => ({ show: r.reply, fa: r.fa, lang: 'en', fixes: r.fixes })
+  });
 };
 routes.talkfree = () => {
   setTop('گپ آزاد', true); const v = view(); if (needAI(v)) return;
