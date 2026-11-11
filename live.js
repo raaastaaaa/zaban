@@ -437,7 +437,7 @@ routes.live = (mode = 'lesson') => {
   $('#leng').onclick = e => { const b = e.target.closest('button'); if (!b || Live.on || Live.starting || Relay.on) return; G.settings.liveEngine = b.dataset.v; saveG('settings'); drawEng(); };
   drawEng(); const idle0 = ui.idle; ui.idle = () => { idle0(); drawEng(); };
   $('#lrmic').onclick = relayMicClick;
-  $('#lgo').onclick = () => Live.starting || Relay.starting ? null : Relay.on ? relayStop() : Live.on ? liveStop(ui) : engine() === 'gpt' ? $('#gpt').click() : engine() === 'relay' ? relayStart(mode, ui) : liveStart(mode, ui);
+  $('#lgo').onclick = () => Live.starting || Relay.starting ? null : Relay.on ? relayStop() : Live.on ? liveStop(ui) : engine() === 'gpt' ? $('#gpt').click() : engine() === 'relay' && !window.VR?.on ? relayStart(mode, ui) : liveStart(mode, ui);
   $$('[data-lm]', v).forEach(b => b.onclick = () => { if (Live.on) liveStop(ui, true); go('live/' + b.dataset.lm); });
   liveLessonText();
   const GPT_ADAPT = GPT_ADAPT_TXT;
@@ -455,14 +455,14 @@ function teachThis(sel, title) {
   const S = Object.assign({ unit: '', focus: 'full', ws: '', gram: '', custom: '', topic: null }, sel); lsSet('zd:livesel:' + G.active, S); LIVE_LESSON = null;
   let P = ''; const ready = liveLessonText().then(() => P = livePrompt('lesson') + '\n' + GPT_ADAPT_TXT).catch(() => { });
   const bg = sheet(`<div class="stack"><b>🎓 کلاس زنده: ${esc(title || '')}</b><span class="small muted">طرح کامل این درس (همهٔ موارد، تلفظ، کاربرد، تمرین تعاملی) به معلم داده می‌شود. با کدام معلم؟</span>
-    <button class="btn" id="tt-gem">✨ Gemini — همین‌جا داخل برنامه حرف بزن</button>
+    <button class="btn" id="tt-gem">🎧 معلم زنده همین‌جا (صدای طبیعی، بدون فیلترشکن)</button>
     <button class="btn gpt-go" id="tt-gpt" disabled>⏳ آماده‌سازی دستور ChatGPT…</button>
     ${navigator.share ? '<button class="btn line" id="tt-sh" disabled>📤 فرستادن مستقیم به اپ ChatGPT (اشتراک‌گذاری)</button>' : ''}<button class="btn ghost sm" id="tt-see" disabled>👁 دیدن و کپی دستی دستور</button>
     <span class="tiny muted">ChatGPT: دستور کپی می‌شود؛ در ChatGPT «Paste» را بزن، بفرست و بعد دکمهٔ صدا 🎙 را بزن. با «فرستادن مستقیم»، از فهرست اشتراک‌گذاری ChatGPT را انتخاب کن.</span></div>`);
   ready.then(() => { const b = bg.querySelector('#tt-gpt'); if (b) { b.disabled = false; b.textContent = '🤖 ChatGPT — کپی دستور و باز کردن ChatGPT'; } ['#tt-sh', '#tt-see'].forEach(k => { const x = bg.querySelector(k); if (x) x.disabled = false; }); });
   bg.querySelector('#tt-sh') && (bg.querySelector('#tt-sh').onclick = () => { if (P) sendToGPT(P, 'share'); });
   bg.querySelector('#tt-see').onclick = () => { if (P) showPromptSheet(P); };
-  bg.querySelector('#tt-gem').onclick = () => { G.settings.liveEngine = 'gemini'; saveG('settings'); bg.remove(); go('live/lesson'); setTimeout(() => toast('درس آماده است؛ «📞 شروع کلاس» را بزن.', 5000), 400); };
+  bg.querySelector('#tt-gem').onclick = () => { G.settings.liveEngine = 'relay'; saveG('settings'); bg.remove(); go('live/lesson'); setTimeout(() => toast('درس آماده است؛ «📞 شروع کلاس» را بزن.', 5000), 400); };
   bg.querySelector('#tt-gpt').onclick = () => { if (P) sendToGPT(P); };
 }
 
@@ -485,6 +485,7 @@ async function sendToGPT(p, how) {
    از راه سرور برنامه به Gemini می‌رسد، جواب معلم با صدای طبیعی «Kore» خوانده می‌شود و دوباره گوش می‌دهد.
    همهٔ ارتباط از سرور خود برنامه است، پس در ایران بدون VPN هم کار می‌کند. */
 const Relay = { on: false, hist: [], busy: false };
+if (!G.settings.relayMig) { G.settings.liveEngine = 'relay'; G.settings.relayMig = 1; try { saveG('settings'); } catch { } }
 const RELAY_ADAPT = `
 === THIS CLASS RUNS AS A TURN-BASED VOICE CALL (no tools available) ===
 Each turn you receive the student's voice (audio) or a typed message. Reply ONLY with JSON:
