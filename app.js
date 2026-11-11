@@ -1251,7 +1251,6 @@ routes.me = () => {
 
 /* ───────── راهنمای امکانات ───────── */
 routes.guide = () => {
-  setTop('زبان دوم چه کارهایی می‌کند؟', true);
   const F = [
     ['👩‍🏫', `معلم صوتی ${G.settings.teacher}`, 'به فارسی روان و با احساس درس می‌دهد، سؤال می‌پرسد، تشویقت می‌کند، اشتباه‌هایت را همان لحظه درست می‌کند و همه‌چیز را دربارهٔ تو به خاطر می‌سپارد.', '#teach/' + currentUnit().id],
     ['📚', 'درس‌ها از مقدماتی تا متوسط', '۳۸ درس مکالمه‌محور + ۳۵ سرفصل واژگان موضوعی؛ هر درس: واژه‌ها با تصویر و تلفظ، فلش‌کارت، مکالمه، گرامر، صحبت، کوییز و آزمون نهایی. درس بعد فقط با نمرهٔ ' + faNum(G.settings.passScore) + ' باز می‌شود.', '#home'],
@@ -1270,7 +1269,20 @@ routes.guide = () => {
     ['🎧', 'صوت آفلاین', 'صوت کامل هر درس و فصل کتاب را بساز، دانلود کن و همیشه، حتی بدون اینترنت، گوش بده.', '#unit/' + currentUnit().id],
     ['🏆', 'رقابت با دوستان', 'امتیاز، نشان، روزهای پیاپی و جدول رقابت هفتگی بین کاربران.', '#home']
   ];
-  view().innerHTML = `<div class="stack"><div class="today"><b style="font-size:19px">سلام ${esc(me().name)}! 👋</b><span class="muted">«زبان دوم» قرار است تو را تا مکالمهٔ روان انگلیسی برساند. این کارها را می‌کند:</span></div>${F.map(([ic, t, d, h]) => `<a class="card row" style="text-decoration:none;color:inherit;flex-wrap:nowrap;align-items:flex-start" href="${h}"><span style="font-size:28px">${ic}</span><span class="grow"><b>${esc(t)}</b><br><span class="small muted">${esc(d)}</span></span></a>`).join('')}<a class="btn" href="#plan">بزن بریم: ساخت برنامهٔ من</a></div>`;
+  F.unshift(['👋', `سلام ${me().name}!`, '«زبان دوم» قدم‌به‌قدم تو را تا مکالمهٔ روان انگلیسی می‌برد. در چند صفحهٔ کوتاه نشانت می‌دهم هر بخش کجاست و چه می‌کند. اگر آشنایی، «رد کردن» را بزن.', '#home']);
+  F.push(['🧭', 'هر چیزی کجاست؟', 'پایین صفحه (در کامپیوتر: کنار صفحه): خانه = درس امروز و رقابت · تقویم = برنامهٔ شخصی · کتابخانه = کتاب و داستان صوتی · گفتگو = معلم، گپ و انجمن · ابزارها = دیکشنری، تمرین، تلفظ · من = پیشرفت، حساب آنلاین، تنظیمات و پنل مدیر.', '#home']);
+  let i = 0;
+  const draw = () => {
+    const [ic, t, d, h] = F[i]; const last = i === F.length - 1;
+    view().innerHTML = `<div class="stack" style="min-height:calc(100vh - 220px);justify-content:center"><div class="card stack" style="align-items:center;text-align:center;padding:32px 22px;gap:16px">
+      <div style="font-size:72px;line-height:1">${ic}</div><b style="font-size:22px">${esc(t)}</b><div style="max-width:52ch;color:var(--muted)">${esc(d)}</div>
+      <div class="row" style="justify-content:center;gap:6px">${F.map((_, k) => `<span style="width:${k === i ? 22 : 8}px;height:8px;border-radius:9px;background:${k === i ? 'var(--accent)' : 'var(--line)'};transition:width .2s"></span>`).join('')}</div></div>
+      <div class="row"><button class="btn line" id="skp">رد کردن</button><span class="grow"></span>${i ? '<button class="btn ghost" id="prv">قبلی</button>' : ''}<button class="btn" id="nxt">${last ? 'شروع یادگیری' : 'بعدی'}</button></div>
+      ${i && h !== '#home' ? `<a class="small" style="text-align:center" href="${h}">همین الان امتحانش کن ←</a>` : ''}</div>`;
+    const end = () => { lsSet('zd:tourDone:' + G.active, true); go(U.plan ? 'home' : 'plan'); };
+    $('#skp').onclick = end; $('#nxt').onclick = () => { if (last) end(); else { i++; draw(); } }; $('#prv') && ($('#prv').onclick = () => { i--; draw(); });
+  };
+  setTop('راهنمای برنامه'); draw();
 };
 
 /* ───────── تنظیمات ───────── */
