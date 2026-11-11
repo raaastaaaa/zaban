@@ -51,7 +51,7 @@ const DEFAULT_SETTINGS = {
   prov: {
     gemini: { key: '', model: 'gemini-3.1-flash-lite' },
     anthropic: { key: '', model: 'claude-haiku-5-5' },
-    openai: { key: '', model: 'gpt-4.1-mini' },
+    openai: { key: '', model: 'gpt-4.1-mini', base: '' },
     groq: { key: '', model: 'llama-3.3-70b-versatile' },
     openrouter: { key: '', model: 'google/gemini-3.1-flash-lite' },
     custom: { key: '', model: '', base: '' }
@@ -172,6 +172,7 @@ function paceInfo() { // سرعت یادگیری و پیش‌بینی
 }
 
 /* ───────── هوش مصنوعی (چند ارائه‌دهنده) ───────── */
+const PROVIDERS_NOTE = 'برای ایران بدون VPN: کلید یک سرویس واسط ایرانی سازگار با OpenAI را در بخش OpenAI بگذار و آدرسش را در «آدرس واسط» بنویس.';
 const PROVIDERS = {
   gemini: { fa: 'Google Gemini (رایگان)', keyUrl: 'https://aistudio.google.com/apikey' },
   anthropic: { fa: 'Claude (Anthropic)', keyUrl: 'https://console.anthropic.com/settings/keys' },
@@ -201,7 +202,8 @@ async function ai({ system, messages, json = true, images = [], max = 1400, temp
     const d = await r.json(); if (!r.ok) throw new Error(d.error?.message || r.status);
     text = d.content?.map(b => b.text || '').join('') || '';
   } else {
-    const base = pv === 'openai' ? 'https://api.openai.com/v1' : pv === 'groq' ? 'https://api.groq.com/openai/v1' : pv === 'openrouter' ? 'https://openrouter.ai/api/v1' : c.base.replace(/\/$/, '');
+    const oaBase = () => (G.settings.prov.openai.base || 'https://api.openai.com/v1').replace(/\/$/, '');
+    const base = pv === 'openai' ? oaBase() : pv === 'groq' ? 'https://api.groq.com/openai/v1' : pv === 'openrouter' ? 'https://openrouter.ai/api/v1' : c.base.replace(/\/$/, '');
     const msgs = [{ role: 'system', content: sys }, ...messages.map((m, i) => ({ role: m.role, content: i === messages.length - 1 && images.length ? [{ type: 'text', text: m.content }, ...images.map(im => ({ type: 'image_url', image_url: { url: `data:${im.mime};base64,${im.b64}` } }))] : m.content }))];
     const body = { model: c.model, messages: msgs, temperature: temp, max_tokens: max }; if (json) body.response_format = { type: 'json_object' };
     const r = await fetch(base + '/chat/completions', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + c.key }, body: JSON.stringify(body) });
@@ -296,7 +298,7 @@ async function cloudTTS(engine, text, lang, emotion) {
       const m = /rate=(\d+)/.exec(part.inlineData.mimeType || ''); blob = pcmToWav(part.inlineData.data, m ? +m[1] : 24000);
     } else {
       const c = G.settings.prov.openai; if (!c.key) throw new Error('NOKEY');
-      const r = await fetch('https://api.openai.com/v1/audio/speech', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + c.key }, body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice: G.settings.openaiVoice, input: text, instructions: style, response_format: 'mp3' }) });
+      const r = await fetch((G.settings.prov.openai.base || 'https://api.openai.com/v1').replace(/\/$/, '') + '/audio/speech', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + c.key }, body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice: G.settings.openaiVoice, input: text, instructions: style, response_format: 'mp3' }) });
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error?.message || r.status);
       blob = await r.blob();
     }
@@ -385,7 +387,7 @@ async function transcribe(blob, lang) {
   }
   const c = G.settings.prov[eng]; if (!c?.key) throw new Error('NOKEY');
   const fd = new FormData(); fd.append('file', blob, 'speech.' + ext); fd.append('model', eng === 'groq' ? 'whisper-large-v3-turbo' : 'whisper-1'); fd.append('language', lang.slice(0, 2));
-  const r = await fetch((eng === 'groq' ? 'https://api.groq.com/openai/v1' : 'https://api.openai.com/v1') + '/audio/transcriptions', { method: 'POST', headers: { authorization: 'Bearer ' + c.key }, body: fd });
+  const r = await fetch((eng === 'groq' ? 'https://api.groq.com/openai/v1' : (G.settings.prov.openai.base || 'https://api.openai.com/v1').replace(/\/$/, '')) + '/audio/transcriptions', { method: 'POST', headers: { authorization: 'Bearer ' + c.key }, body: fd });
   const d = await r.json(); if (!r.ok) throw new Error(d.error?.message || r.status); return (d.text || '').trim();
 }
 function recordAudio() {
@@ -1223,9 +1225,9 @@ routes.settings = () => {
   setTop('تنظیمات', true); const S = G.settings;
   const seg = (id, opts, val) => `<div class="seg" data-seg="${id}">${opts.map(([v, l]) => `<button data-v="${v}" class="${String(val) === String(v) ? 'on' : ''}">${l}</button>`).join('')}</div>`;
   view().innerHTML = `<div class="stack">
-  <div class="card stack"><b>مغز هوش مصنوعی</b><span class="small muted">هر چند کلید که داری بگذار؛ برنامه از «مغز اصلی» استفاده می‌کند و اگر کلیدش نبود، سراغ بعدی می‌رود. کلیدها فقط روی همین دستگاه ذخیره می‌شوند.</span>
+  <div class="card stack"><b>مغز هوش مصنوعی</b><span class="notice soft small">${PROVIDERS_NOTE}</span><span class="small muted">هر چند کلید که داری بگذار؛ برنامه از «مغز اصلی» استفاده می‌کند و اگر کلیدش نبود، سراغ بعدی می‌رود. کلیدها فقط روی همین دستگاه ذخیره می‌شوند.</span>
   <label class="f">مغز اصلی<select class="in" id="brain">${Object.entries(PROVIDERS).map(([k, p]) => `<option value="${k}"${S.brain === k ? ' selected' : ''}>${p.fa}</option>`).join('')}</select></label>
-  ${Object.entries(PROVIDERS).map(([k, p]) => `<details class="card" style="box-shadow:inset 0 0 0 1px var(--line)"${S.prov[k].key ? ' open' : ''}><summary>${p.fa} ${S.prov[k].key ? '<span class="pill ok">فعال</span>' : ''}</summary><div class="stack" style="margin-top:8px">${p.keyUrl ? `<a class="small" href="${p.keyUrl}" target="_blank" rel="noopener">گرفتن کلید ↗</a>` : ''}<input class="in" dir="ltr" type="password" autocomplete="off" placeholder="API key" data-k="${k}" value="${esc(S.prov[k].key)}"><input class="in" dir="ltr" placeholder="model" data-m="${k}" value="${esc(S.prov[k].model)}">${k === 'custom' ? `<input class="in" dir="ltr" placeholder="https://…/v1" data-b="custom" value="${esc(S.prov.custom.base)}">` : ''}</div></details>`).join('')}
+  ${Object.entries(PROVIDERS).map(([k, p]) => `<details class="card" style="box-shadow:inset 0 0 0 1px var(--line)"${S.prov[k].key ? ' open' : ''}><summary>${p.fa} ${S.prov[k].key ? '<span class="pill ok">فعال</span>' : ''}</summary><div class="stack" style="margin-top:8px">${p.keyUrl ? `<a class="small" href="${p.keyUrl}" target="_blank" rel="noopener">گرفتن کلید ↗</a>` : ''}<input class="in" dir="ltr" type="password" autocomplete="off" placeholder="API key" data-k="${k}" value="${esc(S.prov[k].key)}"><input class="in" dir="ltr" placeholder="model" data-m="${k}" value="${esc(S.prov[k].model)}">${k === 'custom' || k === 'openai' ? `<input class="in" dir="ltr" placeholder="${k === 'openai' ? 'آدرس واسط (اختیاری، برای ایران) https://…/v1' : 'https://…/v1'}" data-b="${k}" value="${esc(S.prov[k].base || '')}">` : ''}</div></details>`).join('')}
   <button class="btn ghost" id="test">آزمایش اتصال</button><div id="tr" class="small"></div>
   <hr class="sep"><b>کد اتصال برای دستگاه‌ها و کاربران دیگر</b><span class="small muted">کد را بساز و فقط برای افراد مورد اعتماد بفرست؛ کلیدهای تو داخل این کد است. در دستگاه دیگر، کد را در صفحهٔ اول یا همین‌جا بچسبان.</span>
   <div class="row"><button class="btn ghost sm" id="mkc">ساخت و کپی کد اتصال</button></div><textarea id="cc" class="in" dir="ltr" rows="2" placeholder="کد اتصال را اینجا بچسبان…"></textarea><button class="btn line sm" id="usc">وصل شدن با این کد</button></div>
@@ -1248,7 +1250,7 @@ routes.settings = () => {
   <label class="f">ظاهر</label>${seg('theme', [['auto', 'خودکار'], ['light', 'روشن'], ['dark', 'تیره']], S.theme)}</div>
   <button class="btn" id="sv">ذخیرهٔ تنظیمات</button></div>`;
   $$('[data-seg]').forEach(g => g.onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('button', g).forEach(x => x.classList.remove('on')); b.classList.add('on'); S[g.dataset.seg] = b.dataset.v; if (g.dataset.seg === 'theme') applyTheme(); saveG('settings'); });
-  const collect = () => { S.brain = $('#brain').value; $$('[data-k]').forEach(i => S.prov[i.dataset.k].key = i.value.trim()); $$('[data-m]').forEach(i => S.prov[i.dataset.m].model = i.value.trim()); S.prov.custom.base = $('[data-b]').value.trim(); S.geminiVoice = $('#gv').value; S.openaiVoice = $('#ov').value; S.rate = +$('#rate').value; S.autoSpeak = $('#as').checked; S.pixabayKey = $('#pk').value.trim(); S.teacher = $('#tn').value.trim() || 'رستا'; S.passScore = clamp(+$('#ps').value || 95, 60, 100); saveG('settings'); };
+  const collect = () => { S.brain = $('#brain').value; $$('[data-k]').forEach(i => S.prov[i.dataset.k].key = i.value.trim()); $$('[data-m]').forEach(i => S.prov[i.dataset.m].model = i.value.trim()); $$('[data-b]').forEach(i => S.prov[i.dataset.b].base = i.value.trim()); S.geminiVoice = $('#gv').value; S.openaiVoice = $('#ov').value; S.rate = +$('#rate').value; S.autoSpeak = $('#as').checked; S.pixabayKey = $('#pk').value.trim(); S.teacher = $('#tn').value.trim() || 'رستا'; S.passScore = clamp(+$('#ps').value || 95, 60, 100); saveG('settings'); };
   $('#rate').oninput = e => $('#rv').textContent = e.target.value;
   $('#mkc').onclick = async () => { collect(); if (!firstKeyed()) return toast('اول یک کلید وارد کن.'); const c = makeCode(); $('#cc').value = c; try { await navigator.clipboard.writeText(c); toast('کد اتصال کپی شد؛ در واتساپ یا تلگرام بفرست.'); } catch { $('#cc').select(); toast('کد را از کادر زیر کپی کن.'); } };
   $('#usc').onclick = () => { try { useCode($('#cc').value); toast('هوش مصنوعی وصل شد ✓'); routes.settings(); } catch { toast('کد اتصال درست نیست.'); } };
