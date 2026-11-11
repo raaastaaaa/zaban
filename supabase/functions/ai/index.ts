@@ -94,7 +94,7 @@ async function chatFallback(p: any) {
     const r = await fetch(pr.url, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + pr.key }, body: JSON.stringify({ model: model.trim(), messages: msgs, temperature: p.generationConfig?.temperature ?? 0.8, max_tokens: Math.min(p.generationConfig?.maxOutputTokens ?? 1400, 8000), ...(wantJson ? { response_format: { type: "json_object" } } : {}) }) });
     if (!r.ok) { fbErrors.push(pr.url.split("/")[2] + " " + model + " " + r.status); continue; }
     const d = await r.json(); const t = d.choices?.[0]?.message?.content; if (!t) continue;
-    return { candidates: [{ content: { role: "model", parts: [{ text: t }] } }], usageMetadata: {}, fallback: pr.url.split("/")[2] + " " + model };
+    return { candidates: [{ content: { role: "model", parts: [{ text: t }] } }], usageMetadata: {}, fallback: pr.url.split("/")[2] + " " + model, notes: fbErrors.splice(0) };
   }
   return null;
 }
