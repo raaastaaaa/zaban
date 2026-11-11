@@ -253,3 +253,7 @@ nav.bottom .brand{display:none}
 .install{display:flex;gap:10px;align-items:center;background:var(--accent);color:var(--accent-ink);border-radius:14px;padding:10px 14px}
 .install b{flex:1}
 .install button{border:0;border-radius:10px;padding:8px 14px;font-weight:800;background:var(--accent-ink);color:var(--accent)}
+
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--line);flex:none;vertical-align:middle}
+.dot.live{background:#22c55e;box-shadow:0 0 0 3px color-mix(in srgb,#22c55e 25%,transparent)}
+.avatar img{width:100%;height:100%;object-fit:cover}
