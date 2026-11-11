@@ -415,3 +415,7 @@ body.nopron .pron{display:none!important}
 .book-bar button{font-size:16px}
 
 .lr-sec{background:var(--sunk);padding:6px 14px;font-size:13px;font-weight:800;color:var(--accent)}
+
+.live-board{background:#fffbea;border:2px solid #f3d36b;gap:6px}
+:root[data-theme=dark] .live-board{background:#2a2510;border-color:#6b5a1a}
+.lb-i{padding:4px 6px;border-radius:8px;line-height:1.7}

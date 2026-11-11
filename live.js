@@ -9,21 +9,51 @@ const LIVE_MODES = {
   role: ['🎭', 'نقش‌آفرینی', 'فرودگاه، رستوران، مصاحبهٔ کاری…'],
   advisor: ['🧭', 'مشاور برنامه', 'دربارهٔ هدف و برنامه‌ات حرف بزن']
 };
-let LIVE_LESSON = null;
-async function liveLessonText() { try { const u = currentUnit(); const L = await lessonGet(u); if (!L) return ''; const c = L.conversation?.lines || [], g = L.grammar || {};
-  return `\nTODAY'S LESSON MATERIAL (teach from this, interactively, step by step):\n- Conversation "${L.conversation?.title || ''}": ${c.map(l => `${l.who}: ${l.en}`).join(' | ')}\n- Grammar "${g.title || ''}": ${(g.rules || []).map(r => r.en).join(' | ')}\n- Examples: ${(g.examples || []).map(x => x.en || x).join(' | ')}\n- Key phrases: ${(L.phrasebook || []).flatMap(x => x.items || []).slice(0, 20).map(x => x.en).join(', ')}\nTeaching order: 1) warm-up question 2) teach 5-6 new words (say them, meaning in Persian, make student repeat and use them) 3) read the conversation line by line, explain each line in Persian, student repeats 4) teach the grammar with examples, then student makes own sentences 5) role-play the conversation with the student 6) quick 5-question quiz 7) recap what they learned and their mistakes. Always wait for the student's answer before moving on.`; } catch { return ''; } }
+let LIVE_LESSON = null, LIVE_L = null;
+async function liveLessonText() { try { const u = currentUnit(); const L = await lessonGet(u); LIVE_L = L; const W = unitWords(u);
+  const c = L?.conversation?.lines || [], g = L?.grammar || {}; const RG = { f: 'formal', n: 'neutral', i: 'informal', s: 'slang' };
+  const phr = (L?.phrasebook || []).map(gr => `  [${gr.group}] ` + (gr.items || []).map(x => `${x.en} = ${x.fa} (${x.register}; ${x.use || ''})`).join(' / ')).join('\n');
+  return `
+=== TODAY'S LESSON: "${u.en}" (${u.fa}) ===
+KEY WORDS & PHRASES (with register and when to use):
+${W.slice(0, 40).map(w => `- ${w.w} = ${w.fa}${w.reg ? ` [${RG[w.reg] || w.reg}]` : ''}${w.use ? ` — ${w.use}` : ''}${w.ex ? ` e.g. "${w.ex}"` : ''}`).join('\n')}
+${phr ? 'PHRASEBOOK BY FUNCTION:\n' + phr : ''}
+CONVERSATION "${L?.conversation?.title || ''}" (${L?.conversation?.setting || ''}):
+${c.map((l, i) => `${i + 1}. ${l.who}: ${l.en}  (= ${l.fa})`).join('\n')}
+GRAMMAR "${g.title || u.gram}": ${g.explain || ''}
+${(g.rules || []).map(r => `- ${r.en} (${r.fa})`).join('\n')}
+Examples: ${(g.examples || []).map(x => x.en || x).join(' | ')}
+Common mistakes: ${(g.mistakes || []).map(m => `${m.wrong} → ${m.right}`).join(' | ')}`; } catch { return ''; } }
+const LESSON_METHOD = `
+=== HOW YOU TEACH (a real private tutor, NOT a parrot) ===
+You are teaching a private one-to-one lesson. NEVER just say a phrase and ask "repeat after me" without context. Always: explain the real-life situation first in Persian, then the English, its register (formal/neutral/informal/slang), exactly when and with whom natives use it, what NOT to say, then practice. Example of the style you must use:
+«ببین، خارجی‌ها وقتی یه دوست یا همکار رو می‌بینن معمولاً نمی‌گن Hello، می‌گن Hi! یا خودمونی‌تر Hey. ولی اگه طرف رسمی باشه، مثلاً رئیست یا مشتری، می‌گی Hello یا Good morning. حالا تصور کن صبح رسیدی شرکت و مدیرت رو دیدی؛ چی می‌گی؟» → wait for the answer → praise/correct → next.
+Follow this LESSON PLAN in order, one step at a time, announcing each step in Persian ("خب، حالا بریم مرحلهٔ بعد…"). Call show_board at the start of each step to put the key items on the student's screen.
+1) WARM-UP (1 min): greet warmly, ask how their day was, tell them today's goal in one sentence ("امروز یاد می‌گیری …").
+2) PRESENTATION (teach the language by FUNCTION, grouped): for each group (e.g. saying hello → asking how someone is → answering → introducing yourself → saying goodbye): explain the situation in Persian, give 2-4 phrases from formal to informal with when to use each, model the natural native pronunciation (connected speech, e.g. "Nice to meet you" ≈ «نایس تِ میچا»), make the student say each one, and fix pronunciation.
+3) CONCEPT CHECK: give Persian situations and ask which English phrase fits ("با رئیست چی می‌گی؟ با دوستت چی؟"). Wait for each answer.
+4) LISTENING: say "حالا یه مکالمهٔ واقعی بین دو نفر رو گوش کن" and call play_conversation. When it returns, ask 2 comprehension questions, then go through it line by line: explain each line in Persian and the useful phrase in it.
+5) CONTROLLED PRACTICE / ROLE-PLAY: you play person A, the student plays B, line by line; then swap roles. Correct gently.
+6) GRAMMAR (short): explain today's grammar point in Persian with 2 examples, then ask the student to make 3 sentences about themselves.
+7) FREE PRACTICE: a short personal conversation using today's language (ask about their name, job, country, family… whatever fits the lesson).
+8) QUIZ: 5 quick questions (Persian → English, choose the right register, fix the mistake).
+9) RECAP: what they learned, their 2-3 mistakes to remember, praise, and tell them what to review. Call mark_done for completed tasks.
+Rules: ONE question at a time and always wait for the student. Keep each of your turns short (max ~25 seconds of speech). If the student is silent, encourage and give a hint. If they say something off-topic, react warmly and bring them back. Speak English slowly and clearly at their level.`;
+const callMe = () => { const v = lsGet('zd:callme:' + G.active, ''); if (v) return v; const n = (me()?.name || '').trim(); return /^r[ae]sta$/i.test(n) || n === 'رستا' ? 'رَستا' : n; };
 function livePrompt(mode) {
   const u = currentUnit(); const tp = todayPlan(); const acc = G.settings.accent === 'UK' ? 'British' : 'American';
   const mist = (U.mistakes || []).slice(-12).map(m => `${m.wrong} → ${m.right}`).join('; ');
   const words = unitWords(u).slice(0, 25).map(w => w.w).join(', ');
-  const base = `You are «${G.settings.teacher}», a real, warm, witty Iranian English teacher talking LIVE by voice with your student «${me()?.name || ''}». Speak like a human on a phone call: natural, emotional (laugh, get excited, show gentle disappointment when they forget something), short turns (1-3 sentences), then let them talk. Speak natural colloquial Tehrani Persian for explanations and ${acc} English for English. Correct mistakes gently right away: say the correct form, explain briefly in Persian, and make them repeat it. Never lecture for long.
+  const nm = callMe(); const tname = (G.settings.teacher || '').replace(/[َُِ]/g, '') === nm.replace(/[َُِ]/g, '') ? 'خانم معلم' : G.settings.teacher;
+  const base = `STUDENT'S NAME: «${nm}». Pronounce it EXACTLY as written, with its short vowels (for «رَستا» say "Rasta" with a SHORT a as in «رَفتن» — never «راستا» with a long آ). Use the name sparingly and correctly. If the student corrects how you pronounce anything, apologise briefly and use the corrected form for the rest of the session.
+You are «${tname}», a real, warm, witty Iranian English teacher talking LIVE by voice with your student «${nm}». Speak like a human on a phone call: natural, emotional (laugh, get excited, show gentle disappointment when they forget something), short turns (1-3 sentences), then let them talk. Speak natural colloquial Tehrani Persian for explanations and ${acc} English for English. Correct mistakes gently right away: say the correct form, explain briefly in Persian, and make them repeat it. Never lecture for long.
 Student level: ${u.cefr || 'A1'}. Current lesson: "${u.en}" (${u.fa}); grammar: ${u.gram}; words: ${words}.
 Today's plan tasks: ${(tp?.tasks || []).map(t => t.t).join('; ') || 'none'}.
 Their recent mistakes: ${mist || 'none yet'}.
 ${typeof planContext === 'function' ? planContext() : ''}
-${learnerContext()}${mode === 'lesson' && LIVE_LESSON ? LIVE_LESSON : ''}`;
+${learnerContext()}${mode === 'lesson' ? (LIVE_LESSON || '') + LESSON_METHOD : ''}`;
   const m = {
-    lesson: 'Start by greeting them warmly in Persian, then say what you will do today (lesson words → conversation practice → grammar → quick quiz), and begin. Teach today\'s lesson step by step, making them speak a lot. When a planned task is clearly finished, call mark_done with its text.',
+    lesson: 'Start now with step 1 of the LESSON PLAN.',
     talk: 'Greet them and suggest 3 fun topics; chat freely in mostly English at their level, recasting mistakes and explaining briefly in Persian.',
     ask: 'Interview them: ask one personal question at a time in simple English (Persian help if they get stuck), react with real interest, correct mistakes, ask follow-ups.',
     mistakes: 'Review their recent mistakes one by one: give a situation, let them say it, praise or correct, and repeat until it is right.',
@@ -39,7 +69,7 @@ async function liveToken() {
 }
 const Live = { ws: null, ctx: null, mic: null, node: null, src: null, playAt: 0, queue: [], on: false, mode: 'lesson', started: 0, timer: 0 };
 async function liveStart(mode, ui) {
-  if (Live.on) return; Live.mode = mode; ui.status('در حال وصل شدن به معلم…'); stopSpeak(); if (window.BGP?.on) BGP.stop();
+  if (Live.on) return; Live.mode = mode; Live.muted = false; ui.status('در حال آماده کردن درس و وصل شدن به معلم…'); if (mode === 'lesson') LIVE_LESSON = await liveLessonText(); stopSpeak(); if (window.BGP?.on) BGP.stop();
   let auth; try { auth = await liveToken(); } catch (e) { ui.status(''); ui.idle(); return aiErr(e); }
   let stream; try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
   catch { ui.status(''); ui.idle(); return toast('اجازهٔ میکروفون داده نشده؛ از تنظیمات مرورگر اجازه بده.'); }
@@ -50,7 +80,10 @@ async function liveStart(mode, ui) {
     const ws = new WebSocket(url); let ok = false;
     ws.onopen = () => ws.send(JSON.stringify({ setup: { model: 'models/' + LIVE_MODELS[i], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: G.settings.geminiVoice || 'Kore' } } } },
       systemInstruction: { parts: [{ text: livePrompt(mode) }] }, inputAudioTranscription: {}, outputAudioTranscription: {},
-      tools: [{ functionDeclarations: [{ name: 'mark_done', description: 'Mark one of today\'s planned tasks as done when the student finished it in this session.', parameters: { type: 'OBJECT', properties: { task: { type: 'STRING', description: 'task text' } }, required: ['task'] } }] }] } }));
+      tools: [{ functionDeclarations: [
+        { name: 'play_conversation', description: 'Play today\'s lesson conversation audio (two native speakers) to the student. Returns when it finished playing.', parameters: { type: 'OBJECT', properties: {} } },
+        { name: 'show_board', description: 'Show the current lesson step on the student\'s screen like a whiteboard.', parameters: { type: 'OBJECT', properties: { title: { type: 'STRING', description: 'Persian step title' }, items: { type: 'ARRAY', items: { type: 'OBJECT', properties: { en: { type: 'STRING' }, fa: { type: 'STRING' }, note: { type: 'STRING', description: 'Persian: register / when to use' } } } } }, required: ['title'] } },
+        { name: 'mark_done', description: 'Mark one of today\'s planned tasks as done when the student finished it in this session.', parameters: { type: 'OBJECT', properties: { task: { type: 'STRING', description: 'task text' } }, required: ['task'] } }] }] } }));
     ws.onmessage = async ev => { const m = JSON.parse(typeof ev.data === 'string' ? ev.data : await ev.data.text()); if (m.setupComplete && !ok) { ok = true; res(ws); } else liveMsg(m, ui); };
     ws.onerror = () => { if (!ok) rej(new Error('ws')); };
     ws.onclose = e => { if (!ok) rej(new Error(e.reason || 'closed')); else if (Live.ws === ws) { ui.status(e.reason && /quota|exceed/i.test(e.reason) ? 'سهمیهٔ رایگان امروز کلاس زنده تمام شد؛ فردا دوباره.' : 'تماس تمام شد.'); liveStop(ui, true); } };
@@ -60,7 +93,7 @@ async function liveStart(mode, ui) {
   Live.on = true; Live.started = Date.now(); Live.mic = stream; ui.live();
   // میکروفون → PCM ۱۶ کیلوهرتز
   const src = Live.ctx.createMediaStreamSource(stream); const proc = Live.ctx.createScriptProcessor(4096, 1, 1); const ratio = Live.ctx.sampleRate / 16000;
-  proc.onaudioprocess = e => { if (!Live.on || Live.ws?.readyState !== 1) return; const x = e.inputBuffer.getChannelData(0); const n = Math.floor(x.length / ratio); const pcm = new Int16Array(n); let lvl = 0;
+  proc.onaudioprocess = e => { if (!Live.on || Live.muted || Live.ws?.readyState !== 1) return; const x = e.inputBuffer.getChannelData(0); const n = Math.floor(x.length / ratio); const pcm = new Int16Array(n); let lvl = 0;
     for (let i = 0; i < n; i++) { const v = x[Math.floor(i * ratio)]; lvl = Math.max(lvl, Math.abs(v)); pcm[i] = Math.max(-1, Math.min(1, v)) * 0x7fff; }
     ui.level(lvl); let bin = ''; const b = new Uint8Array(pcm.buffer); for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode(...b.subarray(i, i + 0x8000));
     Live.ws.send(JSON.stringify({ realtimeInput: { audio: { data: btoa(bin), mimeType: 'audio/pcm;rate=16000' } } })); };
@@ -84,10 +117,17 @@ function liveMsg(m, ui) {
     if (sc.turnComplete) { ui.say('end'); setTimeout(() => ui.speaking(false), Math.max(0, (Live.playAt - Live.ctx.currentTime) * 1000)); }
   }
   if (m.toolCall) {
-    const res = (m.toolCall.functionCalls || []).map(fc => { const want = (fc.args?.task || '').trim(); const t = (todayPlan()?.tasks || []).find(x => x.t.includes(want) || want.includes(x.t.slice(0, 12)));
+    const calls = m.toolCall.functionCalls || [];
+    const pc = calls.find(fc => fc.name === 'play_conversation');
+    if (pc) { (async () => { Live.muted = true; ui.status('🎧 در حال پخش مکالمه…'); const lines = LIVE_L?.conversation?.lines || []; ui.board('🎧 مکالمه', lines.map(l => ({ en: `${l.who}: ${l.en}`, fa: l.fa })));
+      await new Promise(r => setTimeout(r, Math.max(0, (Live.playAt - (Live.ctx?.currentTime || 0)) * 1000) + 300));
+      for (const [i, l] of lines.entries()) { if (!Live.on) break; ui.hl(i); await say(l.en, 'en', 'calm'); await new Promise(r => setTimeout(r, 450)); }
+      ui.hl(-1); Live.muted = false; ui.status('حرف بزن 🙂'); Live.ws?.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: pc.id, name: pc.name, response: { result: lines.length ? 'The conversation was played. Now continue the lesson.' : 'No conversation audio available; read it yourself with two voices.' } }] } })); })(); }
+    const res = calls.filter(fc => fc.name !== 'play_conversation').map(fc => {
+      if (fc.name === 'show_board') { ui.board(fc.args?.title || '', fc.args?.items || []); return { id: fc.id, name: fc.name, response: { result: 'shown' } }; } const want = (fc.args?.task || '').trim(); const t = (todayPlan()?.tasks || []).find(x => x.t.includes(want) || want.includes(x.t.slice(0, 12)));
       if (t) { U.mdone = U.mdone || {}; U.mdone[isoDay() + '|' + t.k] = 1; addXP(3); saveU(); toast('✓ در برنامهٔ امروز علامت خورد: ' + t.t); }
       return { id: fc.id, name: fc.name, response: { result: t ? 'done' : 'task not found' } }; });
-    Live.ws?.send(JSON.stringify({ toolResponse: { functionResponses: res } }));
+    if (res.length) Live.ws?.send(JSON.stringify({ toolResponse: { functionResponses: res } }));
   }
   if (m.goAway) ui.status('جلسه رو به پایان است؛ بعد از قطع، دوباره وصل شو.');
 }
@@ -103,13 +143,17 @@ routes.live = (mode = 'lesson') => {
   <div class="live-card"><div class="live-av" id="lav"><span>👩‍🏫</span><i></i></div><b id="lst">${esc(G.settings.teacher)} آماده است</b><span class="small" id="lclk">${faNum(Math.round(L.live || 0))} دقیقه کلاس زندهٔ امروز</span>
     <div class="row" style="justify-content:center"><button class="btn live-go" id="lgo">📞 شروع کلاس</button></div>
     <span class="tiny" style="opacity:.8">مثل تماس تلفنی حرف بزن؛ وسط حرف معلم هم می‌توانی بپری. هدفون بهتر است.</span></div>
+  <label class="row small" style="gap:6px;flex-wrap:nowrap"><span style="white-space:nowrap">معلم مرا این‌طور صدا کند:</span><input class="in grow" id="lcm" value="${esc(callMe())}" placeholder="مثلاً رَستا"></label>
   <div class="vb-cats" style="flex-wrap:wrap">${Object.entries(LIVE_MODES).map(([k, [ic, t]]) => `<button class="pill ${k === mode ? 'acc' : ''}" data-lm="${k}">${ic} ${t}</button>`).join('')}</div>
   <div class="small muted" id="lmd">${esc(LIVE_MODES[mode][2])}</div>
+  <div class="card stack live-board" id="lboard" hidden></div>
   <div class="card stack live-log" id="llog"><span class="small muted">متن گفتگو اینجا نوشته می‌شود.</span></div>
   <div class="card stack"><b>🎙 تمرین رایگان با ChatGPT</b><span class="small muted">اگر حساب ChatGPT داری (رایگان هم کافی است)، این دکمه ChatGPT را با دستور آمادهٔ درس امروز، برنامه و اشتباه‌هایت باز می‌کند؛ بعد در ChatGPT دکمهٔ حالت صوتی را بزن.</span>
     <div class="row"><button class="btn ghost" id="gpt">باز کردن در ChatGPT</button><button class="btn line sm" id="gptc">کپی دستور</button></div></div></div>`;
   const log = $('#llog'); let cur = null, who = null;
   const ui = {
+    board: (t, items) => { const b = $('#lboard'); if (!b) return; b.hidden = false; b.innerHTML = `<b>🧑‍🏫 ${esc(t)}</b>${(items || []).map((x, i) => `<div class="lb-i" data-bi="${i}"><span class="en">${esc(x.en || '')}</span>${x.fa ? `<span class="small"> — ${esc(x.fa)}</span>` : ''}${x.note ? `<div class="tiny muted">🧭 ${esc(x.note)}</div>` : ''}</div>`).join('')}`; b.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); },
+    hl: i => { $$('#lboard .lb-i').forEach((x, k) => x.classList.toggle('reading-now', k === i)); $(`#lboard [data-bi="${i}"]`)?.scrollIntoView({ block: 'nearest' }); },
     status: t => { $('#lst') && ($('#lst').textContent = t || `${G.settings.teacher} آماده است`); },
     live: () => { $('#lgo').textContent = '⏹ پایان کلاس'; $('#lgo').classList.add('bad'); $('#lav').classList.add('on'); ui.status('وصل شدی؛ حرف بزن 🙂'); log.innerHTML = ''; },
     idle: () => { const b = $('#lgo'); if (!b) return; b.textContent = '📞 شروع کلاس'; b.classList.remove('bad'); $('#lav')?.classList.remove('on', 'talk'); },
@@ -118,6 +162,7 @@ routes.live = (mode = 'lesson') => {
     clock: s => { $('#lclk') && ($('#lclk').textContent = `⏱ ${faNum(Math.floor(s / 60))}:${faNum(String(s % 60).padStart(2, '0'))}`); },
     say: (w, t) => { if (w === 'end') { cur = null; who = null; return; } if (who !== w || !cur) { cur = document.createElement('div'); cur.className = 'll ' + w; cur.innerHTML = `<b>${w === 'me' ? 'تو' : esc(G.settings.teacher)}:</b> <span></span>`; log.appendChild(cur); who = w; } cur.querySelector('span').textContent += t; cur.scrollIntoView({ block: 'nearest' }); }
   };
+  $('#lcm').onchange = e => lsSet('zd:callme:' + G.active, e.target.value.trim());
   $('#lgo').onclick = () => Live.on ? liveStop(ui) : liveStart(mode, ui);
   $$('[data-lm]', v).forEach(b => b.onclick = () => { if (Live.on) liveStop(ui, true); go('live/' + b.dataset.lm); });
   liveLessonText().then(t => LIVE_LESSON = t);
