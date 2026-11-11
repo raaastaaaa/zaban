@@ -515,7 +515,7 @@ function router() {
   if (!G.users.length || !G.active || !G.users.some(u => u.id === G.active)) { if (!G.users.length) return viewWelcome(); loadUser(G.users[0].id); }
   if (!U) loadUser(G.active);
   const [r, ...args] = (location.hash.slice(1) || 'home').split('/');
-  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', settings: 'me', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat' }[r] || r)));
+  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat' }[r] || r)));
   (routes[r] || routes.home)(...args.map(decodeURIComponent));
 }
 addEventListener('hashchange', router);
@@ -531,7 +531,7 @@ function viewWelcome() {
   <label class="f">کد اتصال هوش مصنوعی (اگر کسی برایت فرستاده)<input id="cd" class="in" dir="ltr" placeholder="ZD1…"></label>
   <button class="btn wide" id="go">شروع</button></div></div>`;
   let av = AVATARS[0]; $$('#av button').forEach(b => b.onclick = () => { $$('#av button').forEach(x => x.classList.remove('on')); b.classList.add('on'); av = b.dataset.a; });
-  $('#go').onclick = () => { const n = $('#nm').value.trim(); if (!n) return toast('اسمت را بنویس.'); const c = $('#cd').value.trim(); if (c) { try { useCode(c); toast('هوش مصنوعی وصل شد ✓'); } catch { return toast('کد اتصال درست نیست؛ دوباره کپی کن.'); } } addUser(n, av); $('nav.bottom').hidden = false; go('placement'); router(); };
+  $('#go').onclick = () => { const n = $('#nm').value.trim(); if (!n) return toast('اسمت را بنویس.'); const c = $('#cd').value.trim(); if (c) { try { useCode(c); toast('هوش مصنوعی وصل شد ✓'); } catch { return toast('کد اتصال درست نیست؛ دوباره کپی کن.'); } } addUser(n, av); $('nav.bottom').hidden = false; go('guide'); router(); };
 }
 function addUser(name, avatar) { const u = { id: uid(), name, avatar, created: isoDay() }; G.users.push(u); saveG('users'); loadUser(u.id); saveU(); return u; }
 routes.users = () => {
@@ -1170,7 +1170,7 @@ const TOOLS = {
 routes.me = () => {
   setTop('من'); const p = paceInfo(); const last = [...Array(14)].map((_, i) => addDays(isoDay(), -13 + i)); const mx = Math.max(10, ...last.map(d => U.log[d]?.min || 0));
   view().innerHTML = `<div class="stack">
-  <div class="card stack"><div class="row"><span class="avatar" style="width:48px;height:48px;font-size:26px">${esc(me().avatar)}</span><div class="grow"><b style="font-size:18px">${esc(me().name)}</b><div class="small muted">${rankOf(U.xp)} · ${faNum(U.xp)} امتیاز · سطح ورودی: ${esc(U.placement?.level || '—')}</div></div><a class="btn ghost sm" href="#users">کاربران</a></div>
+  <div class="card stack"><div class="row"><span class="avatar" style="width:48px;height:48px;font-size:26px">${esc(me().avatar)}</span><div class="grow"><b style="font-size:18px">${esc(me().name)}</b><div class="small muted">${rankOf(U.xp)} · ${faNum(U.xp)} امتیاز · سطح ورودی: ${esc(U.placement?.level || '—')}</div></div><a class="btn ghost sm" href="#guide">امکانات</a><a class="btn ghost sm" href="#users">کاربران</a></div>
   <div class="grid2 small"><span>درس‌های قبول: <b>${faNum(p.mastered)}</b></span><span>واژهٔ تثبیت‌شده: <b>${faNum(learnedCount())}</b></span><span>کل مطالعه: <b>${faNum(p.minutes)}</b> دقیقه</span><span>روزهای پیاپی: <b>${faNum(streakOf(U))}</b></span></div>
   <div><div class="small muted">دقیقه‌های مطالعه در ۱۴ روز اخیر</div><div style="display:flex;align-items:flex-end;gap:4px;height:70px">${last.map(d => `<div title="${jLabel(d)}: ${Math.round(U.log[d]?.min || 0)}" style="flex:1;background:${d === isoDay() ? 'var(--mark)' : 'var(--accent)'};opacity:${U.log[d]?.min ? 1 : .2};height:${Math.max(4, (U.log[d]?.min || 0) / mx * 100)}%;border-radius:4px 4px 0 0"></div>`).join('')}</div></div>
   <button class="btn ghost" id="coach">نظر معلم دربارهٔ پیشرفتم</button><div id="co"></div></div>
@@ -1184,6 +1184,27 @@ routes.me = () => {
   $('#coach').onclick = async () => { if (needAI($('#co'))) return; $('#co').innerHTML = loading(); try { const r = await ai({ system: TEACHER_STYLE(), messages: [{ role: 'user', content: `${learnerContext()}\nGive me an honest, human progress review in Persian (5-7 sentences): what I mastered, what I keep forgetting, my learning speed, a realistic predicted date (Persian calendar wording is fine) for fluent everyday conversation at this pace, and one concrete challenge for this week. JSON {"say":"","emotion":"proud|encouraging|empathetic|excited"}` }] }); $('#co').innerHTML = `<div class="notice soft">${esc(r.say)}</div>`; say(r.say, 'fa', r.emotion); } catch (e) { $('#co').innerHTML = ''; aiErr(e); } };
   $('#bk').onclick = () => { const data = { v: 1, users: G.users, settings: { ...G.settings, prov: Object.fromEntries(Object.entries(G.settings.prov).map(([k, x]) => [k, { ...x, key: '' }])) }, extra: G.extra, cache: G.cache, img: G.img, u: Object.fromEntries(G.users.map(u => [u.id, userData(u.id)])) }; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' })); a.download = `zaban-dovom-backup-${isoDay()}.json`; document.body.append(a); a.click(); a.remove(); toast('پشتیبان ساخته شد (کلیدهای API داخلش نیست).'); };
   $('#rs').onchange = async e => { try { const d = JSON.parse(await e.target.files[0].text()); for (const [id, ud] of Object.entries(d.u || {})) lsSet('zd:u:' + id, ud); const ids = new Set(G.users.map(u => u.id)); (d.users || []).forEach(u => { if (!ids.has(u.id)) G.users.push(u); }); Object.assign(G.extra, d.extra || {}); Object.assign(G.cache, d.cache || {}); Object.assign(G.img, d.img || {}); ['users', 'extra', 'cache', 'img'].forEach(saveG); loadUser(G.active || G.users[0].id); toast('بازیابی شد.'); go('home'); } catch { toast('فایل پشتیبان معتبر نیست.'); } };
+};
+
+/* ───────── راهنمای امکانات ───────── */
+routes.guide = () => {
+  setTop('زبان دوم چه کارهایی می‌کند؟', true);
+  const F = [
+    ['👩‍🏫', `معلم صوتی ${G.settings.teacher}`, 'به فارسی روان و با احساس درس می‌دهد، سؤال می‌پرسد، تشویقت می‌کند، اشتباه‌هایت را همان لحظه درست می‌کند و همه‌چیز را دربارهٔ تو به خاطر می‌سپارد.', '#teach/' + currentUnit().id],
+    ['📚', 'درس‌ها از مقدماتی تا متوسط', '۳۸ درس مکالمه‌محور + ۳۵ سرفصل واژگان موضوعی؛ هر درس: واژه‌ها با تصویر و تلفظ، فلش‌کارت، مکالمه، گرامر، صحبت، کوییز و آزمون نهایی. درس بعد فقط با نمرهٔ ' + faNum(G.settings.passScore) + ' باز می‌شود.', '#home'],
+    ['🧠', 'هیچ‌چیز فراموش نمی‌شود', 'فلش‌کارت هوشمند با فاصله‌های ۱ تا ۱۲۰ روزه؛ واژه‌های درس‌های قبل مدام در کارت‌ها، داستان‌ها و گفتگوها برمی‌گردند.', '#cards/due'],
+    ['🗓️', 'تقویم شمسی شخصی', 'هدف و وقت روزانه‌ات را می‌گیرد، برنامه می‌چیند، یادآوری می‌کند و اگر عقب بیفتی برنامهٔ جبرانی می‌دهد تا از هدف دور نشوی.', '#plan'],
+    ['🎯', 'مربی تلفظ و لهجه', 'صدایت را گوش می‌دهد، می‌گوید کدام صدا را اشتباه گفتی، چرا (تأثیر فارسی) و زبان و لب را چطور بگذاری؛ آمریکایی یا بریتانیایی.', '#tool/shadow'],
+    ['🗣', 'مثل نیتیوها حرف بزن', 'نشان می‌دهد نیتیوها در مکالمهٔ واقعی جمله‌ها را چطور به هم می‌چسبانند (مثلاً Nice to meet you ← «نایس تِ میچو»).', '#tool/shadow'],
+    ['💬', 'گپ آزاد و نقش‌آفرینی عمان', 'دربارهٔ هر چیزی حرف بزن یا در تاکسی مسقط، داروخانه، مصاحبهٔ کاری و… تمرین کن؛ آخرش نمره و جمله‌های بهتر می‌گیری.', '#chat'],
+    ['📖', 'کتابخانهٔ دوزبانه', 'کتاب‌های ساده تا پیشرفته با ترجمهٔ زیر هر پاراگراف، معنی هر واژه با یک لمس و پخش صوتی.', '#library/online'],
+    ['📕', 'دیکشنری کامل', 'انگلیسی↔فارسی با تلفظ آمریکایی و بریتانیایی، همهٔ معانی، همنشین‌ها، اصطلاحات، اشتباه‌های رایج و لینک به لانگمن.', '#dict'],
+    ['🤔', 'چطور بگم؟ و اصلاح نوشته', 'جملهٔ فارسی بنویس و معادل رسمی و خودمانی بگیر؛ متن انگلیسی‌ات را با توضیح فارسی اصلاح کن.', '#tools'],
+    ['📷', 'عکس بگیر، یاد بگیر', 'از هر چیزی عکس بگیر؛ اسم انگلیسی‌اش را یاد بگیر و به فلش‌کارت‌ها اضافه کن.', '#tool/photo'],
+    ['🎧', 'صوت آفلاین', 'صوت کامل هر درس و فصل کتاب را بساز، دانلود کن و همیشه، حتی بدون اینترنت، گوش بده.', '#unit/' + currentUnit().id],
+    ['🏆', 'رقابت با دوستان', 'امتیاز، نشان، روزهای پیاپی و جدول رقابت هفتگی بین کاربران.', '#home']
+  ];
+  view().innerHTML = `<div class="stack"><div class="today"><b style="font-size:19px">سلام ${esc(me().name)}! 👋</b><span class="muted">«زبان دوم» قرار است تو را تا مکالمهٔ روان انگلیسی برساند. این کارها را می‌کند:</span></div>${F.map(([ic, t, d, h]) => `<a class="card row" style="text-decoration:none;color:inherit;flex-wrap:nowrap;align-items:flex-start" href="${h}"><span style="font-size:28px">${ic}</span><span class="grow"><b>${esc(t)}</b><br><span class="small muted">${esc(d)}</span></span></a>`).join('')}<a class="btn" href="#plan">بزن بریم: ساخت برنامهٔ من</a></div>`;
 };
 
 /* ───────── تنظیمات ───────── */
