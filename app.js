@@ -430,7 +430,7 @@ function listen(lang = 'en-US') {
   if (eng === 'browser' && SR) {
     let rec; const p = new Promise((res, rej) => {
       rec = new SR(); rec.lang = lang; rec.interimResults = false; rec.maxAlternatives = 1; let got = '';
-      rec.onresult = e => { got = [...e.results].map(r => r[0].transcript).join(' '); };
+      rec.onresult = e => { const fin = [...e.results].filter(r => r.isFinal).map(r => r[0].transcript); got = cleanRepeats(fin.length ? fin[fin.length - 1] : e.results[e.results.length - 1][0].transcript); };
       rec.onerror = e => rej(new Error(e.error === 'not-allowed' ? 'اجازهٔ میکروفون داده نشده' : e.error));
       rec.onend = () => res(got); rec.start();
     });
@@ -715,8 +715,12 @@ function planGap() { // چند درس عقب‌تر از برنامه
   const P = U?.plan; if (!P) return 0; const days = Object.keys(P.days).filter(d => d <= isoDay()).sort().reverse(); const d = days.find(x => P.days[x].unit); if (!d) return 0;
   return Math.max(0, unitById(P.days[d].unit).idx - currentUnit().idx);
 }
+function addTopicTasks(P) {
+  const T = P.topics || []; if (!T.length) return; const days = Object.keys(P.days).sort().filter(d => !P.days[d].review); const step = Math.max(2, T.length);
+  T.forEach((tp, i) => { let m = 0; for (let k = i; k < days.length; k += step, m++) { const d = P.days[days[k]]; const w = m % 2; d.tasks.splice(d.tasks.length - 1, 0, { k: (w ? 'wtopic:' : 'topic:') + tp, t: w ? `واژه‌ها و عبارت‌های «${tp}» (۱۵ دقیقه)` : `فعل‌های «${tp}» + کوییز (۱۵ دقیقه)` }); } });
+}
 function catchUpPlan() { const P = U.plan; const end = addDays(P.start, P.dayCount - 1); const left = Math.max(7, Math.round((parseDay(end) - parseDay(isoDay())) / DAY) + 1); const gap = planGap();
-  U.plan = buildPlan({ ...P, start: isoDay(), days: left, minutes: clamp(P.minutes + gap * 10, P.minutes, 180) }); U.plan.dayCount = left; U.plan.catchUp = (U.plan.catchUp || 0) + 1; saveU(); }
+  U.plan = buildPlan({ ...P, start: isoDay(), days: left, minutes: clamp(P.minutes + gap * 10, P.minutes, 180) }); U.plan.dayCount = left; U.plan.catchUp = (P.catchUp || 0) + 1; U.plan.goal = P.goal; U.plan.topics = P.topics; U.plan.firstStart = P.firstStart || P.start; addTopicTasks(U.plan); saveU(); }
 function todayPlan() { const p = U.plan; if (!p) return null; return p.days?.[isoDay()] || null; }
 /* ───────── قفسهٔ دوره‌ها (مثل کتاب) و فهرست درس‌های هر دوره ───────── */
 const COVER = { intro: [350, 18, 'مقدماتی'], l1: [190, 220, 'سطح ۱'], l2: [140, 90, 'سطح ۲'], l3: [265, 300, 'سطح ۳'], wsb: [28, 48, 'واژه‌ها ۱'], wsi: [230, 260, 'واژه‌ها ۲'] };
@@ -757,7 +761,8 @@ routes.home = () => {
   </div>
   <div id="install-box">${installHTML()}</div>
   <div id="online-home"></div>
-  ${planGap() > 0 ? `<div class="notice stack"><b>⚠ ${faNum(planGap())} درس از برنامه‌ات عقبی</b><span class="small">هدفت عقب نمی‌افتد: برنامهٔ جبرانی همان تاریخ پایان را نگه می‌دارد و وقت روزانه را کمی بیشتر می‌کند.</span><button class="btn sm" id="cu" style="align-self:flex-start">ساخت برنامهٔ جبرانی</button></div>` : ''}
+  ${(() => { if (!U.plan) return ''; let md = missedDays(); if (md && U.plan.lastCatch !== isoDay()) { catchUpPlan(); U.plan.lastCatch = isoDay(); U.plan.missedNote = md; saveU(); } else if (U.plan.lastCatch === isoDay()) md = U.plan.missedNote || 0; if (!md) return ''; const end = addDays(U.plan.start, U.plan.dayCount - 1); return `<div class="notice stack"><b>⏰ ${faNum(md)} روز است که طبق برنامه درس نخوانده‌ای</b><span class="small">برای اینکه باز هم تا <b>${jLabel(end, true)}</b> به هدفت برسی، برنامه خودکار جبرانی شد: از امروز روزی <b>${faNum(U.plan.minutes)} دقیقه</b> لازم است. کارهای جامانده به روزهای بعد پخش شد.</span><div class="row"><a class="btn sm" href="#coach/advisor">🧭 مشورت با مشاور</a><a class="btn ghost sm" href="#plan">دیدن تقویم</a></div></div>`; })()}
+  ${planGap() > 0 && !(U.plan?.lastCatch === isoDay() && U.plan?.missedNote) ? `<div class="notice stack"><b>⚠ ${faNum(planGap())} درس از برنامه‌ات عقبی</b><span class="small">هدفت عقب نمی‌افتد: برنامهٔ جبرانی همان تاریخ پایان را نگه می‌دارد و وقت روزانه را کمی بیشتر می‌کند.</span><button class="btn sm" id="cu" style="align-self:flex-start">ساخت برنامهٔ جبرانی</button></div>` : ''}
   ${!hasAI() && !firstKeyed() ? `<div class="notice">برای فعال شدن معلم صوتی و گفتگو، در <a href="#settings">تنظیمات</a> یک کلید رایگان Gemini بگذار.</div>` : ''}
   ${G.users.length > 1 ? `<div class="sec">رقابت این هفته <small>کاربران این دستگاه</small></div>
   <div class="users">${board.map((x, i) => `<button class="ucard${x.u.id === G.active ? ' on' : ''}" data-u="${x.u.id}"><div class="row"><span style="font-weight:900;width:20px">${['🥇', '🥈', '🥉'][i] || faNum(i + 1)}</span><span class="avatar">${avHTML(x.u)}</span><b class="grow">${esc(x.u.name)}</b><span class="pill acc num">${faNum(x.w)}</span></div>
@@ -1045,7 +1050,11 @@ routes.chat = () => {
     <a class="tool" href="#rooms"><span class="ic">🗣️</span><b>انجمن و چت‌روم</b><span>با بقیهٔ زبان‌آموزها گپ بزن؛ معلم ناظر نقش می‌دهد و اشتباه‌ها را درست می‌کند.</span></a></div></div>`;
 };
 /* تمرین با هوش مصنوعی: کوییز شفاهی، نقش دادن، سؤال پرسیدن */
+function missedDays() { const P = U.plan; if (!P) return 0; let n = 0; for (let i = 1; i <= 60; i++) { const d = addDays(isoDay(), -i); const p = P.days[d]; if (!p) break; if (p.review) continue; if ((U.log[d]?.min || 0) >= P.minutes * 0.5) break; n++; } return n; }
+function planContext() { const P = U.plan; if (!P) return 'The learner has no study plan yet.'; const end = addDays(P.start, P.dayCount - 1); const left = Math.max(1, Math.round((parseDay(end) - parseDay(isoDay())) / DAY) + 1);
+  return `STUDY PLAN: goal "${P.goal || (P.target === 'l1' ? 'finish Intro + Level 1' : 'reach intermediate')}", target end ${end} (${left} days left), planned ${P.minutes} min/day, topics: ${(P.topics || []).join(', ') || '-'}. Units behind plan: ${planGap()}. Consecutive missed study days: ${missedDays()}. Last 14 days minutes: ${[...Array(14)].map((_, i) => Math.round(U.log[addDays(isoDay(), -i)]?.min || 0)).join(',')}. Today's tasks: ${(todayPlan()?.tasks || []).map(t => t.t + (taskDone(t) ? ' [done]' : '')).join('; ')}.`; }
 const COACH = {
+  advisor: ['🧭', 'مشاور هوشمند برنامه', 'دربارهٔ هدف، برنامه، عقب‌افتادگی، انگیزه و روش درس خواندنت با یک مشاور حرفه‌ای حرف بزن؛ برنامه‌ات را می‌بیند و راهکار دقیق می‌دهد.', 'You are a professional, warm and honest language-learning ADVISOR (مشاور تحصیلی) for an Iranian adult. You can see the learner\'s plan, progress and missed days. Talk ONLY in natural colloquial Persian. Be specific with numbers (minutes per day, words per day, which lessons, which days), realistic about feasibility, and motivating without flattery. If they are behind, say exactly how many days they missed and the concrete catch-up schedule needed to still reach the goal date, or suggest moving the date. Ask one focused question at a time when you need information (available time, preferred hours, obstacles). Max 90 words per reply.'],
   quiz: ['🧩', 'ازم کوییز بگیر', 'سؤال‌های کوتاه از واژه‌ها و گرامر درس‌هایی که خوانده‌ای؛ جواب بده، نمره و توضیح بگیر.', 'You are a lively quiz master. Ask ONE short quiz question at a time about the learner\'s studied words and grammar (mix: meaning, fill the gap, choose the right form, translate a short Persian sentence, say it in English). After each answer: say if it is right, give the correct answer, a one-line Persian tip, a running score like "Score: 3/4", then ask the next question. Keep it fun and fast.'],
   role: ['🎭', 'بهم نقش بده', 'معلم یک موقعیت واقعی می‌سازد (فروشگاه، فرودگاه، مهمانی…) و نقش طرف مقابل را بازی می‌کند.', 'Pick a realistic everyday situation matching the learner\'s level and topics (e.g. a cafe, a hotel check-in, meeting a new neighbor). First tell the learner in Persian (fa field) who they are and what their goal is, then play the other person. Stay in role, keep lines short, and gently recast mistakes. After about 8 exchanges, step out of role and give a short Persian review with 3 better sentences.'],
   ask: ['🙋', 'ازم سؤال بپرس', 'معلم دربارهٔ زندگی، روز و علاقه‌هایت سؤال می‌پرسد تا راحت صحبت کردن را تمرین کنی.', 'Interview the learner like a warm friend: ask ONE personal question at a time about their life, day, family, work, hobbies and plans, using the grammar and words of their current unit. React with real interest, recast mistakes naturally, then ask a follow-up question.'],
@@ -1056,8 +1065,8 @@ routes.coach = mode => {
   convo(v, {
     key: 'coach:' + mode, intro: 'Start now: greet me by name in one short line and begin.',
     extraTop: `<div class="notice soft small">${esc(m[2])} می‌توانی بنویسی یا با میکروفون جواب بدهی.</div>`,
-    system: () => `${m[3]}\nThe learner is a Persian speaker; current unit: ${currentUnit().en} (CEFR ${currentUnit().cefr || 'A1'}), grammar: ${currentUnit().gram}. Studied words: ${unitWords(currentUnit()).slice(0, 30).map(w => w.w).join(', ')}. Keep English simple for their level. Max 60 words per reply.\n${learnerContext()}\nJSON {"reply":"English","fa":"Persian translation or instruction","fixes":[{"wrong":"","right":"","why":"Persian"}],"emotion":"cheerful|calm|excited|encouraging|empathetic|surprised","memory":"durable fact or empty"}`,
-    parse: r => ({ show: r.reply, fa: r.fa, lang: 'en', fixes: r.fixes })
+    system: () => mode === 'advisor' ? `${m[3]}\n${planContext()}\n${learnerContext()}\nJSON {"reply":"Persian","emotion":"cheerful|calm|encouraging|empathetic|serious","memory":"durable fact or empty"}` : `${m[3]}\nThe learner is a Persian speaker; current unit: ${currentUnit().en} (CEFR ${currentUnit().cefr || 'A1'}), grammar: ${currentUnit().gram}. Studied words: ${unitWords(currentUnit()).slice(0, 30).map(w => w.w).join(', ')}. Keep English simple for their level. Max 60 words per reply.\n${learnerContext()}\nJSON {"reply":"English","fa":"Persian translation or instruction","fixes":[{"wrong":"","right":"","why":"Persian"}],"emotion":"cheerful|calm|excited|encouraging|empathetic|surprised","memory":"durable fact or empty"}`,
+    parse: r => mode === 'advisor' ? ({ show: r.reply, lang: 'fa' }) : ({ show: r.reply, fa: r.fa, lang: 'en', fixes: r.fixes })
   });
 };
 routes.talkfree = () => {
@@ -1234,25 +1243,92 @@ function parseGoalLocal(txt) {
   const m = t.match(/(?:زمینه|موضوع|مباحث|تاپیک)(?:ِ|‌ی)?\s*([^.،؛\n]+)/g) || []; m.forEach(x => x.replace(/^(?:زمینه|موضوع|مباحث|تاپیک)(?:ِ|‌ی)?\s*/, '').split(/\s*(?:،|,| و | یا |یا مثلا|مثلا)\s*/).map(y => y.replace(/^(?:های|ی)\s*/, '').replace(/\s*(کردن|هم|حتی|بشم|مسلط).*$/, '').trim()).filter(y => y.length > 1 && y.length < 25).forEach(y => out.topics.includes(y) || out.topics.push(y)));
   return out;
 }
-async function goalToPlan(txt) {
-  let g = parseGoalLocal(txt);
-  if (hasAI() || firstKeyed()) try { const r = await ai({ max: 600, temp: 0.1, system: 'Extract a study goal. Today is ' + isoDay() + ' (Jalali ' + jLabel(isoDay(), true) + ').', messages: [{ role: 'user', content: `Learner goal (Persian): "${txt}". JSON {"target":"l1 (beginner/elementary) or l3 (up to intermediate)","endDate":"YYYY-MM-DD Gregorian or empty","minutes":minutes per day or 0,"reminder":"HH:MM or empty","topics":["Persian short topic names the learner wants to master, e.g. ترید، پوشاک، خرید"]}` }] });
-    if (r) { if (/^l[13]$/.test(r.target)) g.target = r.target; if (r.endDate && /^\d{4}-\d\d-\d\d$/.test(r.endDate)) { const d = Math.round((parseDay(r.endDate) - parseDay(isoDay())) / DAY) + 1; if (d > 6) g.days = d; } if (r.minutes > 9) g.minutes = r.minutes; if (/^\d\d:\d\d$/.test(r.reminder || '')) g.reminder = r.reminder; if (Array.isArray(r.topics) && r.topics.length) g.topics = r.topics.slice(0, 12); } } catch { }
+function goalBuild(g) {
   const n = (g.target === 'l1' ? ALL_UNITS.filter(u => u.level === 'intro' || u.level === 'l1').length : ALL_UNITS.length) - currentUnit().idx;
   g.days = g.days || (g.target === 'l1' ? 90 : 180); if (!g.minutes) g.minutes = clamp(Math.round(n / (g.days * 6 / 7) * 4.5 * 30 / 10) * 10, 30, 180);
   const P = buildPlan({ days: g.days, minutes: g.minutes, target: g.target, reminder: g.reminder || '20:00', review: 6 });
-  const days = Object.keys(P.days).sort(); g.topics.forEach((tp, i) => { for (let k = i * 2; k < days.length; k += Math.max(3, g.topics.length * 2)) { const d = P.days[days[k]]; if (!d.review) d.tasks.splice(d.tasks.length - 1, 0, { k: (k / Math.max(3, g.topics.length * 2)) % 2 ? 'wtopic:' + tp : 'topic:' + tp, t: (k / Math.max(3, g.topics.length * 2)) % 2 ? `واژه‌ها و عبارت‌های «${tp}» (۱۵ دقیقه)` : `فعل‌های «${tp}» + کوییز (۱۵ دقیقه)` }); } });
-  P.goal = txt; P.topics = g.topics; return P;
+  P.goal = g.txt; P.topics = g.topics; addTopicTasks(P); return P;
 }
 function goalBox() { return `<div class="card stack"><b>🎯 هدفت را بنویس یا بگو</b><span class="small muted">مثلاً: «می‌خوام تا آخر بهمن سطح مقدماتی رو تموم کنم و تا آخر خرداد به سطح متوسط برسم. در زمینهٔ ترید، پوشاک و خرید هم مسلط بشم. روزی یک ساعت، ساعت ۸ شب وقت دارم.» برنامه خودش وقت روزانه را حساب می‌کند و کار هر روز را روی تقویم می‌چیند.</span>
-  <div class="row" style="flex-wrap:nowrap;align-items:stretch"><textarea id="goal" class="in grow" rows="4" placeholder="هدفم این است که…">${esc(U.plan?.goal || '')}</textarea><button class="btn ghost" id="gmic" aria-label="گفتن با صدا" style="min-width:52px">🎤</button></div>
+  <div class="row" style="flex-wrap:nowrap;align-items:stretch"><textarea id="goal" class="in grow" rows="4" placeholder="هدفم این است که…">${esc(cleanRepeats(U.plan?.goal || ''))}</textarea><button class="btn ghost" id="gmic" aria-label="گفتن با صدا" style="min-width:52px">🎤</button></div>
   <button class="btn" id="gmk">✨ برنامه‌ام را از روی هدفم بساز</button><div id="gmsg"></div></div>`; }
+/* حذف تکرارهای اشتباه تبدیل صدا به متن (باگ اندروید که هر جمله را چند بار تکرار می‌کند) */
+function cleanRepeats(t) {
+  let w = (t || '').replace(/\s+/g, ' ').trim().split(' ');
+  for (let changed = true; changed;) { changed = false;
+    for (let n = Math.min(20, Math.floor(w.length / 2)); n >= 1; n--) for (let i = 0; i + 2 * n <= w.length; i++) if (w.slice(i, i + n).join(' ') === w.slice(i + n, i + 2 * n).join(' ')) { w.splice(i + n, n); changed = true; i--; } }
+  // جمله‌ای که پیشوند جملهٔ بعدی است (نسخهٔ ناقص قبلی) حذف شود
+  return w.join(' ');
+}
+/* دیکته با صدا: هر بار بزنی ضبط شروع/تمام می‌شود؛ بی‌نهایت بار قابل تکرار */
+function dictate(ta, btn, lang = 'fa-IR') {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition; let rec = null, on = false;
+  const idle = () => { on = false; rec = null; btn.textContent = '🎤'; btn.classList.remove('rec'); };
+  btn.onclick = () => {
+    if (!SR) return toast('ضبط صدا در این مرورگر پشتیبانی نمی‌شود؛ از 🎤 روی کیبورد گوشی استفاده کن.');
+    if (on) { on = false; try { rec?.stop(); } catch { } return; }
+    on = true; btn.textContent = '⏹'; btn.classList.add('rec'); stopSpeak();
+    const startOne = () => {
+      if (!on) return idle(); rec = new SR(); rec.lang = lang; rec.interimResults = false; rec.continuous = false; rec.maxAlternatives = 1; let got = '';
+      rec.onresult = e => { const r = e.results[e.results.length - 1]; if (r.isFinal) got = r[0].transcript; };
+      rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { toast('اجازهٔ میکروفون داده نشده؛ از تنظیمات مرورگر اجازه بده.'); on = false; } };
+      rec.onend = () => { if (got) { const cur = ta.value.trim(); const g = got.trim(); if (!cur.endsWith(g)) ta.value = cleanRepeats((cur ? cur + ' ' : '') + g); ta.dispatchEvent(new Event('input')); } if (on) setTimeout(startOne, 150); else idle(); };
+      try { rec.start(); } catch { setTimeout(startOne, 400); }
+    };
+    startOne();
+  };
+}
 function bindGoal() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition; const mic = $('#gmic');
-  if (!SR) mic.onclick = () => toast('ضبط صدا در این مرورگر پشتیبانی نمی‌شود؛ از کیبورد صوتی گوشی (🎤 روی کیبورد) استفاده کن.');
-  else mic.onclick = () => { const r = new SR(); r.lang = 'fa-IR'; r.interimResults = true; r.continuous = true; const base = $('#goal').value; mic.textContent = '⏺'; r.onresult = e => { $('#goal').value = (base ? base + ' ' : '') + [...e.results].map(x => x[0].transcript).join(' '); }; r.onend = () => mic.textContent = '🎤'; r.onerror = () => { mic.textContent = '🎤'; toast('صدا گرفته نشد؛ دوباره امتحان کن.'); }; r.start(); mic.onclick = () => r.stop(); };
-  $('#gmk').onclick = async () => { const txt = $('#goal').value.trim(); if (txt.length < 8) return toast('هدفت را کمی کامل‌تر بنویس.'); $('#gmsg').innerHTML = loading('برنامه را می‌چینم…'); const P = await goalToPlan(txt); U.plan = P; saveU(); addXP(10);
-    toast(`برنامه ساخته شد: روزی ${faNum(P.minutes)} دقیقه تا ${jLabel(addDays(P.start, P.dayCount - 1), true)}${P.topics?.length ? ' · موضوع‌ها: ' + P.topics.join('، ') : ''}`, 6000); routes.plan(); };
+  dictate($('#goal'), $('#gmic'));
+  $('#goal').onblur = () => { $('#goal').value = cleanRepeats($('#goal').value); };
+  $('#gmk').onclick = async () => { const txt = cleanRepeats($('#goal').value.trim()); $('#goal').value = txt; if (txt.length < 8) return toast('هدفت را کمی کامل‌تر بنویس.'); $('#gmsg').innerHTML = loading('هدفت را بررسی می‌کنم…'); const g = await goalParse(txt); g.txt = txt; goalReview(g); };
+}
+/* بررسی شدنی بودن هدف و پیشنهاد برنامه پیش از گذاشتن در تقویم */
+function goalMath(g) {
+  const unitsLeft = Math.max(0, (g.target === 'l1' ? ALL_UNITS.filter(u => u.level === 'intro' || u.level === 'l1').length : ALL_UNITS.length) - currentUnit().idx);
+  const wsTarget = WS_UNITS.filter(u => g.target === 'l1' ? u.level === WORD_TRACK[0]?.id : u.level !== WORD_TRACK[WORD_TRACK.length - 1]?.id || WORD_TRACK.length < 3);
+  const wsWords = wsTarget.reduce((a, u) => a + (unitWords(u).length || 30), 0) + g.topics.length * 40;
+  const study = Math.max(1, Math.round(g.days * 6 / 7));
+  const wpd = Math.ceil(wsWords / study), upw = unitsLeft / (study / 6);
+  const need = Math.round(unitsLeft * 270 / study + wpd * 1.6 + 15 + 10); // درس + واژه (با مرور) + شنیدن + مرور لایتنر
+  const have = g.minutes || 0;
+  const level = !have ? 'ask' : have >= need ? 'ok' : have >= need * 0.75 ? 'tight' : 'hard';
+  const daysFor = m => Math.ceil((unitsLeft * 270 + wsWords * 1.6) / Math.max(10, m - 25) * 7 / 6);
+  return { unitsLeft, wsWords, study, wpd, upw, need, have, level, daysFor, wsUnits: wsTarget.length };
+}
+async function goalParse(txt) {
+  const g = parseGoalLocal(txt);
+  if (hasAI() || firstKeyed()) try { const r = await ai({ max: 600, temp: 0.1, system: 'Extract a study goal. Today is ' + isoDay() + ' (Jalali ' + jLabel(isoDay(), true) + ').', messages: [{ role: 'user', content: `Learner goal (Persian): "${txt}". JSON {"target":"l1 (beginner/elementary) or l3 (up to intermediate)","endDate":"YYYY-MM-DD Gregorian or empty","minutes":minutes per day or 0,"reminder":"HH:MM or empty","topics":["topic names the learner wants to master, written in PERSIAN (Farsi script), e.g. ترید، پوشاک، خرید"]}` }] });
+    if (r) { if (/^l[13]$/.test(r.target)) g.target = r.target; if (r.endDate && /^\d{4}-\d\d-\d\d$/.test(r.endDate)) { const d = Math.round((parseDay(r.endDate) - parseDay(isoDay())) / DAY) + 1; if (d > 6) g.days = d; } if (r.minutes > 9) g.minutes = r.minutes; if (/^\d\d:\d\d$/.test(r.reminder || '')) g.reminder = r.reminder; if (Array.isArray(r.topics) && r.topics.length) g.topics = r.topics.slice(0, 12); } } catch { }
+  g.days = g.days || (g.target === 'l1' ? 90 : 180); return g;
+}
+function goalReview(g) {
+  const M = goalMath(g); const end = addDays(isoDay(), g.days - 1);
+  const verdict = { ok: ['ok', '✅ شدنی است', `با ${faNum(M.have)} دقیقه در روز به هدفت می‌رسی؛ حتی کمی وقت اضافه برای مرور داری.`],
+    tight: ['mark', '⚠️ شدنی ولی فشرده', `برای این هدف حدود ${faNum(M.need)} دقیقه در روز لازم است و تو ${faNum(M.have)} دقیقه گفتی. یا روزی ${faNum(M.need - M.have)} دقیقه بیشتر بخوان، یا تاریخ را تا ${jLabel(addDays(isoDay(), M.daysFor(M.have) - 1), true)} عقب ببر.`],
+    hard: ['bad', '❌ با این وقت شدنی نیست', `این هدف روزی حدود ${faNum(M.need)} دقیقه می‌خواهد. با ${faNum(M.have)} دقیقه در روز، تاریخ واقع‌بینانه ${jLabel(addDays(isoDay(), M.daysFor(M.have) - 1), true)} است. می‌توانی وقت روزانه را بیشتر کنی یا تاریخ را عقب ببری.`],
+    ask: ['acc', '❓ روزی چقدر وقت داری؟', `برای رسیدن به این هدف تا ${jLabel(end, true)} حدود ${faNum(M.need)} دقیقه در روز لازم است. بگو روزی چقدر می‌توانی وقت بگذاری تا برنامه را دقیق بچینم.`] }[M.level];
+  const mins = M.have || M.need; const split = [['📖 درس کتاب (مکالمه، گرامر، تمرین)', Math.round(M.unitsLeft * 270 / M.study)], ['🗂️ واژه‌های تازه + فلش‌کارت', Math.round(M.wpd * 1.6)], ['🎧 شنیدن (رادیو، خبر ساده)', 15], ['🗃️ مرور لایتنر', 10]];
+  const sum = split.reduce((a, x) => a + x[1], 0); split.forEach(x => x[1] = Math.max(5, Math.round(x[1] / sum * mins)));
+  $('#gmsg').innerHTML = `<div class="card stack" style="box-shadow:0 0 0 2px var(--accent)">
+    <b style="font-size:17px">🧭 بررسی هدفت</b>
+    <div class="grid2 small"><span>هدف: <b>${g.target === 'l1' ? 'پایان مقدماتی و سطح ۱' : 'تا پایان سطح متوسط'}</b></span><span>تا: <b>${jLabel(end, true)}</b> (${faNum(g.days)} روز)</span>
+      <span>درس‌های باقی‌مانده: <b>${faNum(M.unitsLeft)}</b></span><span>واژه‌ها: <b>${faNum(M.wsWords)}</b> در ${faNum(M.wsUnits + g.topics.length)} موضوع</span>
+      <span>یعنی روزی <b>${faNum(M.wpd)}</b> واژهٔ تازه</span><span>و هفته‌ای <b>${faNum(M.upw.toFixed(1))}</b> درس</span></div>
+    ${g.topics.length ? `<div class="small">موضوع‌های تو: ${g.topics.map(t => `<span class="pill acc">${esc(t)}</span>`).join(' ')} — هر کدام فعل‌ها و واژه‌هایش جدا در برنامه می‌آید.</div>` : ''}
+    <div class="notice ${verdict[0] === 'bad' ? '' : 'soft'} small"><b>${verdict[1]}</b><div>${verdict[2]}</div></div>
+    <label class="f">روزی چند دقیقه وقت داری؟</label>
+    <div class="row" style="gap:6px" id="gmins">${[30, 45, 60, 90, 120, 180].map(m => `<button class="btn sm${mins === m ? '' : ' ghost'}" data-m="${m}">${faNum(m)}</button>`).join('')}<input class="in" id="gm2" type="number" min="10" max="300" style="width:90px" value="${mins}"></div>
+    <div class="grid2"><label class="f">ساعت یادآور<input id="grm" class="in" type="time" value="${g.reminder || '20:00'}"></label><label class="f">تاریخ هدف (روز)<input id="gdy" class="in" type="number" min="14" max="730" value="${g.days}"></label></div>
+    <div class="stack" style="gap:4px"><b class="small">یک روز نمونه از برنامه‌ات (${faNum(mins)} دقیقه):</b>${split.map(([t, m]) => `<div class="row small" style="flex-wrap:nowrap"><span class="grow">${t}</span><b>${faNum(m)} دقیقه</b></div>`).join('')}
+      <span class="tiny muted">جمعه‌ها روز مرور است (فلش‌کارت‌ها، داستان با واژه‌های ضعیف، گپ آزاد). اگر عقب بیفتی، برنامهٔ جبرانی همان تاریخ هدف را نگه می‌دارد.</span></div>
+    <div class="row"><button class="btn" id="gok">✅ تأیید و گذاشتن در تقویم</button><button class="btn ghost" id="gno">ویرایش هدف</button></div></div>`;
+  const re = () => { g.minutes = clamp(+$('#gm2').value || 60, 10, 300); g.days = clamp(+$('#gdy').value || g.days, 14, 730); g.reminder = $('#grm').value; goalReview(g); };
+  $('#gmins').onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return; $('#gm2').value = b.dataset.m; re(); };
+  $('#gm2').onchange = re; $('#gdy').onchange = re;
+  $('#gno').onclick = () => { $('#gmsg').innerHTML = ''; $('#goal').focus(); };
+  $('#gok').onclick = () => { g.minutes = clamp(+$('#gm2').value || mins, 10, 300); g.reminder = $('#grm').value; const P = goalBuild(g); U.plan = P; saveU(); addXP(10); toast(`برنامه در تقویم گذاشته شد: روزی ${faNum(P.minutes)} دقیقه تا ${jLabel(addDays(P.start, P.dayCount - 1), true)}`, 6000); routes.plan(); };
+  $('#gmsg').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 routes.plan = (mOffset = '0') => {
   setTop('تقویم آموزشی'); const v = view(); const P = U.plan;
@@ -1276,7 +1352,7 @@ routes.plan = (mOffset = '0') => {
   const behind = Object.keys(P.days).filter(x => x < isoDay() && status(x) === 'miss').length;
   const planned = P.days[isoDay()]?.unit; const cu = currentUnit(); const planIdx = planned ? unitById(planned).idx : cu.idx; const gap = planIdx - cu.idx;
   v.innerHTML = `<div class="stack">
-  ${P.goal ? `<div class="notice soft small">🎯 ${esc(P.goal)}${P.topics?.length ? `<div>موضوع‌ها: ${P.topics.map(esc).join('، ')}</div>` : ''}</div>` : ''}
+  ${P.goal ? `<div class="notice soft small">🎯 ${esc(cleanRepeats(P.goal))}${P.topics?.length ? `<div>موضوع‌ها: ${P.topics.map(esc).join('، ')}</div>` : ''}</div>` : ''}
   <div class="card stack"><div class="row"><b class="grow">هدف: ${P.target === 'l1' ? 'پایان سطح ۱' : 'پایان سطح متوسط'} تا ${jLabel(addDays(P.start, P.dayCount - 1), true)}</b><span class="pill">${faNum(P.minutes)} دقیقه در روز</span></div>
   <div class="small">${gap > 0 ? `<span class="pill bad">${faNum(gap)} درس عقب‌تر از برنامه</span>` : gap < 0 ? `<span class="pill ok">${faNum(-gap)} درس جلوتر از برنامه 👏</span>` : '<span class="pill ok">طبق برنامه</span>'} · روزهای ازدست‌رفته: ${faNum(behind)}</div>
   <div class="row"><button class="btn sm" id="upd">${gap > 0 ? 'برنامهٔ جبرانی (همان تاریخ هدف)' : 'به‌روزرسانی برنامه از امروز'}</button><button class="btn ghost sm" id="aiu">تنظیم با هوش مصنوعی</button><button class="btn ghost sm" id="ics">افزودن یادآورها به تقویم گوشی</button><button class="btn ghost sm" id="ntf">اعلان در برنامه</button><button class="btn line sm" id="rst">🎯 هدف / برنامهٔ تازه</button></div><div id="aim"></div></div>
