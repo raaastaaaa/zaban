@@ -722,14 +722,14 @@ routes.users = () => {
 /* ───────── صفحهٔ اول ───────── */
 function planGap() { // چند درس عقب‌تر از برنامه
   const P = U?.plan; if (!P) return 0; const days = Object.keys(P.days).filter(d => d <= isoDay()).sort().reverse(); const d = days.find(x => P.days[x].unit); if (!d) return 0;
-  return Math.max(0, unitById(P.days[d].unit).idx - currentUnit().idx);
+  const u = unitById(P.days[d].unit); return u ? Math.max(0, u.idx - currentUnit().idx) : 0;
 }
 function addTopicTasks(P) {
   const T = P.topics || []; if (!T.length) return; const days = Object.keys(P.days).sort().filter(d => !P.days[d].review); const step = Math.max(2, T.length);
   T.forEach((tp, i) => { let m = 0; for (let k = i; k < days.length; k += step, m++) { const d = P.days[days[k]]; const w = m % 2; d.tasks.splice(d.tasks.length - 1, 0, { k: (w ? 'wtopic:' : 'topic:') + tp, t: w ? `واژه‌ها و عبارت‌های «${tp}» (۱۵ دقیقه)` : `فعل‌های «${tp}» + کوییز (۱۵ دقیقه)` }); } });
 }
 function catchUpPlan() { const P = U.plan; const end = addDays(P.start, P.dayCount - 1); const left = Math.max(7, Math.round((parseDay(end) - parseDay(isoDay())) / DAY) + 1); const gap = planGap();
-  U.plan = buildPlan({ ...P, start: isoDay(), days: left, minutes: clamp(P.minutes + gap * 10, P.minutes, 180) }); U.plan.dayCount = left; U.plan.catchUp = (P.catchUp || 0) + 1; U.plan.goal = P.goal; U.plan.topics = P.topics; U.plan.firstStart = P.firstStart || P.start; addTopicTasks(U.plan); saveU(); }
+  const base = P.baseMin || P.minutes; U.plan = buildPlan({ ...P, start: isoDay(), days: left, minutes: clamp(base + Math.min(gap, 6) * 10, base, 180) }); U.plan.baseMin = base; U.plan.dayCount = left; U.plan.catchUp = (P.catchUp || 0) + 1; U.plan.goal = P.goal; U.plan.topics = P.topics; U.plan.firstStart = P.firstStart || P.start; addTopicTasks(U.plan); saveU(); }
 function todayPlan() { const p = U.plan; if (!p) return null; return p.days?.[isoDay()] || null; }
 /* ───────── قفسهٔ دوره‌ها (مثل کتاب) و فهرست درس‌های هر دوره ───────── */
 const COVER = { intro: [350, 18, 'مقدماتی'], l1: [190, 220, 'سطح ۱'], l2: [140, 90, 'سطح ۲'], l3: [265, 300, 'سطح ۳'], owsb: [28, 48, 'واژه‌ها · پایه'], owsi: [230, 260, 'واژه‌ها · متوسط'], owsa: [300, 330, 'واژه‌ها · پیشرفته'], wsb: [28, 48, 'واژه‌ها ۱'], wsi: [230, 260, 'واژه‌ها ۲'] };
@@ -759,6 +759,7 @@ routes.course = id => {
 routes.home = () => {
   if (!lsGet('zd:tourDone:' + G.active, false) && !window.TEST_MODE) return go('guide');
   setTop('زبان رستا');
+  if (U.plan) { try { const md = missedDays(); if (md && U.plan.lastCatch !== isoDay()) { catchUpPlan(); U.plan.lastCatch = isoDay(); U.plan.missedNote = md; saveU(); } } catch (e) { console.warn(e); } }
   const cur = currentUnit(); const due = dueIds().length; const p = paceInfo(); const tp = todayPlan(); const L = U.log[isoDay()] || { xp: 0, min: 0 };
   const board = G.users.map(u => ({ u, d: userData(u.id) })).map(x => ({ ...x, w: weekXP(x.d) })).sort((a, b) => b.w - a.w);
   const tasks = (tp ? tp.tasks : [{ k: 'cards', t: `مرور ${faNum(due)} فلش‌کارت موعددار` }, { k: 'unit', t: `ادامهٔ درس «${cur.fa}»` }]).filter(t => !(t.k === 'cards' && !due)).concat(listenTasks());
@@ -771,9 +772,8 @@ routes.home = () => {
   </div>
   <div id="install-box">${installHTML()}</div>
   <div id="online-home"></div>
-  ${(() => { if (!U.plan) return ''; let md = missedDays(); if (md && U.plan.lastCatch !== isoDay()) { catchUpPlan(); U.plan.lastCatch = isoDay(); U.plan.missedNote = md; saveU(); } else if (U.plan.lastCatch === isoDay()) md = U.plan.missedNote || 0; if (!md) return ''; const end = addDays(U.plan.start, U.plan.dayCount - 1); return `<div class="notice stack"><b>⏰ ${faNum(md)} روز است که طبق برنامه درس نخوانده‌ای</b><span class="small">برای اینکه باز هم تا <b>${jLabel(end, true)}</b> به هدفت برسی، برنامه خودکار جبرانی شد: از امروز روزی <b>${faNum(U.plan.minutes)} دقیقه</b> لازم است. کارهای جامانده به روزهای بعد پخش شد.</span><div class="row"><a class="btn sm" href="#coach/advisor">🧭 مشورت با مشاور</a><a class="btn ghost sm" href="#plan">دیدن تقویم</a></div></div>`; })()}
+  ${(() => { if (!U.plan) return ''; const md = U.plan.lastCatch === isoDay() ? U.plan.missedNote || 0 : 0; if (!md) return ''; const end = addDays(U.plan.start, U.plan.dayCount - 1); return `<div class="notice stack"><b>⏰ ${faNum(md)} روز است که طبق برنامه درس نخوانده‌ای</b><span class="small">برای اینکه باز هم تا <b>${jLabel(end, true)}</b> به هدفت برسی، برنامه خودکار جبرانی شد: از امروز روزی <b>${faNum(U.plan.minutes)} دقیقه</b> لازم است. کارهای جامانده به روزهای بعد پخش شد.</span><div class="row"><a class="btn sm" href="#coach/advisor">🧭 مشورت با مشاور</a><a class="btn ghost sm" href="#plan">دیدن تقویم</a></div></div>`; })()}
   ${planGap() > 0 && !(U.plan?.lastCatch === isoDay() && U.plan?.missedNote) ? `<div class="notice stack"><b>⚠ ${faNum(planGap())} درس از برنامه‌ات عقبی</b><span class="small">هدفت عقب نمی‌افتد: برنامهٔ جبرانی همان تاریخ پایان را نگه می‌دارد و وقت روزانه را کمی بیشتر می‌کند.</span><button class="btn sm" id="cu" style="align-self:flex-start">ساخت برنامهٔ جبرانی</button></div>` : ''}
-  ${''}}
   ${G.users.length > 1 ? `<div class="sec">رقابت این هفته <small>کاربران این دستگاه</small></div>
   <div class="users">${board.map((x, i) => `<button class="ucard${x.u.id === G.active ? ' on' : ''}" data-u="${x.u.id}"><div class="row"><span style="font-weight:900;width:20px">${['🥇', '🥈', '🥉'][i] || faNum(i + 1)}</span><span class="avatar">${avHTML(x.u)}</span><b class="grow">${esc(x.u.name)}</b><span class="pill acc num">${faNum(x.w)}</span></div>
     <div class="small muted">درس ${faNum((ALL_UNITS.find(u => !x.d.units[u.id]?.mastered)?.idx ?? 0) + 1)} از ${faNum(ALL_UNITS.length)} · ${faNum(Object.values(x.d.srs).filter(s => s.box >= 4).length)} واژهٔ تثبیت‌شده · ${rankOf(x.d.xp)}</div>
@@ -1249,9 +1249,9 @@ function buildPlan({ start = isoDay(), days = 120, minutes = 60, target = 'l1', 
 /* هدف آزاد (نوشتنی یا صوتی) → برنامه */
 function parseGoalLocal(txt) {
   const t = txt.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)); const out = { target: /متوسط|سطح ?۳|سطح ?3|B1|پیشرفته/i.test(t) ? 'l3' : 'l1', topics: [] };
-  const mi = J_MONTHS.findIndex(m => t.includes(m)); if (mi >= 0) { let d = isoDay(); let last = null; for (let i = 0; i < 800; i++) { const x = addDays(isoDay(), i); const j = toJ(x); if (j.m === mi + 1) last = x; else if (last) break; } const mm = new RegExp('(\\d{1,2})\\s*' + J_MONTHS[mi]).exec(t); if (last) { if (mm && !/آخر/.test(t)) { const j0 = toJ(last); last = addDays(last, -(j0.d - +mm[1])); } out.days = Math.round((parseDay(last) - parseDay(isoDay())) / DAY) + 1; } }
+  const mi = J_MONTHS.findIndex(m => new RegExp('(?:^|[\\s\\d])' + m + '(?=$|[\\s.،,؟!])').test(t)); if (mi >= 0) { let d = isoDay(); let last = null; for (let i = 0; i < 800; i++) { const x = addDays(isoDay(), i); const j = toJ(x); if (j.m === mi + 1) last = x; else if (last) break; } const mm = new RegExp('(\\d{1,2})\\s*' + J_MONTHS[mi]).exec(t); if (last) { if (mm && !/آخر/.test(t)) { const j0 = toJ(last); last = addDays(last, -(j0.d - +mm[1])); } out.days = Math.round((parseDay(last) - parseDay(isoDay())) / DAY) + 1; if (out.days < 7) { const y = addDays(last, 365); out.days = Math.round((parseDay(y) - parseDay(isoDay())) / DAY) + 1; } } }
   const mh = /(\d+(?:\.\d+)?)\s*ساعت/.exec(t), mm2 = /(\d+)\s*دقیقه/.exec(t); if (mh) out.minutes = Math.round(+mh[1] * 60); else if (mm2) out.minutes = +mm2[1]; else if (/نیم ?ساعت/.test(t)) out.minutes = 30;
-  const tm = /ساعت\s*(\d{1,2})(?::(\d\d))?\s*(صبح|عصر|شب|بعدازظهر)?/.exec(t); if (tm && !mh) { let h = +tm[1]; if (/عصر|شب|بعدازظهر/.test(tm[3] || '') && h < 12) h += 12; out.reminder = String(h).padStart(2, '0') + ':' + (tm[2] || '00'); }
+  const tm = /ساعت\s*(\d{1,2})(?::(\d\d))?\s*(صبح|عصر|شب|بعدازظهر|بعد از ظهر)?/.exec(mh ? t.slice(0, mh.index) + ' '.repeat(mh[0].length) + t.slice(mh.index + mh[0].length) : t); if (tm && +tm[1] < 24) { let h = +tm[1]; if (/عصر|شب|ظهر/.test(tm[3] || '') && h < 12) h += 12; out.reminder = String(h).padStart(2, '0') + ':' + (tm[2] || '00'); }
   const m = t.match(/(?:زمینه|موضوع|مباحث|تاپیک)(?:ِ|‌ی)?\s*([^.،؛\n]+)/g) || []; m.forEach(x => x.replace(/^(?:زمینه|موضوع|مباحث|تاپیک)(?:ِ|‌ی)?\s*/, '').split(/\s*(?:،|,| و | یا |یا مثلا|مثلا)\s*/).map(y => y.replace(/^(?:های|ی)\s*/, '').replace(/\s*(کردن|هم|حتی|بشم|مسلط).*$/, '').trim()).filter(y => y.length > 1 && y.length < 25).forEach(y => out.topics.includes(y) || out.topics.push(y)));
   return out;
 }
@@ -1312,7 +1312,7 @@ async function goalParse(txt) {
   const g = parseGoalLocal(txt);
   if (hasAI() || firstKeyed()) try { const r = await ai({ max: 600, temp: 0.1, system: 'Extract a study goal. Today is ' + isoDay() + ' (Jalali ' + jLabel(isoDay(), true) + ').', messages: [{ role: 'user', content: `Learner goal (Persian): "${txt}". JSON {"target":"l1 (beginner/elementary) or l3 (up to intermediate)","endDate":"YYYY-MM-DD Gregorian or empty","minutes":minutes per day or 0,"reminder":"HH:MM or empty","topics":["topic names the learner wants to master, written in PERSIAN (Farsi script), e.g. ترید، پوشاک، خرید"]}` }] });
     if (r) { if (/^l[13]$/.test(r.target)) g.target = r.target; if (r.endDate && /^\d{4}-\d\d-\d\d$/.test(r.endDate)) { const d = Math.round((parseDay(r.endDate) - parseDay(isoDay())) / DAY) + 1; if (d > 6) g.days = d; } if (r.minutes > 9) g.minutes = r.minutes; if (/^\d\d:\d\d$/.test(r.reminder || '')) g.reminder = r.reminder; if (Array.isArray(r.topics) && r.topics.length) g.topics = r.topics.slice(0, 12); } } catch { }
-  g.days = g.days || (g.target === 'l1' ? 90 : 180); return g;
+  g.days = g.days > 6 ? g.days : (g.target === 'l1' ? 90 : 180); return g;
 }
 function goalReview(g) {
   const M = goalMath(g); const end = addDays(isoDay(), g.days - 1);
@@ -1382,7 +1382,7 @@ routes.plan = (mOffset = '0') => {
       const r = await ai({ system: 'You are an expert language-learning coach. Be realistic, motivating and specific.', messages: [{ role: 'user', content: `${learnerContext()}\nPlan: target ${P.target === 'l1' ? 'finish Intro+Level1 (20 units)' : 'finish up to B1+ (38 units)'} by ${addDays(P.start, P.dayCount - 1)}, ${P.minutes} min/day. Behind by ${gap} units, missed days ${behind}. Last 14 days study: ${last14}. Exam scores: ${Object.entries(U.units).map(([k, x]) => k + ':' + (x.best?.exam || '-')).join(', ')}.\nAdjust the plan. JSON {"minutes":30-180,"days":remaining days to keep or extend (integer),"advice":"Persian, human, 4-6 sentences: praise or honest push, predicted date for fluent speaking at this pace, what to focus on","focus":["Persian short items"]}` }] });
       $('#aim').innerHTML = `<div class="notice soft small stack">${esc(r.advice)}${r.focus?.length ? `<ul class="list">${r.focus.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}<button class="btn sm" id="apl">اعمال: ${faNum(r.minutes)} دقیقه در روز، ${faNum(r.days)} روز</button></div>`;
       say(r.advice, 'fa', gap > 0 ? 'encouraging' : 'proud');
-      $('#apl').onclick = () => { U.plan = buildPlan({ ...P, start: isoDay(), days: clamp(+r.days || 90, 14, 365), minutes: clamp(+r.minutes || P.minutes, 15, 240) }); U.plan.dayCount = clamp(+r.days || 90, 14, 365); saveU(); routes.plan(); };
+      $('#apl').onclick = () => { U.plan = buildPlan({ ...P, start: isoDay(), days: clamp(+r.days || 90, 14, 365), minutes: clamp(+r.minutes || P.minutes, 15, 240) }); U.plan.dayCount = clamp(+r.days || 90, 14, 365); U.plan.goal = P.goal; U.plan.topics = P.topics; U.plan.firstStart = P.firstStart || P.start; U.plan.baseMin = U.plan.minutes; addTopicTasks(U.plan); saveU(); routes.plan(); };
     } catch (e) { $('#aim').innerHTML = ''; aiErr(e); }
   };
   $('#ics').onclick = () => downloadICS(P);

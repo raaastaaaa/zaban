@@ -440,3 +440,11 @@ body.nopron .pron{display:none!important}
 .live-board[hidden],.cr-act[hidden],.cr-hw[hidden]{display:none!important}
 
 .cr-guest{display:flex;flex-direction:column;gap:2px;background:#e8f1ff;color:#152036;border-radius:12px;padding:10px 12px;border:2px solid #7aa7ff}
+.lc-custom{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:14px;background:color-mix(in srgb,var(--acc,#14b8a6) 8%,transparent);border:1px dashed color-mix(in srgb,var(--acc,#14b8a6) 40%,transparent)}
+.lc-list{display:flex;flex-wrap:wrap;gap:6px}
+.lt-box .en{direction:ltr}
+#lfix{display:flex;flex-direction:column;gap:6px}
+.lfx{padding:8px 10px;border-radius:12px;background:var(--card2,rgba(0,0,0,.03));border-inline-start:3px solid #e11d48;animation:lfxIn .35s ease}
+.lfx s{color:#e11d48;text-decoration:line-through;text-decoration-color:#e11d48;text-decoration-thickness:2px}
+.lfx .ok{color:#059669}.lfx .arr{opacity:.6;margin:0 4px}
+@keyframes lfxIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}

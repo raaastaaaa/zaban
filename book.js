@@ -33,7 +33,7 @@ routes.book = async (id, sec) => {
   setTop(sec ? `${BSEC[sec][1]} · درس ${faNum(n)}` : `درس ${faNum(n)}`, true);
   const v = view(); v.innerHTML = loading('درس را باز می‌کنم…');
   let L = null; try { L = u.track === 'ws' ? null : await lessonGet(u); } catch { } const P = await pronLevel(u.level);
-  if (location.hash.split('/')[1] !== id) return;
+  if (decodeURIComponent(location.hash.split('/')[1] || '') !== id) return;
   if (sec === 'conv' && !L?.conversation?.lines?.length || sec === 'read' && !L?.reading?.en || sec === 'gram' && !L?.grammar || sec === 'phr' && !(L?.phrasebook || []).length) return go('unit/' + id);
   const words = unitWords(u); const conv = L?.conversation; const g = L?.grammar;
   const acc = G.settings.accent === 'UK' ? 'UK' : 'US';

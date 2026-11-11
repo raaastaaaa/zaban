@@ -217,7 +217,7 @@ routes.gclass = (id) => {
 routes.verbs = async (cat = 'همه') => {
   setTop('افعال کاربردی', true); const v = view();
   const O = Object.assign({ dir: 'both', forms: true, ex: false, irr: false }, lsGet('zd:vopt', {})); const saveO = () => lsSet('zd:vopt', O);
-  const P = await (typeof pronLoad === 'function' ? pronLoad() : {}); const pr = t => { const x = typeof pronOf === 'function' ? pronOf(P, t) : ''; return x ? `<span class="pron">🗣 «${esc(x)}»</span>` : ''; };
+  const g0 = routeGen; const P = await (typeof pronLoad === 'function' ? pronLoad() : {}); if (g0 !== routeGen && !/^#verbs/.test(location.hash)) return; const pr = t => { const x = typeof pronOf === 'function' ? pronOf(P, t) : ''; return x ? `<span class="pron">🗣 «${esc(x)}»</span>` : ''; };
   if (cat.startsWith('⭐ ') && !myTopics()[cat.slice(2)]) setTimeout(() => { const q = $('#vtq'); if (q) { q.value = cat.slice(2); $('#vtf').requestSubmit(); } }, 50);
   const AV = allVerbs(); const CATS = [...new Set(AV.map(x => x.cat))];
   const list = AV.filter(x => (cat === 'همه' || x.cat === cat) && (!O.irr || x.irr));
@@ -294,14 +294,15 @@ routes.wtopics = async (topic = '') => {
     $('#wtf').onsubmit = e => { e.preventDefault(); const t = $('#wtq').value.trim(); if (t) go('wtopics/' + encodeURIComponent(t)); };
     return;
   }
-  let items = T[topic];
+  let items = T[topic]; let gen0 = routeGen;
   if (!items) {
     if (!hasAI() && !firstKeyed()) { v.innerHTML = '<div class="notice">ساختن موضوع تازه به هوش مصنوعی نیاز دارد.</div>'; return; }
-    v.innerHTML = loading(`همهٔ واژه‌ها و عبارت‌های «${topic}» را جمع می‌کنم…`);
+    v.innerHTML = loading(`همهٔ واژه‌ها و عبارت‌های «${topic}» را جمع می‌کنم…`); gen0 = routeGen;
     try { const r = await ai({ heavy: true, max: 7000, temp: 0.4, system: 'You are an expert English teacher for Persian speakers. Give the words and expressions native speakers really use, from formal to slang.', messages: [{ role: 'user', content: `Topic (Persian): "${topic}". Give a COMPLETE vocabulary list for this topic: nouns, verbs, adjectives, common phrases and chunks, from formal to everyday to slang, grouped logically. 30-50 items. JSON {"items":[{"en":"","fa":"natural Persian","group":"short Persian group name","register":"formal|neutral|informal|slang","use":"Persian: exactly when/with whom to use it, and how it differs from similar items","ex":"short natural sentence","exFa":"natural colloquial Persian translation"}]}` }] });
       items = (r.items || []).filter(x => x.en); if (!items.length) throw new Error('چیزی ساخته نشد؛ دوباره امتحان کن.'); T[topic] = items; lsSet('zd:wtopics:' + G.active, T);
-    } catch (e) { v.innerHTML = `<div class="card stack"><b>ساخته نشد</b><span class="small muted">${esc(e.message || '')}</span><button class="btn" onclick="routes.wtopics(${JSON.stringify(topic).replace(/"/g, '&quot;')})">دوباره</button></div>`; return aiErr(e); }
+    } catch (e) { if (gen0 !== routeGen) return; v.innerHTML = `<div class="card stack"><b>ساخته نشد</b><span class="small muted">${esc(e.message || '')}</span><button class="btn" onclick="routes.wtopics(${JSON.stringify(topic).replace(/"/g, '&quot;')})">دوباره</button></div>`; return aiErr(e); }
   }
+  if (gen0 !== routeGen) return;
   const RG = { formal: ['رسمی', 'acc'], neutral: ['خنثی', ''], informal: ['خودمونی', 'ok'], slang: ['عامیانه', 'bad'] };
   const hid = O.dir !== 'both'; const groups = [...new Set(items.map(x => x.group || ''))];
   v.innerHTML = `<div class="stack"><div class="card stack" style="gap:10px">
