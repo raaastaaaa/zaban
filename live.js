@@ -122,7 +122,7 @@ Today's plan tasks: ${(tp?.tasks || []).map(t => t.t).join('; ') || 'none'}.
 Their recent mistakes: ${mist || 'none yet'}.
 ${liveMemText()}
 ${typeof planContext === 'function' ? planContext() : ''}
-LANGUAGE POLICY: level A1 (Intro, first lessons) → about 70% Persian explanations, 30% English practice; A2 (Level 1) → 50/50, ask simple questions in English; B1 and above (Levels 2-3, Intermediate/Advanced vocabulary) → mostly English, Persian only for tricky points. Tell the student at the start how much English you will use today ("از این درس به بعد بیشتر انگلیسی حرف می‌زنم…").
+LANGUAGE POLICY: level A1 (Intro, first lessons) → about 70% Persian explanations, 30% English practice; A2 (Level 1) → 50/50, ask simple questions in English; B1 and above (Levels 2-3, Intermediate/Advanced vocabulary) → mostly English, Persian only for tricky points. Tell the student at the start, in one short sentence, how much Persian/English you will use today — consistent with the STUDENT'S CHOICE below if there is one.
 ${({ fa: 'STUDENT\'S CHOICE (overrides the level policy above): TEACH IN PERSIAN. Give ALL explanations, instructions, feedback, jokes and chat in natural, fluent Persian; use English only for the words, sentences and examples being taught and for the student\'s practice. Always translate new English into Persian.', mix: 'STUDENT\'S CHOICE: half Persian, half English — explain in Persian, practise and chat in simple English.', en: 'STUDENT\'S CHOICE: mostly English (immersion); use Persian only when the student is clearly stuck.' })[G.settings.teachLang || 'fa'] || ''}
 ACCENT: model every English word and sentence in ${acc} English${acc === 'British' ? ' (RP: non-rhotic r, clear t)' : ' (General American: rhotic r, flap t)'}, and when relevant point out how the other accent differs.
 ATMOSPHERE: the class must NEVER feel dry, stiff or formal. Be warm, friendly and fun like a favourite teacher who is also a friend: use colloquial Tehrani Persian («عزیزم»، «ایول»، «دمت گرم»، «آفرین بهت»), light jokes, playful teasing, real laughter, small stories from "your life", surprising facts about English and native culture, and lots of genuine praise. Use the students' own lives (job, family, hobbies they told you) in examples. Vary the rhythm: quick games, mini challenges, funny role-plays. Discipline (below) stays kind and humorous, never cold or bossy.
@@ -437,6 +437,7 @@ routes.live = (mode = 'lesson') => {
   $('#leng').onclick = e => { const b = e.target.closest('button'); if (!b || Live.on || Live.starting || Relay.on) return; G.settings.liveEngine = b.dataset.v; saveG('settings'); drawEng(); };
   drawEng(); const idle0 = ui.idle; ui.idle = () => { idle0(); drawEng(); };
   $('#lrmic').onclick = relayMicClick;
+  if (window.__liveAuto && Date.now() - window.__liveAuto < 8000 && mode === 'lesson') { window.__liveAuto = 0; setTimeout(() => { if (!Relay.on && !Live.on && $('#lgo')) relayStart(mode, ui); }, 300); }
   $('#lgo').onclick = () => Live.starting || Relay.starting ? null : Relay.on ? relayStop() : Live.on ? liveStop(ui) : engine() === 'gpt' ? $('#gpt').click() : engine() === 'relay' && !window.VR?.on ? relayStart(mode, ui) : liveStart(mode, ui);
   $$('[data-lm]', v).forEach(b => b.onclick = () => { if (Live.on) liveStop(ui, true); go('live/' + b.dataset.lm); });
   liveLessonText();
@@ -462,7 +463,7 @@ function teachThis(sel, title) {
   ready.then(() => { const b = bg.querySelector('#tt-gpt'); if (b) { b.disabled = false; b.textContent = '🤖 ChatGPT — کپی دستور و باز کردن ChatGPT'; } ['#tt-sh', '#tt-see'].forEach(k => { const x = bg.querySelector(k); if (x) x.disabled = false; }); });
   bg.querySelector('#tt-sh') && (bg.querySelector('#tt-sh').onclick = () => { if (P) sendToGPT(P, 'share'); });
   bg.querySelector('#tt-see').onclick = () => { if (P) showPromptSheet(P); };
-  bg.querySelector('#tt-gem').onclick = () => { G.settings.liveEngine = 'relay'; saveG('settings'); bg.remove(); go('live/lesson'); setTimeout(() => toast('درس آماده است؛ «📞 شروع کلاس» را بزن.', 5000), 400); };
+  bg.querySelector('#tt-gem').onclick = () => { G.settings.liveEngine = 'relay'; saveG('settings'); bg.remove(); window.__liveAuto = Date.now(); go('live/lesson'); };
   bg.querySelector('#tt-gpt').onclick = () => { if (P) sendToGPT(P); };
 }
 
