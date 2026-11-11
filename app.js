@@ -38,14 +38,19 @@ function jLabel(s, withYear = false) { const j = toJ(s); return `${faNum(j.d)} $
 const weekdayIdx = s => (parseDay(s).getDay() + 1) % 7; // شنبه = ۰
 
 /* ───────── داده‌ها و وضعیت ───────── */
-const CEFR_OF = { intro: 'A1', l1: 'A2', l2: 'A2+/B1', l3: 'B1', wsb: 'A1-A2', wsi: 'A2-B1' };
+const CEFR_OF = { intro: 'A1', l1: 'A2', l2: 'A2+/B1', l3: 'B1', owsb: 'A1-A2', owsi: 'B1-B2', owsa: 'B2-C1' };
 const ALL_UNITS = LEVELS.flatMap(L => L.units.map((u, i) => ({ ...u, n: i + 1, level: L.id, levelFa: L.fa, cefr: CEFR_OF[L.id] || 'A2' })));
 ALL_UNITS.forEach((u, i) => { u.idx = i; u.baseWords = parseWords(u.words || ''); });
 const WS_UNITS = WORD_TRACK.flatMap(L => L.units.map(u => ({ ...u, level: L.id, levelFa: L.fa, cefr: CEFR_OF[L.id] || 'A2', track: 'ws' })));
 WS_UNITS.forEach((u, i) => { u.idx = 2000 + i; u.wsi = i; u.baseWords = []; });
+/* واژه‌های Word Skills از فایل‌های آفلاین words/<سطح>.json (یک بار دانلود، بعد بدون اینترنت) */
+const WS_LOADED = {};
+function wsLoad(level) { if (!WORD_TRACK.some(l => l.id === level)) return Promise.resolve(); return WS_LOADED[level] || (WS_LOADED[level] = fetch(`words/${level}.json`).then(r => r.json()).then(j => { WS_UNITS.filter(u => u.level === level).forEach(u => { u.baseWords = parseWords(j[u.id] || ''); }); }).catch(() => { delete WS_LOADED[level]; })); }
+const wsLevelOf = id => WS_UNITS.find(u => u.id === id)?.level;
+setTimeout(() => WORD_TRACK.forEach(l => wsLoad(l.id)), 5000);
 const nextUnit = u => u.track === 'ws' ? WS_UNITS[u.wsi + 1] : u.idx < 1000 ? ALL_UNITS[u.idx + 1] : null;
 const currentWS = () => WS_UNITS.find(u => isOpen(u) && !isMastered(u)) || WS_UNITS[WS_UNITS.length - 1];
-function parseWords(txt) { return txt.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const [w, ipa, fa, img, pos, ex, reg, use] = l.split('|'); return { w, ipa, fa, img, pos, ex, reg, use }; }); }
+function parseWords(txt) { return txt.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const [w, ipa, fa, img, pos, ex, reg, use, exFa] = l.split('|'); return { w, ipa, fa, img, pos, ex, reg, use, exFa }; }); }
 const REG = { f: ['رسمی', 'acc'], n: ['خنثی؛ همه‌جا', ''], i: ['خودمونی', 'ok'], s: ['عامیانه', 'bad'] };
 const regPill = w => w.reg && REG[w.reg] ? ` <span class="pill ${REG[w.reg][1]}" title="سطح رسمی بودن">${REG[w.reg][0]}</span>` : '';
 const POS = { n: 'اسم', v: 'فعل', adj: 'صفت', adv: 'قید', prep: 'حرف اضافه', phr: 'عبارت', sent: 'جمله' };
@@ -151,7 +156,7 @@ function forgottenFromPrevious(cur) { // واژه‌های درس‌های قب�
 function unitState(u) { return U.units[u.id] || (U.units[u.id] = { steps: {}, best: {} }); }
 function isMastered(u) { return !!unitState(u).mastered; }
 function isOpen(u) {
-  if (u.track === 'ws') return u.wsi === 0 || isMastered(WS_UNITS[u.wsi - 1]);
+  if (u.track === 'ws') return true; // واژگان موضوعی مثل کتاب مرجع؛ همهٔ موضوع‌ها باز
   if (u.idx >= 1000) return true;
   if (u.idx === 0) return true;
   if (U.placement && u.idx <= U.placement.openTo) return true;
@@ -367,7 +372,7 @@ const EN_PACK = {};
 async function enPackIdx(acc) { if (!EN_PACK[acc]) EN_PACK[acc] = fetch(`audio/en/${acc}/index.json`).then(r => r.json()).then(j => ({ j, all: new Set(Object.values(j).flat()) })).catch(() => (delete EN_PACK[acc], null)); return EN_PACK[acc]; }
 const FA_PACK = {};
 async function faPackUrl(text) { const acc = G.settings.accent === 'UK' ? 'UK' : 'US'; if (!FA_PACK[acc]) FA_PACK[acc] = fetch(`audio/fa/${acc}/index.json`).then(r => r.json()).then(j => new Set(Object.values(j).flat())).catch(() => (delete FA_PACK[acc], null)); const ix = await FA_PACK[acc]; const h = hashStr((text || '').trim()); return ix?.has(h) ? `audio/fa/${acc}/${h}.mp3` : null; }
-async function enPackUrl(text) { const acc = G.settings.accent === 'UK' ? 'UK' : 'US'; const ix = await enPackIdx(acc); const h = hashStr((text || '').trim()); return ix?.all.has(h) ? `audio/en/${acc}/${h}.mp3` : null; }
+async function enPackUrl(text) { const acc = G.settings.accent === 'UK' ? 'UK' : 'US'; const ix = await enPackIdx(acc); if (!ix) return null; for (const t of [(text || '').trim(), (text || '').replace(/\s*\([^)]*\)/g, '').trim()]) { const h = hashStr(t); if (ix.all.has(h)) return `audio/en/${acc}/${h}.mp3`; } return null; }
 function playUrl(url, tok) { return new Promise(res => { if (tok !== speakToken) return res(); const done = () => { if (blobRes === done) blobRes = null; res(); }; blobRes = done; player.src = url; player.playbackRate = 1; player.onended = player.onerror = done; player.play().catch(done); }); }
 async function downloadEnPack(unitId, btn) {
   const out = {}; for (const acc of ['US', 'UK']) { const ix = await enPackIdx(acc); out[acc] = (ix?.j[unitId] || []).map(h => `audio/en/${acc}/${h}.mp3`); }
@@ -619,6 +624,7 @@ function router() {
   if (['unit', 'lesson', 'cards', 'quiz', 'teach', 'talk', 'dialog', 'exam', 'practice', 'sleep', 'myradio'].includes(r) && args[0]) { const gu = unitById(decodeURIComponent(args[0])); if (!gu) { location.hash = 'home'; return; } if (gu.idx < 1000 && !isOpen(gu)) { toast(`این درس هنوز قفل است؛ اول درس قبلی را با نمرهٔ ${faNum(G.settings.passScore)} قبول شو.`); location.hash = 'home'; return; } }
   if (['role', 'gclass'].includes(r) && !args[0]) { location.hash = r === 'role' ? 'chat' : 'grammar'; return; }
   $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', theater: 'library', practice: 'home', vision: 'home', rooms: 'chat', path: 'home', u: 'home', admin: 'me', dm: 'chat', grammar: 'tools', gclass: 'tools', verbs: 'tools', wtopics: 'tools', leitner: 'tools', lesson: 'home', listen: 'tools', vclass: 'tools', news: 'tools', sleep: 'home', myradio: 'chat', music: 'tools', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat', coach: 'chat' }[r] || r)));
+  { const a0 = decodeURIComponent(args[0] || ''); const lv = wsLevelOf(a0) || (r === 'course' && WORD_TRACK.some(l => l.id === a0) ? a0 : null); if (lv && !WS_UNITS.some(u => u.level === lv && u.baseWords.length)) { view().innerHTML = loading('واژه‌ها را باز می‌کنم…'); const h = location.hash; return wsLoad(lv).then(() => { if (location.hash === h) router(); }); } }
   (routes[r] || routes.home)(...args.map(decodeURIComponent));
 }
 addEventListener('hashchange', router);
@@ -725,7 +731,7 @@ function catchUpPlan() { const P = U.plan; const end = addDays(P.start, P.dayCou
   U.plan = buildPlan({ ...P, start: isoDay(), days: left, minutes: clamp(P.minutes + gap * 10, P.minutes, 180) }); U.plan.dayCount = left; U.plan.catchUp = (P.catchUp || 0) + 1; U.plan.goal = P.goal; U.plan.topics = P.topics; U.plan.firstStart = P.firstStart || P.start; addTopicTasks(U.plan); saveU(); }
 function todayPlan() { const p = U.plan; if (!p) return null; return p.days?.[isoDay()] || null; }
 /* ───────── قفسهٔ دوره‌ها (مثل کتاب) و فهرست درس‌های هر دوره ───────── */
-const COVER = { intro: [350, 18, 'مقدماتی'], l1: [190, 220, 'سطح ۱'], l2: [140, 90, 'سطح ۲'], l3: [265, 300, 'سطح ۳'], wsb: [28, 48, 'واژه‌ها ۱'], wsi: [230, 260, 'واژه‌ها ۲'] };
+const COVER = { intro: [350, 18, 'مقدماتی'], l1: [190, 220, 'سطح ۱'], l2: [140, 90, 'سطح ۲'], l3: [265, 300, 'سطح ۳'], owsb: [28, 48, 'واژه‌ها · پایه'], owsi: [230, 260, 'واژه‌ها · متوسط'], owsa: [300, 330, 'واژه‌ها · پیشرفته'], wsb: [28, 48, 'واژه‌ها ۱'], wsi: [230, 260, 'واژه‌ها ۲'] };
 const courseUnits = id => LEVELS.some(l => l.id === id) ? ALL_UNITS.filter(u => u.level === id) : WS_UNITS.filter(u => u.level === id);
 function courseCover(id, big) {
   const [h1, h2, name] = COVER[id] || [200, 230, '']; const Lv = [...LEVELS, ...WORD_TRACK].find(l => l.id === id) || {};
@@ -743,9 +749,9 @@ routes.course = id => {
   const us = courseUnits(id); if (!us.length) return go('path');
   setTop((COVER[id] || [])[2] || 'دوره', true);
   view().innerHTML = `<div class="stack"><div class="course-head">${courseCover(id, true)}</div>
-  <div class="lesson-list">${us.map((u, i) => { const open = isOpen(u), m = isMastered(u), cur = !m && open && (u.track === 'ws' ? u.id === currentWS().id : u.idx === currentUnit().idx);
-    return `<a class="lrow${open ? '' : ' locked'}${cur ? ' current' : ''}" href="${open ? '#unit/' + u.id : 'javascript:void 0'}" ${open ? '' : `onclick="toast('این درس بعد از قبولی در درس قبل باز می‌شود.')"`}>
-      <span class="lr-ic" style="--h:${u.hue}">${esc(u.icon)}</span><div class="grow"><b>درس ${faNum(i + 1)}</b><div class="small">${esc(u.fa)}</div><div class="tiny muted en">${esc(u.en)}</div></div>
+  <div class="lesson-list">${us.map((u, i) => { const hd = u.sec && u.sec !== us[i - 1]?.sec ? `<div class="lr-sec">${esc(u.sec)}</div>` : ''; const open = isOpen(u), m = isMastered(u), cur = !m && open && (u.track === 'ws' ? u.id === currentWS().id : u.idx === currentUnit().idx);
+    return hd + `<a class="lrow${open ? '' : ' locked'}${cur ? ' current' : ''}" href="${open ? '#unit/' + u.id : 'javascript:void 0'}" ${open ? '' : `onclick="toast('این درس بعد از قبولی در درس قبل باز می‌شود.')"`}>
+      <span class="lr-ic" style="--h:${u.hue}">${esc(u.icon)}</span><div class="grow"><b>درس ${faNum(i + 1)}</b><div class="small">${esc(u.fa)}</div><div class="tiny muted en">${esc(u.en)}${u.baseWords?.length ? ` · ${faNum(u.baseWords.length)} واژه` : ''}</div></div>
       <span class="lr-st">${m ? '<span class="pill ok">✓</span>' : cur ? '<span class="pill acc">ادامه</span>' : open ? '' : '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 8V7a3 3 0 0 1 6 0v3zm3 4a2 2 0 0 1 1 3.7V19h-2v-1.3A2 2 0 0 1 12 14z"/></svg>'}</span></a>`; }).join('')}</div></div>`;
   $('.lrow.current')?.scrollIntoView({ block: 'center' });
 };
@@ -1220,7 +1226,7 @@ function buildPlan({ start = isoDay(), days = 120, minutes = 60, target = 'l1', 
   const studyDays = []; for (let i = 0; i < days; i++) { const d = addDays(start, i); if (weekdayIdx(d) !== review) studyDays.push(d); }
   const per = Math.max(2, Math.floor(studyDays.length / Math.max(1, units.length)));
   const out = {}; let k = 0;
-  const wsFrom = currentWS().wsi; const wsList = WS_UNITS.slice(wsFrom, target === 'l1' ? WS_UNITS.findIndex(u => u.level === 'wsi') : WS_UNITS.length);
+  const wsFrom = currentWS().wsi; const wsList = WS_UNITS.slice(wsFrom, target === 'l1' ? WS_UNITS.findIndex(u => u.level === 'owsi') : WS_UNITS.findIndex(u => u.level === 'owsa'));
   const wsPer = Math.max(2, Math.floor(studyDays.length / Math.max(1, wsList.length)));
   units.forEach((u, ui) => {
     for (let j = 0; j < per && k < studyDays.length; j++, k++) {
@@ -1290,7 +1296,7 @@ function bindGoal() {
 /* بررسی شدنی بودن هدف و پیشنهاد برنامه پیش از گذاشتن در تقویم */
 function goalMath(g) {
   const unitsLeft = Math.max(0, (g.target === 'l1' ? ALL_UNITS.filter(u => u.level === 'intro' || u.level === 'l1').length : ALL_UNITS.length) - currentUnit().idx);
-  const wsTarget = WS_UNITS.filter(u => g.target === 'l1' ? u.level === WORD_TRACK[0]?.id : u.level !== WORD_TRACK[WORD_TRACK.length - 1]?.id || WORD_TRACK.length < 3);
+  const wsTarget = WS_UNITS.filter(u => g.target === 'l1' ? u.level === 'owsb' : u.level !== 'owsa');
   const wsWords = wsTarget.reduce((a, u) => a + (unitWords(u).length || 30), 0) + g.topics.length * 40;
   const study = Math.max(1, Math.round(g.days * 6 / 7));
   const wpd = Math.ceil(wsWords / study), upw = unitsLeft / (study / 6);

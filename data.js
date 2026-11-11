@@ -733,44 +733,4 @@ const SCENARIOS = [
 
 /* مسیر «واژگان موضوعی» — هم‌تراز با سرفصل‌های رایج کتاب‌های واژگان (پایه و متوسط).
    لغات هر سرفصل با یک دکمه توسط هوش مصنوعی ساخته می‌شود؛ محتوا تألیف خود برنامه است. */
-const WORD_TRACK = [
-{ id:'wsb', fa:'واژگان موضوعی · پایه', en:'Word Skills · Basic', units:[
-['ws-numbers','Numbers & Quantities','اعداد و مقادیر','🔢','اعداد، کسرها، درصد و some/many/a lot of'],
-['ws-time','Telling the Time & Dates','ساعت و تاریخ','🕰️','گفتن ساعت و تاریخ؛ at/on/in'],
-['ws-countries','Countries & Nationalities','کشورها و ملیت‌ها','🌍','نام کشور، ملیت و زبان'],
-['ws-personal','Personal Information','اطلاعات شخصی','🪪','پر کردن فرم: نام، نشانی، تاریخ تولد، وضعیت تأهل'],
-['ws-describe','Describing People','توصیف افراد','🧑','ظاهر و سن؛ قد، وزن، مو، چشم'],
-['ws-accessories','Clothes & Accessories','لباس و لوازم','👜','جنس و طرح لباس؛ wear/carry'],
-['ws-cooking','Cooking & Recipes','آشپزی و دستور غذا','🍳','افعال آشپزی: boil, fry, chop, mix'],
-['ws-shops','Shops & Shopping','مغازه‌ها و خرید','🏬','نام مغازه‌ها، قیمت، پرداخت، تخفیف'],
-['ws-household','Things in the House','وسایل خانه','🧺','وسایل آشپزخانه، حمام و کارهای خانه'],
-['ws-freetime','Free Time','اوقات فراغت','🎲','سرگرمی‌ها؛ go/play/do + فعالیت'],
-['ws-holidays','Holidays','تعطیلات','🏝️','انواع سفر و اقامت'],
-['ws-placestown','Places in Town','مکان‌های شهر','🏙️','ساختمان‌ها و خدمات شهری'],
-['ws-phone','Phone & Internet','تلفن و اینترنت','📱','تماس، پیام، اپ، رمز، اتصال'],
-['ws-verbs','Common Verbs: get, have, make, do, take','افعال پرکاربرد','🔁','کاربردهای اصلی get, have, make, do, take'],
-['ws-opposites','Common Adjectives & Opposites','صفت‌های پرکاربرد و متضادها','↔️','big/small, cheap/expensive و…'],
-['ws-prepositions','Prepositions of Place & Time','حروف اضافهٔ مکان و زمان','📍','in, on, at, under, between, during'],
-['ws-linking','Linking Words','کلمات ربط','🔗','and, but, because, so, then, also']
-].map(([id,en,fa,icon,gram],i)=>({id,en,fa,icon,hue:(i*37)%360,gram:'تمرکز واژگانی: '+gram,talk:'با واژه‌های «'+fa+'» دربارهٔ زندگی خودت چند جمله بگو.'}))},
-{ id:'wsi', fa:'واژگان موضوعی · متوسط', en:'Word Skills · Intermediate', units:[
-['ws-phrasal','Everyday Phrasal Verbs','افعال چندبخشی روزمره','🧩','get up, look for, turn off, find out…'],
-['ws-collocations','Collocations: make, do, take, have','همنشین‌ها','🤝','make a decision, do homework, take a break'],
-['ws-wordform','Word Formation','ساخت واژه','🏗️','پیشوند و پسوند: un-, re-, -ful, -less, -ment'],
-['ws-personality','Personality','شخصیت','🎭','صفت‌های اخلاقی مثبت و منفی'],
-['ws-relationships','Relationships','روابط','💞','دوستی، آشنایی، اختلاف، آشتی'],
-['ws-money','Money','پول','💰','قرض، پس‌انداز، قسط، هزینه‌ها'],
-['ws-homeproblems','Problems at Home','مشکلات خانه','🔧','خرابی، تعمیر، نشتی، قطعی برق'],
-['ws-travelproblems','Travel Problems','مشکلات سفر','🧳','تأخیر، گم شدن بار، لغو پرواز'],
-['ws-media','Media & News','رسانه و اخبار','📰','انواع رسانه و خبر'],
-['ws-technology','Technology','فناوری','💻','دستگاه‌ها، نرم‌افزار، مشکلات فنی'],
-['ws-environment','The Environment','محیط زیست','🌱','آلودگی، بازیافت، انرژی'],
-['ws-business','Business & Meetings','کسب‌وکار و جلسه','📊','جلسه، پیشنهاد، توافق، مهلت'],
-['ws-complaints','Complaints & Customer Service','شکایت و خدمات مشتری','🛎️','بازپرداخت، تعویض، خسارت'],
-['ws-health','Health & Medicine','سلامت و درمان','💊','علائم، درمان، دارو، بیمه'],
-['ws-opinions','Opinions & Agreeing','نظر دادن و موافقت','💬','In my opinion, I agree, I see your point'],
-['ws-idioms','Common Idioms','اصطلاحات رایج','🎈','اصطلاحات پرکاربرد روزمره'],
-['ws-formal','Formal & Informal English','انگلیسی رسمی و خودمانی','👔','معادل‌های رسمی و غیررسمی'],
-['ws-discourse','Discourse Markers','نشانه‌های گفتمان','🗣️','actually, anyway, by the way, however']
-].map(([id,en,fa,icon,gram],i)=>({id,en,fa,icon,hue:(i*41+20)%360,gram:'تمرکز واژگانی: '+gram,talk:'با واژه‌های «'+fa+'» دربارهٔ تجربه‌های خودت صحبت کن.'}))}
-];
+const WORD_TRACK = WS_META.map((L, li) => ({ id: L.id, fa: L.fa, en: L.en, cefr: L.cefr, units: L.units.map(([id, en, fa, icon, sec], i) => ({ id, en, fa, icon, sec, hue: (i * 37 + li * 90) % 360, gram: 'واژگان موضوعی: ' + sec, talk: 'با واژه‌های «' + fa + '» دربارهٔ زندگی و تجربه‌های خودت چند جمله بگو.' })) }));

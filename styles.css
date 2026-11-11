@@ -413,3 +413,5 @@ body:has(#bgp) .mini-play{bottom:calc(var(--nav) + 76px + env(safe-area-inset-bo
 
 body.nopron .pron{display:none!important}
 .book-bar button{font-size:16px}
+
+.lr-sec{background:var(--sunk);padding:6px 14px;font-size:13px;font-weight:800;color:var(--accent)}

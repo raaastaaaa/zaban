@@ -42,7 +42,7 @@ const Spatial = (() => {
 document.addEventListener('pointerdown', () => { try { Spatial.prep(); } catch { } }, { capture: true });
 
 /* ───── سطح و برنامهٔ شنیداری روزانه ───── */
-const CEFR = { intro: 'A1', l1: 'A2', l2: 'A2+', l3: 'B1', wsb: 'A2', wsi: 'B1' };
+const CEFR = { intro: 'A1', l1: 'A2', l2: 'A2+', l3: 'B1', owsb: 'A2', owsi: 'B1', owsa: 'B2' };
 const cefrNow = () => CEFR[currentUnit()?.level] || 'A2';
 function listenDiet() {
   const M = U.plan?.minutes || 30; const lv = cefrNow();
