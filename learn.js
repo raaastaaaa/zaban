@@ -315,7 +315,7 @@ routes.wtopics = async (topic = '') => {
   if (gen0 !== routeGen) return;
   const RG = { formal: ['رسمی', 'acc'], neutral: ['خنثی', ''], informal: ['خودمونی', 'ok'], slang: ['عامیانه', 'bad'] };
   const hid = O.dir !== 'both'; const groups = [...new Set(items.map(x => x.group || ''))];
-  setTimeout(() => { const b = $('#wtl'); if (b) b.onclick = () => teachThis({ topic: { title: topic, items: items.map(x => `${x.en} = ${x.fa}${x.reg ? ' [' + x.reg + ']' : ''}${x.use ? ' — ' + x.use : ''}`) } }, topic); }, 0);
+  setTimeout(() => { const b = $('#wtl'); if (b) b.onclick = () => teachThis({ topic: { title: topic, items: items.map(x => `${x.en} = ${x.fa}${x.register ? ' [' + x.register + ']' : ''}${x.use ? ' — ' + x.use : ''}${x.ex ? ` | e.g. "${x.ex}"${x.exFa ? ' (' + x.exFa + ')' : ''}` : ''}`) } }, topic); }, 0);
   v.innerHTML = `<div class="stack"><div class="card stack" style="gap:10px">
     <div class="seg" id="wacc">${[['US', '🇺🇸 آمریکایی'], ['UK', '🇬🇧 بریتانیایی']].map(([k, t]) => `<button data-v="${k}" class="${(G.settings.accent === 'UK' ? 'UK' : 'US') === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <div class="seg" id="wdir">${[['both', 'انگلیسی + فارسی'], ['en', 'انگلیسی ← فارسی'], ['fa', 'فارسی ← انگلیسی']].map(([k, t]) => `<button data-v="${k}" class="${O.dir === k ? 'on' : ''}">${t}</button>`).join('')}</div>

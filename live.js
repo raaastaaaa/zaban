@@ -311,7 +311,7 @@ routes.live = (mode = 'lesson') => {
   v.innerHTML = `<div class="stack">
   <div class="card stack gpt-card" id="lgpt" ${(G.settings.liveEngine || 'gemini') === 'gpt' ? '' : 'hidden'}><b>🎙 کلاس صوتی با ChatGPT (رایگان)</b>
     <ol class="small gpt-steps"><li>اگر خواستی، پایین همین صفحه انتخاب کن چه چیزی یاد بگیری (درس، واژه، گرامر یا موضوع دلخواه).</li><li>دکمهٔ سبز را بزن؛ طرح کامل درس کپی می‌شود و ChatGPT باز می‌شود.</li><li>در ChatGPT نگه دار و «Paste / چسباندن» را بزن و بفرست.</li><li>بعد دکمهٔ حالت صوتی 🎙 (کنار جای نوشتن) را بزن و حرف بزن. غلط‌های نوشتاری‌ات را با خط‌خوردگی ❌ و شکل درست ✅ تصحیح می‌کند.</li></ol>
-    <div class="row"><button class="btn" id="gpt">🚀 شروع کلاس در ChatGPT</button><button class="btn line sm" id="gptc">فقط کپی دستور</button></div>
+    <div class="row"><button class="btn" id="gpt">🚀 شروع کلاس در ChatGPT</button>${navigator.share ? '<button class="btn line sm" id="gpts">📤 فرستادن مستقیم</button>' : ''}<button class="btn line sm" id="gptc">👁 دیدن و کپی دستی</button></div>
     <span class="tiny muted">${mode === 'group' ? 'برای کلاس گروهی: یک نفر ChatGPT را روی بلندگو باز کند و همه کنار هم باشید؛ هر کس قبل از حرف زدن اسمش را بگوید.' : 'برنامهٔ امروز، اشتباه‌های قبلی و حافظهٔ کلاس‌هایت هم به ChatGPT داده می‌شود.'}</span></div>
   <div class="live-card"><div class="live-av" id="lav"><span>👩‍🏫</span><i></i></div><b id="lst">${esc(G.settings.teacher)} آماده است</b><span class="small" id="lclk">${faNum(Math.round(L.live || 0))} دقیقه کلاس زندهٔ امروز</span>
     <div class="seg eng-seg" id="leng">${[['gemini', '✨ Gemini'], ['gpt', '🤖 ChatGPT']].map(([k, t]) => `<button data-v="${k}" class="${(G.settings.liveEngine || 'gemini') === k ? 'on' : ''}">${t}</button>`).join('')}</div>
@@ -439,10 +439,10 @@ routes.live = (mode = 'lesson') => {
   const GPT_ADAPT = GPT_ADAPT_TXT;
   const gptPrompt = async () => { if (mode === 'lesson' || mode === 'group') { try { await liveLessonText(); } catch { } } return livePrompt(mode) + '\n' + GPT_ADAPT; };
   let GPT_P = ''; const gptRefresh = () => gptPrompt().then(p => GPT_P = p).catch(() => { }); gptRefresh(); setInterval(() => { if ($('#gpt')) gptRefresh(); }, 4000);
-  $('#gpt').onclick = () => { const p = GPT_P || (livePrompt(mode) + '\n' + GPT_ADAPT); let ok = true; try { navigator.clipboard.writeText(p).catch(() => { ok = false; }); } catch { ok = false; }
-    const url = p.length < 7000 ? 'https://chatgpt.com/?q=' + encodeURIComponent(p) : 'https://chatgpt.com/';
-    if (!window.open(url, '_blank')) location.href = url; setTimeout(() => toast(ok ? '✅ طرح درس کپی شد. در ChatGPT «چسباندن» را بزن، بفرست و بعد دکمهٔ صدا 🎙 را بزن.' : 'در ChatGPT دستور را بچسبان («فقط کپی دستور»).', 8000), 50); };
-  $('#gptc').onclick = async () => { try { await navigator.clipboard.writeText(await gptPrompt()); toast('دستور کپی شد؛ در ChatGPT بچسبان و بفرست.'); } catch { toast('کپی نشد.'); } };
+  const curP = () => GPT_P || (livePrompt(mode) + '\n' + GPT_ADAPT);
+  $('#gpt').onclick = () => sendToGPT(curP());
+  $('#gpts') && ($('#gpts').onclick = () => sendToGPT(curP(), 'share'));
+  $('#gptc').onclick = () => showPromptSheet(curP());
   const myHash = location.hash; addEventListener('hashchange', function h() { if (location.hash !== myHash) { if (Live.on && Live.hash === myHash) liveStop(null, true); if (window.VR?.on && !/^#live\/group/.test(location.hash)) vrLeave(); removeEventListener('hashchange', h); } });
 };
 
@@ -453,8 +453,25 @@ function teachThis(sel, title) {
   const bg = sheet(`<div class="stack"><b>🎓 کلاس زنده: ${esc(title || '')}</b><span class="small muted">طرح کامل این درس (همهٔ موارد، تلفظ، کاربرد، تمرین تعاملی) به معلم داده می‌شود. با کدام معلم؟</span>
     <button class="btn" id="tt-gem">✨ Gemini — همین‌جا داخل برنامه حرف بزن</button>
     <button class="btn gpt-go" id="tt-gpt" disabled>⏳ آماده‌سازی دستور ChatGPT…</button>
-    <span class="tiny muted">ChatGPT: دستور کپی می‌شود؛ در ChatGPT «Paste» را بزن، بفرست و بعد دکمهٔ صدا 🎙 را بزن.</span></div>`);
-  ready.then(() => { const b = bg.querySelector('#tt-gpt'); if (b) { b.disabled = false; b.textContent = '🤖 ChatGPT — کپی دستور و باز کردن ChatGPT'; } });
+    ${navigator.share ? '<button class="btn line" id="tt-sh" disabled>📤 فرستادن مستقیم به اپ ChatGPT (اشتراک‌گذاری)</button>' : ''}<button class="btn ghost sm" id="tt-see" disabled>👁 دیدن و کپی دستی دستور</button>
+    <span class="tiny muted">ChatGPT: دستور کپی می‌شود؛ در ChatGPT «Paste» را بزن، بفرست و بعد دکمهٔ صدا 🎙 را بزن. با «فرستادن مستقیم»، از فهرست اشتراک‌گذاری ChatGPT را انتخاب کن.</span></div>`);
+  ready.then(() => { const b = bg.querySelector('#tt-gpt'); if (b) { b.disabled = false; b.textContent = '🤖 ChatGPT — کپی دستور و باز کردن ChatGPT'; } ['#tt-sh', '#tt-see'].forEach(k => { const x = bg.querySelector(k); if (x) x.disabled = false; }); });
+  bg.querySelector('#tt-sh') && (bg.querySelector('#tt-sh').onclick = () => { if (P) sendToGPT(P, 'share'); });
+  bg.querySelector('#tt-see').onclick = () => { if (P) showPromptSheet(P); };
   bg.querySelector('#tt-gem').onclick = () => { G.settings.liveEngine = 'gemini'; saveG('settings'); bg.remove(); go('live/lesson'); setTimeout(() => toast('درس آماده است؛ «📞 شروع کلاس» را بزن.', 5000), 400); };
-  bg.querySelector('#tt-gpt').onclick = () => { if (!P) return; try { navigator.clipboard.writeText(P); } catch { } const url = P.length < 7000 ? 'https://chatgpt.com/?q=' + encodeURIComponent(P) : 'https://chatgpt.com/'; if (!window.open(url, '_blank')) location.href = url; bg.remove(); toast('✅ دستور کپی شد. در ChatGPT «Paste» را بزن، بفرست و دکمهٔ صدا 🎙 را بزن.', 8000); };
+  bg.querySelector('#tt-gpt').onclick = () => { if (P) sendToGPT(P); };
 }
+
+/* کپی مطمئن (روی همهٔ گوشی‌ها و مرورگرهای داخل برنامه‌ها) و فرستادن مستقیم به ChatGPT */
+async function copyText(t) {
+  try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(t); return true; } } catch { }
+  try { const ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px'; document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0, t.length); const ok = document.execCommand('copy'); ta.remove(); if (ok) return true; } catch { }
+  return false; }
+function showPromptSheet(t) { const bg = sheet(`<div class="stack"><b>📋 دستور کلاس</b><span class="small muted">کپی خودکار در این مرورگر کار نکرد. داخل کادر را نگه دار ← «انتخاب همه» ← «کپی»، بعد در ChatGPT بچسبان.</span><textarea class="in" id="ptx" rows="8" readonly style="direction:ltr;font-size:13px">${esc(t)}</textarea><div class="row"><button class="btn" id="psel">انتخاب همه</button><a class="btn line" href="https://chatgpt.com/" target="_blank" rel="noopener">باز کردن ChatGPT</a></div></div>`);
+  const ta = bg.querySelector('#ptx'); bg.querySelector('#psel').onclick = () => { ta.focus(); ta.select(); ta.setSelectionRange(0, t.length); try { document.execCommand('copy') && toast('کپی شد ✅'); } catch { } }; }
+async function sendToGPT(p, how) {
+  if (how === 'share' && navigator.share) { try { await navigator.share({ text: p }); return; } catch (e) { if (e?.name === 'AbortError') return; } }
+  const ok = await copyText(p);
+  if (!ok) { showPromptSheet(p); return; }
+  const url = p.length < 7000 ? 'https://chatgpt.com/?q=' + encodeURIComponent(p) : 'https://chatgpt.com/';
+  if (!window.open(url, '_blank')) location.href = url; toast('✅ دستور کپی شد. در ChatGPT «Paste / چسباندن» را بزن، بفرست و بعد دکمهٔ صدا 🎙 را بزن.', 8000); }
