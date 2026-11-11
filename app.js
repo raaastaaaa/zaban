@@ -44,7 +44,7 @@ WS_UNITS.forEach((u, i) => { u.idx = 2000 + i; u.wsi = i; u.baseWords = []; });
 const nextUnit = u => u.track === 'ws' ? WS_UNITS[u.wsi + 1] : u.idx < 1000 ? ALL_UNITS[u.idx + 1] : null;
 const currentWS = () => WS_UNITS.find(u => isOpen(u) && !isMastered(u)) || WS_UNITS[WS_UNITS.length - 1];
 function parseWords(txt) { return txt.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const [w, ipa, fa, img, pos, ex] = l.split('|'); return { w, ipa, fa, img, pos, ex }; }); }
-const POS = { n: 'اسم', v: 'فعل', adj: 'صفت', adv: 'قید', prep: 'حرف اضافه', phr: 'عبارت' };
+const POS = { n: 'اسم', v: 'فعل', adj: 'صفت', adv: 'قید', prep: 'حرف اضافه', phr: 'عبارت', sent: 'جمله' };
 
 const DEFAULT_SETTINGS = {
   brain: 'gemini',
@@ -183,7 +183,7 @@ const PROVIDERS = {
 const hasAI = () => !!G.settings.prov[G.settings.brain]?.key;
 function firstKeyed() { const p = G.settings.prov; return ['gemini', 'groq', 'anthropic', 'openai', 'openrouter', 'custom'].find(k => p[k]?.key); }
 
-async function ai({ system, messages, json = true, images = [], max = 1400, temp = 0.8 }) {
+async function ai({ system, messages, json = true, images = [], max = 1400, temp = 0.8, heavy = false }) {
   let pv = G.settings.brain; if (!G.settings.prov[pv]?.key) pv = firstKeyed();
   if (!pv) throw new Error('NOKEY');
   const c = G.settings.prov[pv];
@@ -193,7 +193,7 @@ async function ai({ system, messages, json = true, images = [], max = 1400, temp
     const contents = messages.map((m, i) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }, ...(i === messages.length - 1 ? images.map(im => ({ inlineData: { mimeType: im.mime, data: im.b64 } })) : [])] }));
     const gc = { temperature: temp, maxOutputTokens: max };
     if (json) gc.responseMimeType = 'application/json';
-    const d = await gemFetch([c.model, ...GEM_FALLBACK], 'generateContent', { systemInstruction: { parts: [{ text: sys }] }, contents, generationConfig: gc }, c.key);
+    const d = await gemFetch(heavy ? ['gemini-3.5-flash', 'gemini-flash-latest', c.model, ...GEM_FALLBACK] : [c.model, ...GEM_FALLBACK], 'generateContent', { systemInstruction: { parts: [{ text: sys }] }, contents, generationConfig: gc }, c.key);
     text = d.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
   } else if (pv === 'anthropic') {
     const msgs = messages.map((m, i) => ({ role: m.role, content: i === messages.length - 1 && images.length ? [...images.map(im => ({ type: 'image', source: { type: 'base64', media_type: im.mime, data: im.b64 } })), { type: 'text', text: m.content }] : m.content }));
@@ -623,9 +623,9 @@ routes.unit = (id, sub) => {
   <div id="ua"></div><div class="stack" id="ub"><button class="btn ghost sm" id="mkaudio">🎧 صوت کامل درس (واژه‌ها + مکالمه) برای گوش دادن آفلاین و دانلود</button></div></div>
   ${!words.length ? `<div class="notice">لغات این سرفصل هنوز ساخته نشده. با یک دکمه هوش مصنوعی همهٔ واژه‌ها و افعال کاربردی‌اش را می‌سازد.</div>` : ''}
   <ul class="steps">${STEPS.map((s, i) => `<li><a class="step${st.steps[s.k] || (s.k === 'exam' && st.mastered) ? ' done' : ''}" href="#${s.k === 'words' ? 'unit/' + u.id + '/w' : s.k + '/' + u.id}"><span class="n">${st.steps[s.k] || (s.k === 'exam' && st.mastered) ? '✓' : faNum(i + 1)}</span><span class="grow"><b>${s.ic} ${s.fa}</b><br><span class="small muted">${s.d}</span></span></a></li>`).join('')}</ul>
-  <div class="sec">واژه‌ها و افعال <small>${faNum(words.length)} مورد</small><span class="grow"></span><button class="btn ghost sm" id="more">${words.length ? '+ تکمیل لغات با هوش مصنوعی' : 'ساخت لغات این درس'}</button></div>
+  <div class="sec">واژه‌ها و افعال <small>${faNum(words.length)} مورد</small><span class="grow"></span><button class="btn ghost sm" id="more">${words.length ? '+ بانک کامل لغات، افعال و جمله‌ها' : 'ساخت بانک کامل لغات این درس'}</button></div>
   <div class="row"><button class="btn sm" id="playall">${I.spk} پخش همه</button><span class="small muted">رنگ نقطه: نارنجی = تازه، فیروزه‌ای = در حال تثبیت، سبز = تثبیت‌شده</span></div>
-  <div class="words" id="wl">${words.map(w => wordRow(u, w)).join('')}</div></div>`;
+  <div class="stack" id="wl">${(() => { const groups = {}; words.forEach(w => (groups[w.g || 'واژه‌های اصلی درس'] = groups[w.g || 'واژه‌های اصلی درس'] || []).push(w)); return Object.entries(groups).map(([g, ws]) => `<details class="card" ${Object.keys(groups).length < 3 ? 'open' : ''}><summary>${esc(g)} <span class="pill">${faNum(ws.length)}</span></summary><div class="words" style="margin-top:8px">${ws.map(w => wordRow(u, w)).join('')}</div></details>`).join(''); })()}</div></div>`;
   bindWordRows(u); autoImages(view());
   $('#whyb') && ($('#whyb').onclick = async () => { if (needAI($('#why'))) return; $('#why').innerHTML = loading(); try { const r = await ai({ system: 'You are a motivating Persian-speaking English teacher.', messages: [{ role: 'user', content: `${learnerContext(u)}\n\nIn Persian, in 3 short sentences, tell this learner why the unit "${u.en}" (grammar: ${u.gram}) is useful for their real life in Oman and how it moves them toward fluent speaking. JSON {"why":"..."}` }] }); G.cache['why:' + u.id] = r.why; saveG('cache'); $('#why').innerHTML = `<div class="notice soft small">${esc(r.why)}</div>`; say(r.why, 'fa', 'encouraging'); } catch (e) { aiErr(e); $('#why').innerHTML = ''; } });
   $('#more').onclick = () => expandWords(u);
@@ -650,12 +650,23 @@ function bindWordRows(u) {
 async function expandWords(u) {
   if (needAI(view().querySelector('.words') || view())) return;
   const have = unitWords(u).map(w => w.w);
-  const bg = sheet(loading('هوش مصنوعی در حال ساخت فهرست کامل واژه‌ها و افعال کاربردی است…'));
+  const bg = sheet(loading('در حال طراحی سرفصل‌های بانک لغات…'));
+  const SYS = 'You are an expert ESL vocabulary-book author for Persian speakers (original content). Accuracy is critical: correct IPA (General American), natural Persian meanings, natural examples.';
   try {
-    const r = await ai({ max: 6000, temp: 0.4, system: 'You are an expert ESL syllabus designer for Persian speakers. Accuracy is critical: correct IPA (General American), correct and natural Persian meanings, natural example sentences.', messages: [{ role: 'user', content: `Unit topic: "${u.en}" (${u.fa}), level ${u.levelFa || 'any'}, grammar focus: ${u.gram}.\nAlready included: ${have.join(', ') || 'none'}.\nGive the remaining MOST USEFUL everyday vocabulary for this topic so the learner never meets a common word or expression in this situation that they don't know: nouns, VERBS, adjectives, AND every common set expression natives really say in this situation (formal and informal variants, typical questions and typical answers, e.g. for greetings: How's it going? / Not bad / Long time no see / Take care…). Aim for 30-45 new items, no duplicates, no rare words. JSON {"words":[{"w":"","ipa":"without slashes","fa":"Persian meaning","img":"one emoji","pos":"n|v|adj|adv|prep|phr","ex":"short natural example sentence"}]}` }] });
-    const list = (r.words || []).filter(w => w.w && w.fa); const ex = G.extra[u.id] || (G.extra[u.id] = { words: [] });
-    const seen = new Set(have.map(x => x.toLowerCase())); list.forEach(w => { if (!seen.has(w.w.toLowerCase())) { ex.words.push(w); seen.add(w.w.toLowerCase()); } });
-    saveG('extra'); bg.remove(); toast(`${faNum(list.length)} واژهٔ تازه اضافه شد.`); routes.unit(u.id);
+    const plan = await ai({ heavy: true, temp: 0.3, system: SYS, messages: [{ role: 'user', content: `Topic "${u.en}" (${u.fa}), level ${u.levelFa || 'A2'}, grammar ${u.gram}. Design 6-8 sub-topics that together cover EVERYTHING a learner needs to talk about this topic fluently in real life (things/nouns, all relevant verbs and phrasal verbs, describing adjectives, what one person says, what the other says, and a last group of complete ready-to-use sentences). JSON {"groups":[{"fa":"Persian sub-topic name","en":"English focus description","n":8-14}]}` }] });
+    const ex = G.extra[u.id] || (G.extra[u.id] = { words: [] }); const seen = new Set(have.map(x => x.toLowerCase())); let added = 0, done = 0;
+    const box = bg.querySelector('.sheet'); const upd = () => box.innerHTML = '<div class="grab"></div>' + loading(`در حال ساخت بانک لغات: ${faNum(done)} از ${faNum(plan.groups.length)} سرفصل · ${faNum(added)} مورد`);
+    upd();
+    for (const g of (plan.groups || []).slice(0, 9)) { // پشت‌سرهم، برای سهمیهٔ رایگان
+      for (let attempt = 0; attempt < 3; attempt++) try {
+        const sent = /sentence|جمل/i.test(g.en + g.fa);
+        const r = await ai({ heavy: true, max: 6000, temp: 0.4, system: SYS, messages: [{ role: 'user', content: `Topic "${u.en}", sub-topic "${g.en}" (${g.fa}). Give ${g.n || 10} of the most useful everyday ${sent ? 'complete natural sentences (questions and answers people really say)' : 'items (words, verbs, phrasal verbs, collocations or set expressions)'} for this sub-topic. Avoid these (already included): ${[...seen].slice(0, 120).join(', ')}. JSON {"words":[{"w":"","ipa":"no slashes","fa":"Persian","img":"one emoji","pos":"${sent ? 'sent' : 'n|v|adj|adv|prep|phr'}","ex":"short natural example${sent ? ' reply' : ''}"}]}` }] });
+        (r.words || []).forEach(w => { if (w.w && w.fa && !seen.has(w.w.toLowerCase())) { seen.add(w.w.toLowerCase()); ex.words.push({ ...w, g: g.fa }); added++; } });
+        break;
+      } catch { await sleep(4000 * (attempt + 1)); }
+      done++; upd(); saveG('extra');
+    }
+    saveG('extra'); bg.remove(); toast(`${faNum(added)} مورد در ${faNum(plan.groups.length)} سرفصل اضافه شد.`, 4000); routes.unit(u.id);
   } catch (e) { bg.remove(); aiErr(e); }
 }
 function imageSheet(u, w) {
@@ -1075,11 +1086,11 @@ routes.tool = k => (TOOLS[k] || routes.tools)();
 const TOOLS = {
   howto() {
     setTop('چطور بگم؟', true); const v = view();
-    v.innerHTML = `<div class="stack"><div class="card stack"><textarea id="q" class="in" placeholder="مثلاً: می‌شه لطفاً کولر رو یه کم کم کنی؟"></textarea><div class="row"><button class="btn grow" id="go">بگو چطور بگم</button><span id="mc"></span></div></div><div id="out"></div></div>`;
+    v.innerHTML = `<div class="stack"><div class="card stack"><textarea id="q" class="in" placeholder="هر طور که در فارسی محاوره می‌گویی بنویس؛ مثلاً: آقا اینو یه سایز بزرگ‌ترش رو ندارین؟"></textarea><input id="sit" class="in" placeholder="کجا می‌خواهی بگویی؟ (اختیاری) مثلاً: موقع خرید لباس، به همکار، به صاحبخانه"><div class="row"><button class="btn grow" id="go">بگو چطور بگم</button><span id="mc"></span></div></div><div id="out"></div></div>`;
     $('#mc').append(micButton(t => $('#q').value = t, 'fa-IR'));
     $('#go').onclick = async () => {
       const q = $('#q').value.trim(); if (!q) return; if (needAI($('#out'))) return; $('#out').innerHTML = loading();
-      try { const r = await ai({ system: 'You are a native English speaker and expert translator for Persian speakers. Give natural, idiomatic English (not literal).', messages: [{ role: 'user', content: `Persian: "${q}"\nAccent/variety: ${G.settings.accent === 'UK' ? 'British' : 'American'}.\nJSON {"formal":"","informal":"","alternatives":["",""],"notes":"Persian: key words/grammar and why it's said this way"}` }] });
+      try { const r = await ai({ system: 'You are a native English speaker and expert translator for Persian speakers. Give natural, idiomatic English (not literal).', messages: [{ role: 'user', content: `Persian (may be colloquial street Persian): "${q}"\nSituation: ${$('#sit').value.trim() || 'everyday life in Oman'}.\nAccent/variety: ${G.settings.accent === 'UK' ? 'British' : 'American'}.\nGive what a native speaker would ACTUALLY say in that situation (not a literal translation). JSON {"formal":"","informal":"","alternatives":["",""],"notes":"Persian: why natives say it this way in this situation, key words/grammar, and what NOT to say (literal translation mistakes)"}` }] });
         $('#out').innerHTML = `<div class="stack">${[['رسمی', r.formal], ['خودمانی', r.informal], ...(r.alternatives || []).map(a => ['جایگزین', a])].map(([l, t]) => `<div class="card row"><span class="pill">${l}</span><b class="en grow">${esc(t)}</b><button class="icon-btn" data-t="${esc(t)}">${I.spk}</button></div>`).join('')}<div class="notice soft small">${esc(r.notes)}</div></div>`;
         $$('[data-t]', v).forEach(b => b.onclick = () => say(b.dataset.t, 'en', 'cheerful', b)); addXP(3); saveU();
       } catch (e) { $('#out').innerHTML = ''; aiErr(e); }
@@ -1155,12 +1166,12 @@ const TOOLS = {
       const fa = $('#fa').value.trim() || 'درس من', en = $('#en').value.trim() || 'My Unit';
       if (!hasAI() && !firstKeyed()) return save(fa, en, lines.map(l => { const [w, m] = l.split(/\s*[-–—:=]\s*/); return { w, fa: m || '', ipa: '', img: '📘', pos: '', ex: '' }; }));
       const bg = sheet(loading('در حال کامل کردن لغت‌ها…'));
-      try { const r = await ai({ max: 6000, temp: 0.3, system: 'You are an accurate ESL lexicographer for Persian speakers.', messages: [{ role: 'user', content: `Complete each item (keep the learner's words exactly; use given Persian meanings if provided):\n${lines.join('\n')}\nJSON {"grammar":"likely grammar focus in Persian or —","talk":"speaking goal in Persian","icon":"emoji","words":[{"w":"","ipa":"","fa":"","img":"emoji","pos":"n|v|adj|adv|prep|phr","ex":""}]}` }] }); bg.remove(); save(fa, en, r.words, r.grammar, r.talk, r.icon); }
+      try { const r = await ai({ heavy: true, max: 12000, temp: 0.3, system: 'You are an accurate ESL lexicographer for Persian speakers.', messages: [{ role: 'user', content: `Complete each item (keep the learner's words exactly; use given Persian meanings if provided):\n${lines.join('\n')}\nJSON {"grammar":"likely grammar focus in Persian or —","talk":"speaking goal in Persian","icon":"emoji","words":[{"w":"","ipa":"","fa":"","img":"emoji","pos":"n|v|adj|adv|prep|phr","ex":""}]}` }] }); bg.remove(); save(fa, en, r.words, r.grammar, r.talk, r.icon); }
       catch (e) { bg.remove(); aiErr(e); }
     };
     $('#gen').onclick = async () => {
       const t = $('#tp').value.trim(); if (!t) return; if (needAI(v)) return; const bg = sheet(loading('در حال ساخت درس…'));
-      try { const r = await ai({ max: 6000, temp: 0.4, system: 'You are an expert ESL syllabus designer for Persian speakers. Accuracy is critical.', messages: [{ role: 'user', content: `Create a complete unit for the topic "${t}" for a learner at ${currentUnit().levelFa} level living in Oman: 25-35 most useful words, verbs and phrases. JSON {"en":"","fa":"","icon":"emoji","grammar":"suitable grammar focus in Persian","talk":"speaking goal in Persian","words":[{"w":"","ipa":"","fa":"","img":"emoji","pos":"n|v|adj|adv|prep|phr","ex":""}]}` }] }); bg.remove(); save(r.fa || t, r.en || t, r.words, r.grammar, r.talk, r.icon); }
+      try { const r = await ai({ heavy: true, max: 12000, temp: 0.4, system: 'You are an expert ESL syllabus designer for Persian speakers. Accuracy is critical.', messages: [{ role: 'user', content: `Create a complete unit for the topic "${t}" for a learner at ${currentUnit().levelFa} level living in Oman: 25-35 most useful words, verbs and phrases. JSON {"en":"","fa":"","icon":"emoji","grammar":"suitable grammar focus in Persian","talk":"speaking goal in Persian","words":[{"w":"","ipa":"","fa":"","img":"emoji","pos":"n|v|adj|adv|prep|phr","ex":""}]}` }] }); bg.remove(); save(r.fa || t, r.en || t, r.words, r.grammar, r.talk, r.icon); }
       catch (e) { bg.remove(); aiErr(e); }
     };
   }
