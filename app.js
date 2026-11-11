@@ -69,6 +69,8 @@ const G = { // سراسری (مشترک بین کاربران همین دستگ�
   img: lsGet('zd:img', {}),          // آدرس تصویر هر واژه
   cache: lsGet('zd:cache', {})       // دیالوگ‌ها، «چرا این درس» و…
 };
+const makeCode = () => 'ZD1.' + btoa(unescape(encodeURIComponent(JSON.stringify({ b: G.settings.brain, p: Object.fromEntries(Object.entries(G.settings.prov).filter(([, x]) => x.key)), v: G.settings.voiceFa, l: G.settings.listen }))));
+function useCode(c) { const d = JSON.parse(decodeURIComponent(escape(atob(c.trim().replace(/^ZD1\./, ''))))); deepMerge(G.settings.prov, d.p || {}); if (d.b) G.settings.brain = d.b; if (d.v) G.settings.voiceFa = d.v; if (d.l) G.settings.listen = d.l; saveG('settings'); }
 function deepMerge(a, b) { for (const k in b) { if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k])) a[k] = deepMerge(a[k] || {}, b[k]); else a[k] = b[k]; } return a; }
 const saveG = k => lsSet('zd:' + k, G[k]);
 
@@ -442,9 +444,10 @@ function viewWelcome() {
   <div class="today"><div class="big-ic">👋</div><b style="font-size:20px">به «زبان دوم» خوش آمدی</b><span class="muted">معلم هوشمندی که با تو فارسی حرف می‌زند، انگلیسی را از واژه تا مکالمهٔ روان قدم‌به‌قدم یادت می‌دهد و هیچ درسی را فراموش نمی‌کنی.</span></div>
   <div class="card stack"><label class="f">اسمت چیست؟<input id="nm" class="in" placeholder="مثلاً رستا" maxlength="24"></label>
   <div class="row" id="av">${AVATARS.map((a, i) => `<button class="icon-btn${i ? '' : ' on'}" data-a="${a}" style="font-size:20px">${a}</button>`).join('')}</div>
+  <label class="f">کد اتصال هوش مصنوعی (اگر کسی برایت فرستاده)<input id="cd" class="in" dir="ltr" placeholder="ZD1…"></label>
   <button class="btn wide" id="go">شروع</button></div></div>`;
   let av = AVATARS[0]; $$('#av button').forEach(b => b.onclick = () => { $$('#av button').forEach(x => x.classList.remove('on')); b.classList.add('on'); av = b.dataset.a; });
-  $('#go').onclick = () => { const n = $('#nm').value.trim(); if (!n) return toast('اسمت را بنویس.'); addUser(n, av); $('nav.bottom').hidden = false; go('placement'); router(); };
+  $('#go').onclick = () => { const n = $('#nm').value.trim(); if (!n) return toast('اسمت را بنویس.'); const c = $('#cd').value.trim(); if (c) { try { useCode(c); toast('هوش مصنوعی وصل شد ✓'); } catch { return toast('کد اتصال درست نیست؛ دوباره کپی کن.'); } } addUser(n, av); $('nav.bottom').hidden = false; go('placement'); router(); };
 }
 function addUser(name, avatar) { const u = { id: uid(), name, avatar, created: isoDay() }; G.users.push(u); saveG('users'); loadUser(u.id); saveU(); return u; }
 routes.users = () => {
@@ -1092,7 +1095,9 @@ routes.settings = () => {
   <div class="card stack"><b>مغز هوش مصنوعی</b><span class="small muted">هر چند کلید که داری بگذار؛ برنامه از «مغز اصلی» استفاده می‌کند و اگر کلیدش نبود، سراغ بعدی می‌رود. کلیدها فقط روی همین دستگاه ذخیره می‌شوند.</span>
   <label class="f">مغز اصلی<select class="in" id="brain">${Object.entries(PROVIDERS).map(([k, p]) => `<option value="${k}"${S.brain === k ? ' selected' : ''}>${p.fa}</option>`).join('')}</select></label>
   ${Object.entries(PROVIDERS).map(([k, p]) => `<details class="card" style="box-shadow:inset 0 0 0 1px var(--line)"${S.prov[k].key ? ' open' : ''}><summary>${p.fa} ${S.prov[k].key ? '<span class="pill ok">فعال</span>' : ''}</summary><div class="stack" style="margin-top:8px">${p.keyUrl ? `<a class="small" href="${p.keyUrl}" target="_blank" rel="noopener">گرفتن کلید ↗</a>` : ''}<input class="in" dir="ltr" type="password" autocomplete="off" placeholder="API key" data-k="${k}" value="${esc(S.prov[k].key)}"><input class="in" dir="ltr" placeholder="model" data-m="${k}" value="${esc(S.prov[k].model)}">${k === 'custom' ? `<input class="in" dir="ltr" placeholder="https://…/v1" data-b="custom" value="${esc(S.prov.custom.base)}">` : ''}</div></details>`).join('')}
-  <button class="btn ghost" id="test">آزمایش اتصال</button><div id="tr" class="small"></div></div>
+  <button class="btn ghost" id="test">آزمایش اتصال</button><div id="tr" class="small"></div>
+  <hr class="sep"><b>کد اتصال برای دستگاه‌ها و کاربران دیگر</b><span class="small muted">کد را بساز و فقط برای افراد مورد اعتماد بفرست؛ کلیدهای تو داخل این کد است. در دستگاه دیگر، کد را در صفحهٔ اول یا همین‌جا بچسبان.</span>
+  <div class="row"><button class="btn ghost sm" id="mkc">ساخت و کپی کد اتصال</button></div><textarea id="cc" class="in" dir="ltr" rows="2" placeholder="کد اتصال را اینجا بچسبان…"></textarea><button class="btn line sm" id="usc">وصل شدن با این کد</button></div>
 
   <div class="card stack"><b>صدا</b>
   <label class="f">لهجهٔ انگلیسی</label>${seg('accent', [['US', '🇺🇸 آمریکایی'], ['UK', '🇬🇧 بریتانیایی']], S.accent)}
@@ -1114,6 +1119,8 @@ routes.settings = () => {
   $$('[data-seg]').forEach(g => g.onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('button', g).forEach(x => x.classList.remove('on')); b.classList.add('on'); S[g.dataset.seg] = b.dataset.v; if (g.dataset.seg === 'theme') applyTheme(); saveG('settings'); });
   const collect = () => { S.brain = $('#brain').value; $$('[data-k]').forEach(i => S.prov[i.dataset.k].key = i.value.trim()); $$('[data-m]').forEach(i => S.prov[i.dataset.m].model = i.value.trim()); S.prov.custom.base = $('[data-b]').value.trim(); S.geminiVoice = $('#gv').value; S.openaiVoice = $('#ov').value; S.rate = +$('#rate').value; S.autoSpeak = $('#as').checked; S.pixabayKey = $('#pk').value.trim(); S.teacher = $('#tn').value.trim() || 'سارا'; S.passScore = clamp(+$('#ps').value || 95, 60, 100); saveG('settings'); };
   $('#rate').oninput = e => $('#rv').textContent = e.target.value;
+  $('#mkc').onclick = async () => { collect(); if (!firstKeyed()) return toast('اول یک کلید وارد کن.'); const c = makeCode(); $('#cc').value = c; try { await navigator.clipboard.writeText(c); toast('کد اتصال کپی شد؛ در واتساپ یا تلگرام بفرست.'); } catch { $('#cc').select(); toast('کد را از کادر زیر کپی کن.'); } };
+  $('#usc').onclick = () => { try { useCode($('#cc').value); toast('هوش مصنوعی وصل شد ✓'); routes.settings(); } catch { toast('کد اتصال درست نیست.'); } };
   $('#sv').onclick = () => { collect(); toast('ذخیره شد.'); };
   $('#test').onclick = async () => { collect(); $('#tr').innerHTML = loading('در حال آزمایش…'); try { const t0 = performance.now(); const r = await ai({ system: 'Reply briefly.', messages: [{ role: 'user', content: 'Say hello to a Persian learner in Persian. JSON {"hi":""}' }] }); $('#tr').innerHTML = `✅ وصل شد (${faNum(Math.round(performance.now() - t0))} میلی‌ثانیه): ${esc(r.hi)}`; } catch (e) { $('#tr').textContent = '❌ ' + (e.message === 'NOKEY' ? 'کلیدی وارد نشده' : e.message); } };
   $('#t1').onclick = e => { collect(); say('Hello! Nice to meet you. How are you today?', 'en', 'cheerful', e.currentTarget); };
