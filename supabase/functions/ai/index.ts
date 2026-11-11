@@ -67,9 +67,10 @@ Deno.serve(async (req) => {
     if (isAudio) { const d = await azureTTS(p); if (d) { await admin.rpc("add_ai_usage", { uid: user.id, d: today, amount: 0.0005 }); return json(d); } }
     else { const d = await chatFallback(p); if (d) { await admin.rpc("add_ai_usage", { uid: user.id, d: today, amount: 0.0002 }); return json(d); } }
   } catch (e) { last = String(e); }
-  return json({ error: last || "busy" }, 503);
+  return json({ error: last || "busy", fallbacks: fbErrors.splice(0) }, 503);
 });
 
+const fbErrors: string[] = [];
 // متن: Groq و OpenRouter (سازگار با OpenAI)؛ پاسخ به شکل پاسخ Gemini برگردانده می‌شود
 async function chatFallback(p: any) {
   if ((p.contents ?? []).some((c: any) => (c.parts ?? []).some((x: any) => x.inlineData))) return null; // عکس/صدا فقط با Gemini
@@ -83,15 +84,17 @@ async function chatFallback(p: any) {
     const sysA = (sys ? sys + "\n" : "") + (wantJson ? "Return ONLY valid JSON, no markdown fences." : "");
     const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "content-type": "application/json", "x-api-key": ak, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: Deno.env.get("ANTHROPIC_MODEL") ?? "claude-haiku-5-5", max_tokens: Math.min(p.generationConfig?.maxOutputTokens ?? 1400, 8000), temperature: Math.min(1, p.generationConfig?.temperature ?? 0.8), ...(sysA ? { system: sysA } : {}), messages: msgs.filter((m) => m.role !== "system") }) });
     if (r.ok) { const d = await r.json(); const t = (d.content ?? []).map((b: any) => b.text ?? "").join(""); if (t) return { candidates: [{ content: { role: "model", parts: [{ text: t }] } }], usageMetadata: {}, fallback: "anthropic" }; }
+    else fbErrors.push("anthropic " + r.status);
   }
   const providers = [
-    { key: Deno.env.get("GROQ_KEY"), url: "https://api.groq.com/openai/v1/chat/completions", model: Deno.env.get("GROQ_MODEL") ?? "llama-3.3-70b-versatile" },
-    { key: Deno.env.get("OPENROUTER_KEY"), url: "https://openrouter.ai/api/v1/chat/completions", model: Deno.env.get("OPENROUTER_MODEL") ?? "meta-llama/llama-3.3-70b-instruct:free" },
+    { key: Deno.env.get("GROQ_KEY"), url: "https://api.groq.com/openai/v1/chat/completions", models: (Deno.env.get("GROQ_MODEL") ?? "openai/gpt-oss-120b,llama-3.3-70b-versatile,qwen/qwen3-32b,meta-llama/llama-4-maverick-17b-128e-instruct").split(",") },
+    { key: Deno.env.get("OPENROUTER_KEY"), url: "https://openrouter.ai/api/v1/chat/completions", models: (Deno.env.get("OPENROUTER_MODEL") ?? "openrouter/free,meta-llama/llama-3.3-70b-instruct:free,deepseek/deepseek-chat-v3-0324:free").split(",") },
   ].filter((x) => x.key);
-  for (const pr of providers) {
-    const r = await fetch(pr.url, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + pr.key }, body: JSON.stringify({ model: pr.model, messages: msgs, temperature: p.generationConfig?.temperature ?? 0.8, max_tokens: Math.min(p.generationConfig?.maxOutputTokens ?? 1400, 8000), ...(wantJson ? { response_format: { type: "json_object" } } : {}) }) });
-    if (!r.ok) continue; const d = await r.json(); const t = d.choices?.[0]?.message?.content; if (!t) continue;
-    return { candidates: [{ content: { role: "model", parts: [{ text: t }] } }], usageMetadata: {}, fallback: pr.url };
+  for (const pr of providers) for (const model of pr.models) {
+    const r = await fetch(pr.url, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + pr.key }, body: JSON.stringify({ model: model.trim(), messages: msgs, temperature: p.generationConfig?.temperature ?? 0.8, max_tokens: Math.min(p.generationConfig?.maxOutputTokens ?? 1400, 8000), ...(wantJson ? { response_format: { type: "json_object" } } : {}) }) });
+    if (!r.ok) { fbErrors.push(pr.url.split("/")[2] + " " + model + " " + r.status); continue; }
+    const d = await r.json(); const t = d.choices?.[0]?.message?.content; if (!t) continue;
+    return { candidates: [{ content: { role: "model", parts: [{ text: t }] } }], usageMetadata: {}, fallback: pr.url.split("/")[2] + " " + model };
   }
   return null;
 }
