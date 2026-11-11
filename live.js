@@ -438,7 +438,7 @@ routes.live = (mode = 'lesson') => {
     Live.ws.send(JSON.stringify({ clientContent: { turns: [{ role: 'user', parts: [{ text: `[TYPED MESSAGE from ${n || 'a student'}]: ${msg}\n(Check it carefully. If it has ANY mistake — spelling, grammar, word choice, punctuation, capital letters — call correct_writing with the wrong part, the correct version and a short Persian reason, then reply.)` }] }], turnComplete: true } })); return true; };
   const sendTyped = () => { const i = $('#lti'); const t = i.value.trim(); if (!t) return; let n = mode === 'group' ? (window.VR?.on ? VR.name : '') : callMe(), msg = t; const m2 = !window.VR?.on && t.match(/^([^:：]{1,20})[:：]\s*(.+)$/); if (m2) { n = m2[1].trim(); msg = m2[2]; }
     if (window.VR?.on && !VR.host) { vrSend({ k: 'chat', n, t: msg }); ui.say('me', `✍️ ${msg}`); ui.say('end'); i.value = ''; return; }
-    if (Relay.on) { if (Relay.busy) return toast('یک لحظه صبر کن، معلم دارد جواب می‌دهد.'); Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); try { Relay.mr?.state === 'recording' && (Relay.mr.onstop = null, Relay.mr.stop()); } catch { } clearInterval(Relay.vad); i.value = ''; ui.say('me', `✍️ ${msg}`); ui.say('end'); liveLog('S', msg + ' ');
+    if (Relay.on) { if (Relay.busy || Relay.starting) { Relay.queued = { text: `[TYPED MESSAGE from ${n || 'the student'}]: ${msg}\n(If it has any real mistake, put it in "fix" and explain briefly.)` }; i.value = ''; ui.say('me', `✍️ ${msg}`); ui.say('end'); liveLog('S', msg + ' '); return toast('پیامت ثبت شد؛ معلم بعد از جواب فعلی‌اش به آن می‌رسد.'); } Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); try { Relay.mr?.state === 'recording' && (Relay.mr.onstop = null, Relay.mr.stop()); } catch { } clearInterval(Relay.vad); i.value = ''; ui.say('me', `✍️ ${msg}`); ui.say('end'); liveLog('S', msg + ' ');
       relayTurn({ text: `[TYPED MESSAGE from ${n || 'the student'}]: ${msg}\n(If it has any real mistake, put it in "fix" and explain briefly.)` }); return; }
     if (typedToTeacher(n, msg)) i.value = ''; };
   $('#ltb').onclick = sendTyped; $('#lti').onkeydown = e => { if (e.key === 'Enter') sendTyped(); };
@@ -511,12 +511,13 @@ NEW TOPIC REQUESTS: if at ANY moment the student asks you to teach a topic (e.g.
 If the audio is silent or unclear, kindly ask them to repeat.`;
 const RELAY_TEACH_START = '(PHASE 1 starts now. Greet the student warmly in 1-2 sentences, say today\'s topic, that this is a full class of about ' + (+G.settings.classMin || 60) + ' minutes and that you will first teach everything completely and then practise together, then teach the FIRST segment.)';
 const relayMin = () => +G.settings.classMin || 60;
+const langHint = () => ({ fa: ' LANGUAGE: the student chose PERSIAN — every explanation, comment, transition and joke MUST be in natural spoken Persian; English ONLY for the word/phrase/example being taught (always followed by its Persian meaning). Never speak whole English paragraphs.', mix: ' LANGUAGE: half Persian (explanations) and half simple English (practice).', en: ' LANGUAGE: mostly English; Persian only when the student is stuck.' })[G.settings.teachLang || 'fa'] || '';
 const relayEl = () => Math.round((Date.now() - (Live.started || Date.now())) / 60000);
 const RELAY_TIME = () => `(CLASS LENGTH: ${relayMin()} minutes in total; ${relayEl()} minutes have passed. Phase 1 (teaching) should take about ${Math.round(relayMin() * 0.6)} minutes, phase 2 (practice) the rest.)`;
-const relayTeachNext = () => `(PHASE 1: continue teaching the NEXT items that have not been taught yet — never repeat earlier items. ${RELAY_TIME()} If all items are taught but phase-1 time is not yet used, go DEEPER instead of finishing: more varied examples, short stories and mini-dialogues using the items, collocations and word families, related useful words that were not in the list, culture tips, common mistakes of Persian speakers, and quick recaps of earlier groups. Set done=true only when everything is taught AND about ${Math.round(relayMin() * 0.6)} minutes have passed (or the student asked to move on).)`;
+const relayTeachNext = () => langHint() + ` (PHASE 1: continue teaching the NEXT items that have not been taught yet — never repeat earlier items. ${RELAY_TIME()} If all items are taught but phase-1 time is not yet used, go DEEPER instead of finishing: more varied examples, short stories and mini-dialogues using the items, collocations and word families, related useful words that were not in the list, culture tips, common mistakes of Persian speakers, and quick recaps of earlier groups. Set done=true only when everything is taught AND about ${Math.round(relayMin() * 0.6)} minutes have passed (or the student asked to move on).)`;
 const RELAY_TEACH_NEXT = '(PHASE 1: continue teaching the next items.)';
 const RELAY_QA_START = '(PHASE 1 is finished. Start PHASE 2: tell the student warmly that now it is their turn — they can ask any question, then you will practise together. Ask your first short question.)';
-const relayQaHint = () => `(PHASE 2. ${RELAY_TIME()} Keep practising with varied activities until the class time is used; in the last 3 minutes do the quiz recap and say goodbye.)`;
+const relayQaHint = () => `(PHASE 2. ${RELAY_TIME()}${langHint()} Keep practising with varied activities until the class time is used; in the last 3 minutes do the quiz recap and say goodbye.)`;
 function relayB64(blob) { return new Promise(r => { const f = new FileReader(); f.onload = () => r(String(f.result).split(',')[1]); f.readAsDataURL(blob); }); }
 async function relayStart(mode, ui) {
   if (Relay.on || Relay.starting) return; Relay.starting = true; ui.connecting?.();
@@ -526,10 +527,10 @@ async function relayStart(mode, ui) {
   } catch { Relay.starting = false; ui.idle(); return toast('اجازهٔ میکروفون داده نشده؛ از تنظیمات مرورگر اجازه بده.'); }
   const C = window.AudioContext || window.webkitAudioContext; Relay.ctx = new C(); try { await Relay.ctx.resume(); } catch { }
   if (mode === 'lesson' || mode === 'group') { try { LIVE_LESSON = await liveLessonText(); } catch { } }
-  Object.assign(Relay, { on: true, starting: false, mode, hist: [], ui, sys: livePrompt(mode) + RELAY_ADAPT });
+  Object.assign(Relay, { on: true, starting: false, mode, hist: [], ui, sys: livePrompt(mode) + RELAY_ADAPT + '\nFINAL RULE —' + langHint() });
   Live.started = Date.now(); Live.log = []; Live.mode = mode; ui.live(); ui.status('🧠 معلم دارد آماده می‌شود…'); relayMicBtn(true);
   Relay.timer = setInterval(() => { const s = Math.round((Date.now() - Live.started) / 1000); ui.clock?.(s); const L = todayLog(); L.min = (L.min || 0) + 1 / 60; L.live = (L.live || 0) + 1 / 60; if (s % 30 === 0) saveU(); }, 1000);
-  if (mode === 'lesson' || mode === 'group') { Relay.phase = 'teach'; relayTeach(RELAY_TEACH_START); }
+  if (mode === 'lesson' || mode === 'group') { Relay.phase = 'teach'; relayTeach(RELAY_TEACH_START + langHint()); }
   else { Relay.phase = 'qa'; relayTurn({ text: '(The class starts now. Greet the student warmly and begin. This is PHASE 2 style: short interactive turns.)' }); }
 }
 function relayStop() {
@@ -558,6 +559,7 @@ async function relayTeach(first) {
     if (r.say) { ui.say('t', r.say); ui.say('end'); liveLog('T', r.say + ' '); const my = Relay.turnId = (Relay.turnId || 0) + 1; await say(r.say, 'fa', 'cheerful'); if (Relay.turnId !== my) break; }
     if (r.done) { Relay.phase = 'qa'; break; }
     if (Relay.paused) return;
+    if (Relay.queued) { const q = Relay.queued; Relay.queued = null; Relay.phase = 'pause'; Relay.paused = true; return relayTurn(q); }
   }
   if (Relay.on && Relay.phase === 'qa' && !Relay.paused) { relayMicBtn(true, 'busy'); relayTurn({ text: RELAY_QA_START }); }
 }
@@ -565,9 +567,9 @@ async function relayTeach(first) {
 async function relayNewTopic(topic) {
   const ui = Relay.ui; Relay.busy = true; relayMicBtn(true, 'busy'); ui.status(`🧠 در حال طراحی درس کامل «${topic}» (واژه‌ها، افعال، جمله‌ها، اصطلاحات)…`);
   try { const k = await makeCustomPlan(topic); if (!Relay.on) return; const S = Object.assign(liveSel(), { custom: k, ws: '', gram: '', topic: null, focus: 'full' }); lsSet('zd:livesel:' + G.active, S);
-    LIVE_LESSON = await liveLessonText(); Relay.sys = livePrompt('lesson') + RELAY_ADAPT; Relay.hist = []; Relay.mode = 'lesson'; Live.started = Date.now();
+    LIVE_LESSON = await liveLessonText(); Relay.sys = livePrompt('lesson') + RELAY_ADAPT + '\nFINAL RULE —' + langHint(); Relay.hist = []; Relay.mode = 'lesson'; Live.started = Date.now();
     const P = customPlans()[k]; toast(`✨ درس «${P.title_fa || topic}» آماده شد: ${faNum((P.bank || []).reduce((a, g) => a + (g.items || []).length, 0))} واژه، ${faNum((P.verbs || []).length)} فعل، ${faNum((P.sentences || []).length)} جمله، ${faNum((P.colloquial || []).length)} اصطلاح`, 6000);
-    Relay.busy = false; Relay.phase = 'teach'; Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); relayTeach(RELAY_TEACH_START); }
+    Relay.busy = false; Relay.phase = 'teach'; Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); relayTeach(RELAY_TEACH_START + langHint()); }
   catch (e) { console.warn(e); Relay.busy = false; ui.status('طراحی درس انجام نشد؛ دوباره بگو.'); if (Relay.on) relayListen(); } }
 async function relayTurn(input) {
   if (!Relay.on) return; const ui = Relay.ui; Relay.busy = true; relayMicBtn(true, 'busy'); ui.status('🧠 معلم دارد فکر می‌کند…');
@@ -588,6 +590,7 @@ async function relayTurn(input) {
     if (r.say) { ui.say('t', r.say); ui.say('end'); liveLog('T', r.say + ' '); ui.status('🔊 معلم حرف می‌زند… (برای حرف زدن، 🎤 را بزن)'); relayMicBtn(true, 'speak'); Relay.busy = false; const myTurn = Relay.turnId = (Relay.turnId || 0) + 1; await say(r.say, 'fa', 'cheerful'); if (Relay.turnId !== myTurn) return; }
   } catch (e) { console.warn(e); if (Relay.on) { ui.status('اینترنت کند بود؛ دوباره حرف بزن یا بنویس.'); } }
   finally { Relay.busy = false; }
+  if (Relay.on && Relay.queued) { const q = Relay.queued; Relay.queued = null; Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); return relayTurn(q); }
   if (Relay.on && !Relay.busy) relayListen();
 }
 async function relayListen() {
