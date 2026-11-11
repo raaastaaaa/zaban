@@ -29,20 +29,17 @@ QUIZ: ${J(P.quiz)}`; }
 /* «هرچه می‌خواهی یاد بگیری»: مغز برنامه‌ریز یک طرح درس کامل و تعاملی می‌نویسد و معلم زنده (یا ChatGPT) با آن درس می‌دهد */
 const customPlans = () => (U.customPlans = U.customPlans || {});
 async function makeCustomPlan(want) {
-  const u = currentUnit();
-  const r = await ai({ max: 3500, temp: 0.4, system: 'You are a master English teacher and curriculum designer (CELTA/DELTA level) planning ONE complete, interactive live lesson for a Persian-speaking learner. The lesson is taught by voice by another AI tutor, so write a precise, well-calculated plan: logical sequence (warm-up → presentation in small chunks → controlled practice → freer practice/role-play → personal use → quiz/recap), lots of interaction (questions, games, role-plays), complete vocabulary (not samples), registers, and common mistakes of Persian speakers. Persian for explanations, English for language items.',
-    messages: [{ role: 'user', content: `What the learner wants to learn (their words): «${want}»\nLearner level now: ${u.cefr || 'A1'} (lesson "${u.en}").\nReturn JSON exactly: {"title_fa":"short Persian title","title_en":"","goal":"Persian: what they can DO at the end","intro":"Persian: how the teacher opens and motivates","bank":[{"g":"group name","items":["word/phrase = Persian meaning (register; when to use)"]}],"patterns":["key sentence patterns with examples"],"checks":["concept-check questions"],"roleplay":["role-play scenarios, who plays whom"],"personal":["questions linking to the learner's life"],"grammar":{"point":"","examples":[""],"rule":"Persian","drill":["Persian sentence → English"]},"pron":["pronunciation points with Persian-script hints"],"steps":["numbered interactive teaching steps with timing in minutes"],"mistakes":["typical Persian-speaker mistakes with correction"],"quiz":["final quiz questions"]}` }] });
-  if (!r || !Array.isArray(r.bank) || !r.bank.length) throw new Error('plan');
-  const id = 'c' + Date.now().toString(36); customPlans()[id] = { ...r, want, d: isoDay() }; saveU(); return id; }
-const GPT_ADAPT_TXT = `
-=== YOU ARE RUNNING INSIDE THE ChatGPT APP (voice mode or chat) — NO TOOLS ARE AVAILABLE. Adapt every instruction above: ===
-- Wherever it says to call a tool, do it yourself instead: show_board → write the items as a short clear list in the chat; play_conversation → perform the lesson conversation yourself, reading both characters with clearly different voices and names; guest_say → play Emma (British) and Jake (American) yourself with their accents; call_on / give_points / set_activity / give_homework → simply say it out loud (keep a running score in your head in group classes); ask_brain → think carefully and answer yourself; mark_done → skip.
-- CORRECTING WRITTEN MESSAGES: for EVERY mistake in what the student types, write a correction block exactly like this:
-  ❌ ~~wrong words~~ → ✅ **correct words**
-  💡 short Persian reason why
-  then praise what was right and ask them to write it again correctly.
-- Keep the lesson interactive at all times: short turns, questions, games, role-plays; never lecture for long.
-- Start RIGHT NOW: greet me warmly in Persian by my name, say today's topic and the plan in one or two sentences, and begin step 1.`;
+  const u = currentUnit(); const lv = u.cefr || 'A1';
+  const SYS = 'You are a master English teacher and curriculum designer (CELTA/DELTA level) preparing COMPLETE, exhaustive material for one live lesson for a Persian-speaking learner. Persian for meanings/explanations (natural colloquial Persian), English for language items. Be exhaustive: nothing important about the topic may be missing. Output ONLY JSON.';
+  const ask = (max, content) => ai({ max, temp: 0.4, system: SYS, messages: [{ role: 'user', content: `Topic the learner wants (their words): «${want}». Learner level: ${lv}.\n${content}` }] });
+  const [m, b, v, c] = await Promise.all([
+    ask(3000, 'Return JSON: {"title_fa":"short Persian title","title_en":"","goal":"Persian: what they can DO at the end","intro":"Persian: how the teacher opens and motivates","patterns":["key sentence patterns with examples"],"checks":["concept-check questions"],"roleplay":["role-play scenarios, who plays whom"],"personal":["questions linking to the learner\'s life"],"grammar":{"point":"the grammar most useful for this topic","examples":[""],"rule":"Persian","drill":["Persian sentence → English"]},"pron":["pronunciation points with Persian-script hints"],"steps":["numbered teaching steps with minutes"],"mistakes":["typical Persian-speaker mistakes → correction"],"quiz":["8 final quiz questions"]}'),
+    ask(6000, 'Return JSON {"bank":[{"g":"Persian group name","items":["word/phrase = Persian meaning (register; when to use)"]}]} with the COMPLETE vocabulary of this topic: 6-10 logical groups, AT LEAST 50 items in total (more if the topic is big), from basic to useful advanced, including nouns, adjectives and fixed phrases. Example for "family": every family member one by one (mother, father, parents, sister, brother, siblings, grandmother, grandfather, grandparents, aunt, uncle, cousin, niece, nephew, husband, wife, son, daughter, in-laws, step-family, twins, relatives…).'),
+    ask(5000, 'Return JSON {"verbs":["verb or phrasal verb (past / past participle) = Persian meaning — example sentence (Persian translation)"],"sentences":["useful ready-to-use sentence = natural Persian translation (when to use it)"]} with AT LEAST 20 of the most useful verbs/phrasal verbs for this topic and AT LEAST 25 of the most useful real-life sentences (questions and answers) people actually say in this situation.'),
+    ask(4000, 'Return JSON {"colloquial":["natural everyday/slang expression = Persian meaning (who says it, when; neutral/formal alternative)"],"us_uk":["American ↔ British = Persian meaning"],"dialogue":["A: … ","B: …"]} with AT LEAST 15 colloquial expressions natives really use in this situation, every relevant American vs British difference (at least 6 if they exist), and one realistic natural dialogue of 10-14 lines.')]);
+  const r = Object.assign({}, m || {}, { bank: b?.bank || [], verbs: v?.verbs || [], sentences: v?.sentences || [], colloquial: c?.colloquial || [], us_uk: c?.us_uk || [], dialogue: c?.dialogue || [] });
+  if (!r.bank.length) throw new Error('plan');
+  r.v = 2; const id = 'c' + Date.now().toString(36); customPlans()[id] = { ...r, want, d: isoDay() }; saveU(); return id; }
 let LLT_SEQ = 0, LLT_P = null;
 function liveLessonText() { const my = ++LLT_SEQ; const out = { L: null }; const p = _llt(out).then(t => { if (my === LLT_SEQ) { LIVE_L = out.L; LIVE_LESSON = t; return t; } return LLT_P; }); LLT_P = p; return p; }
 async function _llt(out) { try {
@@ -51,7 +48,7 @@ async function _llt(out) { try {
     return `\n=== VOCABULARY TOPIC (Word Skills ${u.levelFa || ''}): "${u.en}" (${u.fa}) — section: ${u.sec || ''} ===\nCOMPLETE WORD BANK (teach ALL of it, in groups of 5-6):\n${W.map(w => `- ${w.w} = ${w.fa}${w.reg ? ` [${RG[w.reg] || w.reg}]` : ''}${w.use ? ` — ${w.use}` : ''}${w.ex ? ` e.g. "${w.ex}" (${w.exFa || ''})` : ''}`).join('\n')}`; } }
   if (S.topic?.items?.length) { out.L = null; return `\n=== TOPIC the student chose: «${S.topic.title}» ===\nCOMPLETE ITEM BANK (teach ALL of it, in groups of 5-6, with meaning, register, when to use, native pronunciation, example sentences from real life, then practise each group interactively — questions, mini role-plays, quick quizzes — before moving on; recycle earlier groups):\n${S.topic.items.slice(0, 120).map(x => '- ' + x).join('\n')}`; }
   if (S.custom && customPlans()[S.custom]) { const P = customPlans()[S.custom]; out.L = null;
-    return `\n=== CUSTOM LESSON the student asked for: «${P.want}» — "${P.title_en || ''}" (${P.title_fa || ''}) ===\nThis plan was designed in advance by the expert planning brain; follow its steps, keep EVERYTHING interactive.\n${fmtPlan(P)}\nTEACHING STEPS: ${J(P.steps)}\nTYPICAL MISTAKES TO WATCH: ${J(P.mistakes)}`; }
+    return `\n=== CUSTOM LESSON the student asked for: «${P.want}» — "${P.title_en || ''}" (${P.title_fa || ''}) ===\nThis plan was designed in advance by the expert planning brain; teach ALL of it, nothing may be skipped.\n${fmtPlan(P)}${P.verbs?.length ? '\nUSEFUL VERBS (teach all): ' + J(P.verbs) : ''}${P.sentences?.length ? '\nUSEFUL SENTENCES (teach all): ' + J(P.sentences) : ''}${P.colloquial?.length ? '\nCOLLOQUIAL / EVERYDAY EXPRESSIONS (teach all): ' + J(P.colloquial) : ''}${P.us_uk?.length ? '\nAMERICAN vs BRITISH: ' + J(P.us_uk) : ''}${P.dialogue?.length ? '\nSAMPLE DIALOGUE: ' + J(P.dialogue) : ''}\nTEACHING STEPS: ${J(P.steps)}\nTYPICAL MISTAKES TO WATCH: ${J(P.mistakes)}`; }
   if (S.gram) { const g = (typeof GRAMMAR !== 'undefined' ? GRAMMAR : []).find(x => x.id === S.gram); if (g) { out.L = null; return `\n=== GRAMMAR TOPIC: "${g.fa}" (level ${g.lvl}) ===\nTeach this grammar topic completely (form, uses, contrasts with similar structures and with Persian, common mistakes of Persian speakers), using everyday situations and the student's life.`; } }
   const u = S.unit && unitById(S.unit) || currentUnit(); const P = (await livePlans())[u.id]; const L = await lessonGet(u).catch(() => null); out.L = L; const W = unitWords(u);
   const c = L?.conversation?.lines || [], g = L?.grammar || {};
@@ -315,7 +312,7 @@ routes.live = (mode = 'lesson') => {
     <span class="tiny muted">${mode === 'group' ? 'برای کلاس گروهی: یک نفر ChatGPT را روی بلندگو باز کند و همه کنار هم باشید؛ هر کس قبل از حرف زدن اسمش را بگوید.' : 'برنامهٔ امروز، اشتباه‌های قبلی و حافظهٔ کلاس‌هایت هم به ChatGPT داده می‌شود.'}</span></div>
   <div class="live-card"><div class="live-av" id="lav"><span>👩‍🏫</span><i></i></div><b id="lst">${esc(G.settings.teacher)} آماده است</b><span class="small" id="lclk">${faNum(Math.round(L.live || 0))} دقیقه کلاس زندهٔ امروز</span>
     <div class="seg eng-seg" id="leng">${[['relay', '🎧 بدون فیلترشکن'], ['gemini', '✨ زنده (VPN)'], ['gpt', '🤖 ChatGPT']].map(([k, t]) => `<button data-v="${k}" class="${(G.settings.liveEngine || 'gemini') === k ? 'on' : ''}">${t}</button>`).join('')}</div>
-    <button class="btn line" id="lrmic" hidden>🎤 حرف بزن</button>
+    <button class="btn line" id="lrmic" hidden>🎤 حرف بزن</button><button class="btn" id="lrgo" hidden>▶ ادامهٔ درس</button>
     <div class="row" style="justify-content:center"><button class="btn live-go" id="lgo">📞 شروع کلاس</button></div>
     <span class="tiny" style="opacity:.8">مثل تماس تلفنی حرف بزن؛ وسط حرف معلم هم می‌توانی بپری. هدفون بهتر است.</span></div>
   <div class="row small" style="justify-content:space-between;gap:6px"><span>زبان آموزش معلم:</span><div class="seg" id="ltl">${[['fa', '🇮🇷 فارسی'], ['mix', 'نیمه‌نیمه'], ['en', '🇬🇧 بیشتر انگلیسی']].map(([k, t]) => `<button data-v="${k}" class="${(G.settings.teachLang || 'fa') === k ? 'on' : ''}">${t}</button>`).join('')}</div></div>
@@ -332,7 +329,7 @@ routes.live = (mode = 'lesson') => {
     <label class="f">یا یک موضوع واژگان (Word Skills)<select class="in" id="lsw"><option value="">—</option>${WORD_TRACK.map(Lv => `<optgroup label="${esc(Lv.fa)}">${WS_UNITS.filter(x => x.level === Lv.id).map(x => `<option value="${x.id}"${S.ws === x.id ? ' selected' : ''}>${esc(x.fa)} — ${esc(x.en)}</option>`).join('')}</optgroup>`).join('')}</select></label>
     <label class="f">یا یک مبحث گرامر (مثلاً زمان‌ها)<select class="in" id="lsg"><option value="">—</option>${(typeof GRAMMAR !== 'undefined' ? GRAMMAR : []).map(g => `<option value="${g.id}"${S.gram === g.id ? ' selected' : ''}>${esc(g.lvl)} · ${esc(g.fa)}</option>`).join('')}</select></label>
     <div class="lc-custom"><b>✨ یا بگو دقیقاً چه می‌خواهی یاد بگیری</b><span class="tiny muted">مثلاً «مصاحبهٔ کاری»، «حرف زدن با دکتر»، «فرق since و for»، «سفارش قهوه در لندن». یک طرح درس کامل و تعاملی برایت طراحی می‌شود و معلم با همان درس می‌دهد.</span>
-      <div class="row"><input class="in grow" id="lcw" placeholder="چه چیزی یاد بگیری؟"><button class="btn sm" id="lcb">طراحی درس</button></div>
+      <div class="row"><input class="in grow" id="lcw" placeholder="موضوع را بنویس یا 🎤 بگو (مثلاً خرید لباس)"><button class="btn sm" id="lcb">طراحی درس</button></div>
       <div class="lc-list" id="lcl">${Object.entries(customPlans()).reverse().slice(0, 8).map(([k, P]) => `<button class="pill ${S.custom === k ? 'acc' : ''}" data-cp="${k}">✨ ${esc(P.title_fa || P.want)}</button>`).join('')}</div></div>
     <div class="seg" id="lsa">${[['US', '🇺🇸 آمریکایی'], ['UK', '🇬🇧 بریتانیایی']].map(([k, t]) => `<button data-v="${k}" class="${(G.settings.accent === 'UK' ? 'UK' : 'US') === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <span class="tiny muted">برنامهٔ تدریس هر درس از قبل کامل نوشته شده: بانک کامل واژه‌ها، الگوها، نقش‌آفرینی، گرامر، تلفظ و کوییز.</span></div>`; })() : ''}
@@ -364,6 +361,7 @@ routes.live = (mode = 'lesson') => {
     $('#lsf').onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('#lsf button').forEach(x => x.classList.toggle('on', x === b)); saveSel({ focus: b.dataset.v, ws: '', gram: '', custom: '' , topic: null }); $('#lsw').value = ''; $('#lsg').value = ''; };
     const pickC = k => { saveSel({ custom: k, ws: '', gram: '', focus: 'full' , topic: null }); $('#lsw').value = ''; $('#lsg').value = ''; offF(); $$('#lcl .pill').forEach(x => x.classList.toggle('acc', x.dataset.cp === k)); };
     $('#lcl').onclick = e => { const b = e.target.closest('[data-cp]'); if (b) { pickC(b.dataset.cp); toast('✨ درس دلخواه انتخاب شد؛ «شروع کلاس» را بزن.'); } };
+    try { $('#lcw').after(micButton(t => { $('#lcw').value = t; }, 'fa-IR')); } catch { }
     $('#lcb').onclick = async () => { const w = $('#lcw').value.trim(); if (w.length < 3) return toast('بنویس چه چیزی می‌خواهی یاد بگیری.'); const b = $('#lcb'); b.disabled = true; b.textContent = '🧠 در حال طراحی…'; const h0 = location.hash;
       try { const k = await makeCustomPlan(w); if (location.hash !== h0) return; const P = customPlans()[k]; $('#lcl').insertAdjacentHTML('afterbegin', `<button class="pill" data-cp="${k}">✨ ${esc(P.title_fa || w)}</button>`); pickC(k); $('#lcw').value = '';
         toast(`✨ درس «${P.title_fa || w}» طراحی شد: ${faNum((P.bank || []).reduce((a, g) => a + (g.items || []).length, 0))} واژه/عبارت، ${faNum((P.steps || []).length)} مرحلهٔ تعاملی. «شروع کلاس» را بزن.`, 6000); }
@@ -436,7 +434,7 @@ routes.live = (mode = 'lesson') => {
   const drawEng = () => { $$('#leng button').forEach(b => b.classList.toggle('on', b.dataset.v === engine())); $('#lgpt').hidden = engine() !== 'gpt'; if (!Live.on && !Relay.on) $('#lgo').textContent = engine() === 'gpt' ? '🤖 شروع کلاس با ChatGPT' : '📞 شروع کلاس'; };
   $('#leng').onclick = e => { const b = e.target.closest('button'); if (!b || Live.on || Live.starting || Relay.on) return; G.settings.liveEngine = b.dataset.v; saveG('settings'); drawEng(); };
   drawEng(); const idle0 = ui.idle; ui.idle = () => { idle0(); drawEng(); };
-  $('#lrmic').onclick = relayMicClick;
+  $('#lrmic').onclick = relayMicClick; $('#lrgo').onclick = () => { if (!Relay.on || Relay.busy) return; Relay.phase = 'teach'; Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); try { Relay.mr?.state === 'recording' && (Relay.mr.onstop = null, Relay.mr.stop()); } catch { } clearInterval(Relay.vad); $('#lrgo').hidden = true; relayTeach('(The student\'s question was answered. Continue PHASE 1 from exactly where you stopped — the next items not taught yet.)'); };
   if (window.__liveAuto && Date.now() - window.__liveAuto < 8000 && mode === 'lesson') { window.__liveAuto = 0; setTimeout(() => { if (!Relay.on && !Live.on && $('#lgo')) relayStart(mode, ui); }, 300); }
   $('#lgo').onclick = () => Live.starting || Relay.starting ? null : Relay.on ? relayStop() : Live.on ? liveStop(ui) : engine() === 'gpt' ? $('#gpt').click() : engine() === 'relay' && !window.VR?.on ? relayStart(mode, ui) : liveStart(mode, ui);
   $$('[data-lm]', v).forEach(b => b.onclick = () => { if (Live.on) liveStop(ui, true); go('live/' + b.dataset.lm); });
@@ -490,9 +488,16 @@ if (!G.settings.relayMig) { G.settings.liveEngine = 'relay'; G.settings.relayMig
 const RELAY_ADAPT = `
 === THIS CLASS RUNS AS A TURN-BASED VOICE CALL (no tools available) ===
 Each turn you receive the student's voice (audio) or a typed message. Reply ONLY with JSON:
-{"heard":"exact transcript of what the student just said in the audio, keeping their mistakes (empty if the input was text)","say":"what you say now — at most 3 SHORT spoken sentences (max ~40 words, even in the first greeting; never explain the whole plan at once), natural and warm, following the language policy; it is read aloud by a voice, so no emojis, no markdown, no lists, no IPA","board":null or {"title":"","items":[{"en":"","fa":""}]},"fix":null or {"wrong":"","right":"","why":"short Persian reason"}}
+{"heard":"exact transcript of what the student just said in the audio, keeping their mistakes (empty if the input was text)","say":"what you say now — length depends on the PHASE (see below); natural, warm and caring, following the language policy; it is read aloud by a voice, so no emojis, no markdown, no lists, no IPA","board":null or {"title":"","items":[{"en":"","fa":""}]},"fix":null or {"wrong":"","right":"","why":"short Persian reason"}}
 Wherever the instructions mention tools: show_board → put the items in "board"; correct_writing → "fix"; play_conversation → read a short version of the dialogue yourself or role-play it with the student; guest_say/call_on/give_points/set_activity/give_homework → just say it; ask_brain → think and answer yourself; mark_done → skip.
-Keep turns SHORT and always end with something for the student to say or do. If the audio is silent or unclear, kindly ask them to repeat.`;
+THE CLASS HAS TWO PHASES:
+PHASE 1 — TEACHING (no waiting, no questions to the student): like a devoted private teacher, teach the COMPLETE material as a flowing explanation, segment by segment. Cover EVERY item of the word/phrase bank, one by one, in a logical order (e.g. family: mother, father, sister, brother… then grandparents, uncles/aunts, in-laws…): the English word, its Persian meaning, a pronunciation tip in Persian script for the chosen accent, when/with whom/how natives use it (register, common mistakes of Persians, difference from similar words), and 2 varied real-life example sentences with Persian translation. Use warm, caring, encouraging language, small memory tricks and a little humour. Teach in this order when the material has these parts: all vocabulary groups → useful verbs → useful sentences → colloquial/everyday expressions → American vs British differences → a short dialogue. For EVERY single item give at least one full example sentence with its Persian translation (never just list words). Each segment: about 150-220 words covering only 2-4 items so each is taught properly, with those items in "board". Do NOT ask the student anything in this phase. When EVERY item has been taught, give a short summary and set "done": true.
+PHASE 2 — PRACTICE & Q&A: now interactive: answer the student's questions fully, then concept-check questions, mini role-plays, a short quiz and a recap — ONE question at a time, short turns (max ~40 words), wait for the answer, correct kindly.
+Add to the JSON: "done": true|false (true only when phase 1 is complete).
+If the audio is silent or unclear, kindly ask them to repeat.`;
+const RELAY_TEACH_START = '(PHASE 1 starts now. Greet the student warmly in 1-2 sentences, say today\'s topic and that you will first teach everything completely and then practise together, then teach the FIRST segment.)';
+const RELAY_TEACH_NEXT = '(PHASE 1: continue teaching the NEXT items that have not been taught yet — do not repeat earlier items. If all items are taught, summarise and set done=true.)';
+const RELAY_QA_START = '(PHASE 1 is finished. Start PHASE 2: tell the student warmly that now it is their turn — they can ask any question, then you will practise together. Ask your first short question.)';
 function relayB64(blob) { return new Promise(r => { const f = new FileReader(); f.onload = () => r(String(f.result).split(',')[1]); f.readAsDataURL(blob); }); }
 async function relayStart(mode, ui) {
   if (Relay.on || Relay.starting) return; Relay.starting = true; ui.connecting?.();
@@ -505,7 +510,8 @@ async function relayStart(mode, ui) {
   Object.assign(Relay, { on: true, starting: false, mode, hist: [], ui, sys: livePrompt(mode) + RELAY_ADAPT });
   Live.started = Date.now(); Live.log = []; Live.mode = mode; ui.live(); ui.status('🧠 معلم دارد آماده می‌شود…'); relayMicBtn(true);
   Relay.timer = setInterval(() => { const s = Math.round((Date.now() - Live.started) / 1000); ui.clock?.(s); const L = todayLog(); L.min = (L.min || 0) + 1 / 60; L.live = (L.live || 0) + 1 / 60; if (s % 30 === 0) saveU(); }, 1000);
-  relayTurn({ text: '(The class starts now. Greet the student warmly and begin.)' });
+  if (mode === 'lesson' || mode === 'group') { Relay.phase = 'teach'; relayTeach(RELAY_TEACH_START); }
+  else { Relay.phase = 'qa'; relayTurn({ text: '(The class starts now. Greet the student warmly and begin. This is PHASE 2 style: short interactive turns.)' }); }
 }
 function relayStop() {
   if (!Relay.on && !Relay.starting) return; const was = Relay.on; Relay.on = false; Relay.starting = false; clearInterval(Relay.timer);
@@ -513,10 +519,32 @@ function relayStop() {
   try { Relay.stream?.getTracks().forEach(t => t.stop()); } catch { } try { Relay.ctx?.close(); } catch { }
   Relay.ui?.idle(); relayMicBtn(false); if (was && (Live.log || []).length > 2) liveRemember();
 }
+async function relayAsk(text) { // یک درخواست متنی به مغز (بدون صدا)
+  const body = { systemInstruction: { parts: [{ text: Relay.sys }] }, contents: [...Relay.hist, { role: 'user', parts: [{ text }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.75, maxOutputTokens: 1600 } };
+  const d = await gemFetch([G.settings.prov.gemini.model, ...GEM_FALLBACK], 'generateContent', body, gemKey());
+  const raw = d.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+  let r; try { r = JSON.parse(raw.replace(/^```json|```$/g, '')); } catch { r = { say: raw.replace(/[{}"]/g, '').slice(0, 1200) }; }
+  r.__q = text; return r; }
+const relayPre = r => { if (r?.say && G.settings.voiceFa !== 'browser') cloudTTS(G.settings.voiceFa, r.say, 'fa', 'cheerful').catch(() => { }); return r; };
+async function relayTeach(first) {
+  const ui = Relay.ui; Relay.paused = false; relayMicBtn(true, 'teach'); ui.status('📖 معلم دارد درس را کامل توضیح می‌دهد… (سؤال داشتی «✋ سؤال دارم» را بزن)');
+  let next = relayAsk(first).then(relayPre); let n = 0;
+  while (Relay.on && Relay.phase === 'teach') {
+    let r; try { r = await next; } catch (e) { console.warn(e); ui.status('اینترنت کند بود؛ دوباره تلاش می‌کنم…'); await new Promise(x => setTimeout(x, 2000)); next = relayAsk(RELAY_TEACH_NEXT).then(relayPre); if (++n > 3) break; continue; }
+    if (!Relay.on || Relay.phase !== 'teach') break;
+    Relay.hist.push({ role: 'user', parts: [{ text: r.__q }] }, { role: 'model', parts: [{ text: r.say || '' }] }); if (Relay.hist.length > 60) Relay.hist = Relay.hist.slice(-60);
+    if (r.board?.items?.length) ui.board(r.board.title || '', r.board.items);
+    if (!r.done) next = relayAsk(RELAY_TEACH_NEXT).then(relayPre); // بخش بعدی هم‌زمان آماده می‌شود
+    if (r.say) { ui.say('t', r.say); ui.say('end'); liveLog('T', r.say + ' '); const my = Relay.turnId = (Relay.turnId || 0) + 1; await say(r.say, 'fa', 'cheerful'); if (Relay.turnId !== my) break; }
+    if (r.done) { Relay.phase = 'qa'; break; }
+    if (Relay.paused) return;
+  }
+  if (Relay.on && Relay.phase === 'qa' && !Relay.paused) { relayMicBtn(true, 'busy'); relayTurn({ text: RELAY_QA_START }); }
+}
 async function relayTurn(input) {
   if (!Relay.on) return; const ui = Relay.ui; Relay.busy = true; relayMicBtn(true, 'busy'); ui.status('🧠 معلم دارد فکر می‌کند…');
   try {
-    const parts = input.audio ? [{ text: '(the student is speaking — audio attached)' }, { inlineData: { mimeType: input.audio.type.split(';')[0] || 'audio/webm', data: await relayB64(input.audio) } }] : [{ text: input.text }];
+    const parts = input.audio ? [{ text: Relay.phase === 'pause' ? '(the student paused the lesson to ask a question — audio attached. Answer it fully, clearly and kindly with examples, then tell them they can tap «ادامهٔ درس» to continue or ask another question.)' : '(the student is speaking — audio attached)' }, { inlineData: { mimeType: input.audio.type.split(';')[0] || 'audio/webm', data: await relayB64(input.audio) } }] : [{ text: input.text }];
     const body = { systemInstruction: { parts: [{ text: Relay.sys }] }, contents: [...Relay.hist, { role: 'user', parts }], generationConfig: { responseMimeType: 'application/json', temperature: 0.8, maxOutputTokens: 1200 } };
     const d = await gemFetch([G.settings.prov.gemini.model, ...GEM_FALLBACK], 'generateContent', body, gemKey());
     if (!Relay.on) return;
@@ -549,5 +577,7 @@ async function relayListen() {
     if (rms > thr) { spoke = true; loudAt = now; }
     if ((spoke && now - loudAt > 1400) || (!spoke && now - t0 > 15000) || now - t0 > 45000) { clearInterval(Relay.vad); try { mr.stop(); } catch { } } }, 100);
 }
-function relayMicBtn(show, st) { const b = $('#lrmic'); if (!b) return; b.hidden = !show; b.dataset.st = st || ''; b.textContent = st === 'rec' ? '⏹ تمام شد، بفرست' : st === 'busy' ? '⏳ صبر کن…' : st === 'speak' ? '✋ قطع کن، می‌خواهم حرف بزنم' : '🎤 حرف بزن'; b.disabled = st === 'busy'; }
-function relayMicClick() { const st = $('#lrmic')?.dataset.st; if (st === 'rec') { try { Relay.mr?.stop(); } catch { } } else if (st === 'speak') { Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); relayListen(); } else if (st !== 'busy') relayListen(); }
+function relayMicBtn(show, st) { const b = $('#lrmic'); if (!b) return; b.hidden = !show; b.dataset.st = st || ''; b.textContent = st === 'rec' ? '⏹ تمام شد، بفرست' : st === 'busy' ? '⏳ صبر کن…' : st === 'speak' ? '✋ قطع کن، می‌خواهم حرف بزنم' : st === 'teach' ? '✋ سؤال دارم (درس مکث می‌کند)' : '🎤 حرف بزن'; b.disabled = st === 'busy';
+  const g = $('#lrgo'); if (g) g.hidden = !(show && Relay.phase === 'pause' && st !== 'busy'); }
+function relayMicClick() { const st = $('#lrmic')?.dataset.st;
+  if (st === 'teach') { Relay.paused = true; Relay.phase = 'pause'; Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); Relay.ui.status('سؤالت را بپرس؛ بعد «▶ ادامهٔ درس» را بزن.'); relayListen(); return; } if (st === 'rec') { try { Relay.mr?.stop(); } catch { } } else if (st === 'speak') { Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); relayListen(); } else if (st !== 'busy') relayListen(); }
