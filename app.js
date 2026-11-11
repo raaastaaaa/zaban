@@ -45,7 +45,9 @@ const WS_UNITS = WORD_TRACK.flatMap(L => L.units.map(u => ({ ...u, level: L.id, 
 WS_UNITS.forEach((u, i) => { u.idx = 2000 + i; u.wsi = i; u.baseWords = []; });
 const nextUnit = u => u.track === 'ws' ? WS_UNITS[u.wsi + 1] : u.idx < 1000 ? ALL_UNITS[u.idx + 1] : null;
 const currentWS = () => WS_UNITS.find(u => isOpen(u) && !isMastered(u)) || WS_UNITS[WS_UNITS.length - 1];
-function parseWords(txt) { return txt.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const [w, ipa, fa, img, pos, ex] = l.split('|'); return { w, ipa, fa, img, pos, ex }; }); }
+function parseWords(txt) { return txt.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const [w, ipa, fa, img, pos, ex, reg, use] = l.split('|'); return { w, ipa, fa, img, pos, ex, reg, use }; }); }
+const REG = { f: ['رسمی', 'acc'], n: ['خنثی؛ همه‌جا', ''], i: ['خودمونی', 'ok'], s: ['عامیانه', 'bad'] };
+const regPill = w => w.reg && REG[w.reg] ? ` <span class="pill ${REG[w.reg][1]}" title="سطح رسمی بودن">${REG[w.reg][0]}</span>` : '';
 const POS = { n: 'اسم', v: 'فعل', adj: 'صفت', adv: 'قید', prep: 'حرف اضافه', phr: 'عبارت', sent: 'جمله' };
 
 const DEFAULT_SETTINGS = {
@@ -61,7 +63,7 @@ const DEFAULT_SETTINGS = {
   voiceEn: 'browser', voiceFa: 'gemini', listen: 'browser',
   accent: 'US', rate: 0.95,
   geminiTtsModel: 'gemini-3.8-flash-tts', geminiVoice: 'Kore', openaiVoice: 'nova',
-  teacher: 'رستا', img: 'set', pixabayKey: '', passScore: 95, theme: 'auto', autoSpeak: true
+  teacher: 'رستا', img: 'set', pixabayKey: '', passScore: 95, theme: 'light', autoSpeak: true
 };
 const G = { // سراسری (مشترک بین کاربران همین دستگاه)
   users: lsGet('zd:users', []),
@@ -358,6 +360,18 @@ async function cloudTTS(engine, text, lang, emotion) {
   }
   return blob;
 }
+/* بستهٔ صدای انگلیسی ازپیش‌ساخته (آمریکایی و بریتانیایی) — رایگان، سریع و آفلاین */
+const EN_PACK = {};
+async function enPackIdx(acc) { if (!EN_PACK[acc]) EN_PACK[acc] = fetch(`audio/en/${acc}/index.json`).then(r => r.json()).then(j => ({ j, all: new Set(Object.values(j).flat()) })).catch(() => (delete EN_PACK[acc], null)); return EN_PACK[acc]; }
+async function enPackUrl(text) { const acc = G.settings.accent === 'UK' ? 'UK' : 'US'; const ix = await enPackIdx(acc); const h = hashStr((text || '').trim()); return ix?.all.has(h) ? `audio/en/${acc}/${h}.mp3` : null; }
+function playUrl(url, tok) { return new Promise(res => { if (tok !== speakToken) return res(); const done = () => { if (blobRes === done) blobRes = null; res(); }; blobRes = done; player.src = url; player.playbackRate = 1; player.onended = player.onerror = done; player.play().catch(done); }); }
+async function downloadEnPack(unitId, btn) {
+  const out = {}; for (const acc of ['US', 'UK']) { const ix = await enPackIdx(acc); out[acc] = (ix?.j[unitId] || []).map(h => `audio/en/${acc}/${h}.mp3`); }
+  const all = [...out.US, ...out.UK]; if (!all.length) return toast('برای این درس هنوز بستهٔ صدا ساخته نشده.');
+  const c = await caches.open('zd-media'); let i = 0;
+  for (const u of all) { if (!(await c.match(u))) { try { const r = await fetch(u); if (r.ok) await c.put(u, r); } catch { toast('اینترنت قطع شد؛ دوباره بزن تا ادامه بدهد.'); return; } } i++; if (btn) btn.textContent = `⬇ در حال دانلود… ${faNum(Math.round(i / all.length * 100))}٪`; }
+  lsSet('zd:enpack:' + unitId, 1); if (btn) btn.textContent = '✓ صدای انگلیسی این درس (آمریکایی + بریتانیایی) آفلاین ذخیره شد'; toast('حالا بدون اینترنت هم همهٔ واژه‌ها و جمله‌ها پخش می‌شوند.');
+}
 function playBlob(blob, tok) {
   return new Promise(res => { if (tok !== speakToken) return res(); const url = URL.createObjectURL(blob); const done = () => { if (blobRes === done) blobRes = null; URL.revokeObjectURL(url); res(); }; blobRes = done; player.src = url; player.playbackRate = 1; player.onended = player.onerror = done; player.play().catch(done); });
 }
@@ -366,6 +380,7 @@ async function say(text, lang = 'en', emotion = 'cheerful', btn) {
   if (!text) return; haltAudio(); const tok = ++speakToken; btn?.classList.add('on'); try { Spatial.wake(); } catch { }
   const engine = lang === 'fa' ? G.settings.voiceFa : G.settings.voiceEn;
   try {
+    if (lang === 'en') { const f = await enPackUrl(text); if (f) { await playUrl(f, tok); return; } }
     if (engine !== 'browser') { try { await playBlob(await cloudTTS(engine, text, lang, emotion), tok); return; } catch (e) { if (e.message !== 'NOKEY') console.warn(e); } }
     if (lang === 'en') { await browserSay(text, 'en'); return; }
     // فارسی با صدای مرورگر: بخش‌های انگلیسی با صدای انگلیسی
@@ -560,7 +575,7 @@ const I = {
   lock: '🔒'
 };
 function toast(t, ms = 3200) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, ms); }
-function setTop(title, back) { if (!back && !['home', 'plan', 'library', 'chat', 'tools', 'me', ''].includes((location.hash.slice(1).split('/')[0]))) back = true; $('#top').innerHTML = `${back ? `<button class="back" aria-label="بازگشت" onclick="history.length>1?history.back():go('home')">${I.back}</button>` : ''}<h1>${esc(title)}</h1>${U && !U.online && window.loginSheet ? `<button class="btn sm" style="margin-inline-start:auto" onclick="loginSheet(()=>router())">ورود / ثبت‌نام</button>` : ''}${me() ? `<button class="userchip" onclick="go('users')"><span class="avatar">${avHTML(me())}</span>${esc(me().name)}</button>` : ''}`; }
+function setTop(title, back) { if (!back && !['home', 'plan', 'library', 'chat', 'tools', 'me', ''].includes((location.hash.slice(1).split('/')[0]))) back = true; $('#top').innerHTML = `${back ? `<button class="back" aria-label="بازگشت" onclick="history.length>1?history.back():go('home')">${I.back}</button>` : ''}<h1>${esc(title)}</h1><button class="back" aria-label="حالت روز و شب" title="روز / شب" onclick="toggleDayNight()">${document.documentElement.dataset.theme === 'dark' ? '☀️' : '🌙'}</button>${U && !U.online && window.loginSheet ? `<button class="btn sm" style="margin-inline-start:auto" onclick="loginSheet(()=>router())">ورود / ثبت‌نام</button>` : ''}${me() ? `<button class="userchip" onclick="go('users')"><span class="avatar">${avHTML(me())}</span>${esc(me().name)}</button>` : ''}`; }
 function go(h) { location.hash = h; }
 const view = () => $('#view');
 function sheet(html) { const bg = document.createElement('div'); bg.className = 'sheet-bg'; bg.innerHTML = `<div class="sheet" role="dialog"><div class="grab"></div>${html}</div>`; bg.onclick = e => { if (e.target === bg) bg.remove(); }; document.body.appendChild(bg); return bg; }
@@ -698,11 +713,30 @@ function planGap() { // چند درس عقب‌تر از برنامه
 function catchUpPlan() { const P = U.plan; const end = addDays(P.start, P.dayCount - 1); const left = Math.max(7, Math.round((parseDay(end) - parseDay(isoDay())) / DAY) + 1); const gap = planGap();
   U.plan = buildPlan({ ...P, start: isoDay(), days: left, minutes: clamp(P.minutes + gap * 10, P.minutes, 180) }); U.plan.dayCount = left; U.plan.catchUp = (U.plan.catchUp || 0) + 1; saveU(); }
 function todayPlan() { const p = U.plan; if (!p) return null; return p.days?.[isoDay()] || null; }
+/* ───────── قفسهٔ دوره‌ها (مثل کتاب) و فهرست درس‌های هر دوره ───────── */
+const COVER = { intro: [350, 18, 'مقدماتی'], l1: [190, 220, 'سطح ۱'], l2: [140, 90, 'سطح ۲'], l3: [265, 300, 'سطح ۳'], wsb: [28, 48, 'واژه‌ها ۱'], wsi: [230, 260, 'واژه‌ها ۲'] };
+const courseUnits = id => LEVELS.some(l => l.id === id) ? ALL_UNITS.filter(u => u.level === id) : WS_UNITS.filter(u => u.level === id);
+function courseCover(id, big) {
+  const [h1, h2, name] = COVER[id] || [200, 230, '']; const Lv = [...LEVELS, ...WORD_TRACK].find(l => l.id === id) || {};
+  const us = courseUnits(id); const done = us.filter(isMastered).length;
+  return `<div class="cover${big ? ' big' : ''}" style="--h1:${h1};--h2:${h2}"><span class="cv-brand">زبان رستا</span><b class="cv-name">${esc(name)}</b><span class="cv-en en">${esc(Lv.en || '')}</span><span class="cv-lv en">${esc(CEFR_OF[id] || '')}</span><span class="cv-pr">${faNum(done)}/${faNum(us.length)} درس</span></div>`;
+}
+const shelfHTML = (title, sub, ids) => `<div class="shelf card"><div><b class="shelf-t">${title}</b><div class="small muted">${sub}</div></div><div class="shelf-row">${ids.map(id => `<a class="book" href="#course/${id}">${courseCover(id)}<b>${esc((COVER[id] || [])[2] || id)}</b><span class="tiny muted">${faNum(courseUnits(id).length)} درس · ${esc(CEFR_OF[id] || '')}</span></a>`).join('')}</div></div>`;
 routes.path = () => {
-  setTop('همهٔ درس‌ها', true);
-  view().innerHTML = `<div class="stack">${LEVELS.map(Lv => `<div class="sec">${esc(Lv.fa)} <small class="en">${esc(Lv.en)} · CEFR ${CEFR_OF[Lv.id] || ''}</small></div><div class="units">${ALL_UNITS.filter(u => u.level === Lv.id).map(unitCard).join('')}</div>`).join('')}
-  ${WORD_TRACK.map(Lv => `<div class="sec">${esc(Lv.fa)} <small class="en">${esc(Lv.en)}</small></div><div class="units">${WS_UNITS.filter(u => u.level === Lv.id).map(unitCard).join('')}</div>`).join('')}
+  setTop('دوره‌ها و درس‌ها', true);
+  view().innerHTML = `<div class="stack">${shelfHTML('دوره‌های آموزشی', 'از صفر تا متوسط، درس‌به‌درس مثل کتاب', LEVELS.map(l => l.id))}
+  ${shelfHTML('آموزش واژه‌ها', 'واژه‌های پرکاربرد، موضوع‌به‌موضوع', WORD_TRACK.map(l => l.id))}
   ${U.custom.length ? `<div class="sec">درس‌های خودم</div><div class="units">${U.custom.map(c => unitCard({ ...c, idx: 1000, baseWords: c.words })).join('')}</div>` : ''}<a class="btn line wide" href="#tool/import">+ افزودن درس از کتاب خودم یا ساخت درس تازه</a></div>`;
+};
+routes.course = id => {
+  const us = courseUnits(id); if (!us.length) return go('path');
+  setTop((COVER[id] || [])[2] || 'دوره', true);
+  view().innerHTML = `<div class="stack"><div class="course-head">${courseCover(id, true)}</div>
+  <div class="lesson-list">${us.map((u, i) => { const open = isOpen(u), m = isMastered(u), cur = !m && open && (u.track === 'ws' ? u.id === currentWS().id : u.idx === currentUnit().idx);
+    return `<a class="lrow${open ? '' : ' locked'}${cur ? ' current' : ''}" href="${open ? '#unit/' + u.id : 'javascript:void 0'}" ${open ? '' : `onclick="toast('این درس بعد از قبولی در درس قبل باز می‌شود.')"`}>
+      <span class="lr-ic" style="--h:${u.hue}">${esc(u.icon)}</span><div class="grow"><b>درس ${faNum(i + 1)}</b><div class="small">${esc(u.fa)}</div><div class="tiny muted en">${esc(u.en)}</div></div>
+      <span class="lr-st">${m ? '<span class="pill ok">✓</span>' : cur ? '<span class="pill acc">ادامه</span>' : open ? '' : '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 8V7a3 3 0 0 1 6 0v3zm3 4a2 2 0 0 1 1 3.7V19h-2v-1.3A2 2 0 0 1 12 14z"/></svg>'}</span></a>`; }).join('')}</div></div>`;
+  $('.lrow.current')?.scrollIntoView({ block: 'center' });
 };
 routes.home = () => {
   setTop('زبان رستا');
@@ -729,6 +763,7 @@ routes.home = () => {
     <span>سرعت: <b>${faNum(p.perWeek)}</b> درس در هفته</span><span>${p.eta ? `پیش‌بینی پایان سطح متوسط: <b>${jLabel(p.eta, true)}</b>` : 'پیش‌بینی بعد از اولین درس'}</span></div>
     ${U.badges.length ? `<div class="row">${U.badges.map(b => { const x = BADGES.find(y => y.id === b); return x ? `<span class="pill mark" title="${x.fa}">${x.ic} ${x.fa}</span>` : ''; }).join('')}</div>` : ''}</div>
   ${(() => { const f = forecast(); const m = f.milestones.find(x => !x.done); return m ? `<a class="card row" href="#vision" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span style="font-size:30px">🔭</span><div class="grow"><b>چشم‌انداز تو</b><div class="small">با همین سرعت، تا <b>${jLabel(m.date, true)}</b> می‌توانی ${esc(m.t)}.</div></div><span class="muted">›</span></a>` : ''; })()}
+  ${shelfHTML('دوره‌های آموزشی', 'یک دوره را بزن تا درس‌هایش را ببینی', [...LEVELS, ...WORD_TRACK].map(l => l.id))}
   <div class="sec">درس‌های پیش رو <small><a href="#path">همهٔ درس‌ها ›</a></small></div><div class="units">${ALL_UNITS.slice(cur.idx, cur.idx + 4).map(unitCard).join('')}${unitCard(currentWS())}</div>
   <a class="btn line wide" href="#tool/import">+ افزودن درس از کتاب خودم یا ساخت درس تازه با هوش مصنوعی</a>
   ${!U.placement ? `<a class="btn ghost wide" href="#placement">تعیین سطح با هوش مصنوعی</a>` : ''}
@@ -777,7 +812,7 @@ routes.unit = (id, sub) => {
   <ul class="small" style="margin:0;padding-inline-start:18px;line-height:2"><li>${faNum(unitWords(u).length || 20)}+ واژه، فعل و عبارت دربارهٔ «${esc(u.fa)}» با تصویر و تلفظ</li><li><b>گرامر:</b> ${bidi(u.gram || '—')}</li><li><b>در پایان می‌توانی:</b> ${bidi(u.talk || '—')}</li><li>یک مکالمهٔ واقعی این موقعیت، شنیدن و تکرار، و صحبت با معلم</li></ul>
   <span class="tiny muted">قبولی: نمرهٔ ${faNum(G.settings.passScore)} در آزمون پایانی؛ بعد درس بعدی باز می‌شود.</span>
   <div id="why">${G.cache['why:' + u.id] ? `<div class="notice soft small">${esc(G.cache['why:' + u.id])}</div>` : `<button class="btn ghost sm" id="whyb">این درس به چه دردم می‌خورد؟</button>`}</div>
-  <div id="ua"></div><div class="stack" id="ub"><div class="row" style="gap:6px"><a class="btn ghost sm" href="#sleep/${u.id}">🌙 مرور قبل از خواب (سه‌بعدی)</a><a class="btn ghost sm" href="#myradio/${u.id}">📻 رادیوی این درس</a></div><button class="btn ghost sm" id="dlv">⬇ دانلود همهٔ صداهای این درس (برای آفلاین و سرعت)</button><button class="btn ghost sm" id="mkaudio">🎧 صوت کامل درس (واژه‌ها + مکالمه) برای گوش دادن آفلاین و دانلود</button></div></div>
+  <div id="ua"></div><div class="stack" id="ub"><div class="row" style="gap:6px"><a class="btn ghost sm" href="#sleep/${u.id}">🌙 مرور قبل از خواب (سه‌بعدی)</a><a class="btn ghost sm" href="#myradio/${u.id}">📻 رادیوی این درس</a></div><button class="btn ghost sm wide" id="dlv">⬇ دانلود صدای انگلیسی این درس برای آفلاین (🇺🇸 آمریکایی + 🇬🇧 بریتانیایی)</button><button class="btn ghost sm wide" id="mkaudio">🎧 صوت کامل درس (واژه‌ها + مکالمه) برای گوش دادن آفلاین و دانلود</button></div></div>
   ${!words.length ? `<div class="notice">لغات این سرفصل هنوز ساخته نشده. با یک دکمه هوش مصنوعی همهٔ واژه‌ها و افعال کاربردی‌اش را می‌سازد.</div>` : ''}
   <ul class="steps">${STEPS.map((s, i) => `<li><a class="step${st.steps[s.k] || (s.k === 'exam' && st.mastered) ? ' done' : ''}" href="#${s.k === 'words' ? 'unit/' + u.id + '/w' : s.k + '/' + u.id}"><span class="n">${st.steps[s.k] || (s.k === 'exam' && st.mastered) ? '✓' : faNum(i + 1)}</span><span class="grow"><b>${s.ic} ${s.fa}</b><br><span class="small muted">${s.d}</span></span></a></li>`).join('')}</ul>
   <div class="grid2"><a class="btn ghost" href="#grammar">📐 گرامر کامل</a><a class="btn ghost" href="#verbs">🔁 افعال کاربردی</a><a class="btn ghost" href="#practice/${u.id}">✍️ تمرین‌ها (آفلاین و هوشمند)</a><a class="btn ghost" href="#theater">🎬 داستان صوتی با این واژه‌ها</a></div>
@@ -788,14 +823,14 @@ routes.unit = (id, sub) => {
   $('#whyb') && ($('#whyb').onclick = async () => { if (needAI($('#why'))) return; $('#why').innerHTML = loading(); try { const r = await ai({ system: 'You are a motivating Persian-speaking English teacher.', messages: [{ role: 'user', content: `${learnerContext(u)}\n\nIn Persian, in 3 short sentences, tell this learner why the unit "${u.en}" (grammar: ${u.gram}) is useful for their real real life and how it moves them toward fluent speaking. JSON {"why":"..."}` }] }); G.cache['why:' + u.id] = r.why; saveG('cache'); $('#why').innerHTML = `<div class="notice soft small">${esc(r.why)}</div>`; say(r.why, 'fa', 'encouraging'); } catch (e) { aiErr(e); $('#why').innerHTML = ''; } });
   $('#more').onclick = () => expandWords(u);
   idb.get('unitwav:' + u.id).then(b => { if (b) audioBox($('#ub'), b, 'zaban-' + u.id); });
-  $('#dlv') && (lsGet('zd:voiceDl:' + u.id + ':' + voiceSig(), 0) && ($('#dlv').textContent = '✓ صداهای این درس روی دستگاه ذخیره شده'), $('#dlv').onclick = () => preloadUnitVoice(u, $('#dlv')));
+  $('#dlv') && (lsGet('zd:enpack:' + u.id, 0) && ($('#dlv').textContent = '✓ صدای انگلیسی این درس آفلاین ذخیره شده'), $('#dlv').onclick = () => downloadEnPack(u.id, $('#dlv')));
   $('#mkaudio') && ($('#mkaudio').onclick = async () => { if (!unitWords(u).length) return toast('اول لغات این درس را بساز.'); const box = $('#ub'); try { const b = await buildAudio('unitwav:' + u.id, unitAudioChunks(u), (i, n) => box.innerHTML = loading(`در حال ساخت صوت درس… ${faNum(i + 1)} از ${faNum(n)}`)); audioBox(box, b, 'zaban-' + u.id); } catch (e) { box.innerHTML = ''; aiErr(e); } });
   $('#playall').onclick = async e => { for (const w of words) { if (!(await say(w.w, 'en', 'calm'))) break; await sleep(350); } };
-  idb.get('unitaudio:' + u.id).then(b => { $('#ua').innerHTML = `${b ? `<audio controls src="${URL.createObjectURL(b)}" style="width:100%"></audio>` : ''}<label class="btn line sm" style="margin-top:6px">${b ? 'جایگزینی' : 'افزودن'} فایل صوتی دلخواه برای این درس<input type="file" accept="audio/*" hidden id="uaf"></label>`; $('#uaf').onchange = async e => { const f = e.target.files[0]; if (f) { await idb.set('unitaudio:' + u.id, f); routes.unit(id); } }; });
+  idb.get('unitaudio:' + u.id).then(b => { $('#ua').innerHTML = `${b ? `<audio controls src="${URL.createObjectURL(b)}" style="width:100%"></audio>` : ''}<label class="btn line sm" style="margin-top:6px">${b ? 'جایگزینی' : 'افزودن'} فایل صوتی دلخواه برای این درس<input type="file" accept="audio/*" hidden id="uaf"></label>`; $('#uaf').onchange = async e => { const f = e.target.files[0]; if (f) { await idb.set('unitaudio:' + u.id, f); routes.unit(id, 'steps'); } }; });
   if (sub === 'w') { markStep(u, 'words'); setTimeout(() => $('#wl')?.scrollIntoView({ behavior: 'smooth' }), 100); }
 };
 function wordRow(u, w) {
-  const s = U.srs[wid(u, w)]; return `<div class="word" data-w="${esc(w.w)}">${picHTML(u, w)}<div class="t"><b>${esc(w.w)}</b><span class="ipa">/${esc(w.ipa || '')}/</span><span>${esc(w.fa)} <span class="pill">${POS[w.pos] || ''}</span></span><span class="en small muted" style="text-align:right">${esc(w.ex || '')}</span></div>
+  const s = U.srs[wid(u, w)]; return `<div class="word" data-w="${esc(w.w)}">${picHTML(u, w)}<div class="t"><b>${esc(w.w)}</b><span class="ipa">/${esc(w.ipa || '')}/</span><span>${esc(w.fa)} <span class="pill">${POS[w.pos] || ''}</span>${regPill(w)}</span>${w.use ? `<span class="small muted">🧭 کجا: ${esc(w.use)}</span>` : ''}<span class="en small muted" style="text-align:right">${esc(w.ex || '')}</span></div>
   <span class="lv l${s ? s.box : 0}" title="سطح تثبیت"></span><div class="acts" style="flex-direction:column"><button class="icon-btn" data-a="say" title="تلفظ">${I.spk}</button><button class="icon-btn" data-a="ask" title="دربارهٔ این لغت بپرس">${I.ask}</button></div></div>`;
 }
 function bindWordRows(u) {
@@ -825,14 +860,14 @@ async function expandWords(u) {
       } catch { await sleep(4000 * (attempt + 1)); }
       done++; upd(); saveG('extra');
     }
-    saveG('extra'); bg.remove(); toast(`${faNum(added)} مورد در ${faNum(plan.groups.length)} سرفصل اضافه شد.`, 4000); routes.unit(u.id);
+    saveG('extra'); bg.remove(); toast(`${faNum(added)} مورد در ${faNum(plan.groups.length)} سرفصل اضافه شد.`, 4000); routes.unit(u.id, 'steps');
   } catch (e) { bg.remove(); aiErr(e); }
 }
 function imageSheet(u, w) {
   const k = wid(u, w);
   const bg = sheet(`<div class="stack"><b>تصویر «${esc(w.w)}»</b><div class="row" style="justify-content:center">${picHTML(u, w, true).replace('class="pic big"', 'class="pic" style="width:180px;height:180px;font-size:80px;--h:' + u.hue + '"')}</div>
   <div class="grid2"><button class="btn ghost" id="i1">تصویر سه‌بعدی برنامه</button><button class="btn ghost" id="i2">عکس واقعی از اینترنت</button><label class="btn ghost">تصویر از گوشی/کامپیوتر<input type="file" accept="image/*" hidden id="i3"></label><button class="btn line" id="i4">فقط ایموجی</button></div><span class="tiny muted">تصاویر سه‌بعدی: Microsoft Fluent Emoji (مجوز MIT)؛ همیشه آفلاین.</span></div>`);
-  const set = url => { if (url) G.img[k] = url; else delete G.img[k]; saveG('img'); bg.remove(); routes.unit(u.id); };
+  const set = url => { if (url) G.img[k] = url; else delete G.img[k]; saveG('img'); bg.remove(); routes.unit(u.id, 'steps'); };
   $('#i1', bg).onclick = () => set(null);
   $('#i2', bg).onclick = async () => { try { const url = await photoUrl(u, w); url ? set(url) : toast('عکسی پیدا نشد.'); } catch { toast('اتصال به منبع عکس ممکن نشد.'); } };
   $('#i3', bg).onchange = e => { const f = e.target.files[0]; if (!f) return; const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); const s = 256; c.width = c.height = s; const g = c.getContext('2d'); const m = Math.min(img.width, img.height); g.drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, s, s); set(c.toDataURL('image/jpeg', 0.8)); }; img.src = URL.createObjectURL(f); };
@@ -1470,7 +1505,8 @@ routes.settings = () => {
   $('#ci').onclick = () => { G.img = {}; saveG('img'); toast('تصاویر پاک شد.'); };
   setTimeout(() => { loadVoices(); const en = bestVoice('en'), fa = bestVoice('fa'); $('#vinfo') && ($('#vinfo').textContent = `صدای انگلیسی دستگاه: ${en ? en.name : 'یافت نشد'} · صدای فارسی دستگاه: ${fa ? fa.name : 'ندارد (Gemini را انتخاب کن)'}`); }, 400);
 };
-function applyTheme() { const t = G.settings.theme; if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = t; }
+function toggleDayNight() { G.settings.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; saveG('settings'); applyTheme(); $('#top [title="روز / شب"]') && ($('#top [title="روز / شب"]').textContent = G.settings.theme === 'dark' ? '☀️' : '🌙'); }
+function applyTheme() { if (!lsGet('zd:themeMig', 0)) { lsSet('zd:themeMig', 1); if (G.settings.theme === 'auto') { G.settings.theme = 'light'; saveG('settings'); } } const t = G.settings.theme; if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = t; }
 
 /* ───────── شروع ───────── */
 applyTheme();

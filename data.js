@@ -7,33 +7,69 @@ const LEVELS = [
   gram:'فعل to be با I / you (I am…, Are you…?) و سؤال‌های What / Where / How',
   talk:'سلام و احوالپرسی کن، خودت را معرفی کن (اسم، کشور، شغل)، اسمت را هجی کن و خداحافظی کن.',
   words:`hello|həˈloʊ|سلام|👋|phr|Hello! I'm Rasta.
-hi|haɪ|سلام (خودمانی)|🙋|phr|Hi, Sara! How are you?
-good morning|ɡʊd ˈmɔːrnɪŋ|صبح بخیر|🌅|phr|Good morning, everyone!
-good afternoon|ɡʊd ˌæftərˈnuːn|بعدازظهر بخیر|🌤️|phr|Good afternoon. Can I help you?
-good evening|ɡʊd ˈiːvnɪŋ|عصربخیر / شب بخیر (هنگام دیدار)|🌆|phr|Good evening, sir.
-good night|ɡʊd ˈnaɪt|شب بخیر (هنگام خداحافظی و خواب)|🌙|phr|Good night! See you tomorrow.
-How are you?|haʊ ɑːr juː|حالت چطور است؟|🙂|phr|Hi, Ali! How are you?
-I'm fine, thanks.|aɪm faɪn θæŋks|خوبم، ممنون.|👍|phr|I'm fine, thanks. And you?
-What's your name?|wʌts jʊr neɪm|اسمت چیست؟|❓|phr|Hi! What's your name?
-My name is…|maɪ neɪm ɪz|اسم من … است|🪪|phr|My name is Rasta.
-Nice to meet you.|naɪs tə miːt juː|از آشنایی‌ات خوشحالم.|🤝|phr|Nice to meet you, Maryam.
-Where are you from?|wer ɑːr juː frʌm|اهل کجایی؟|🌍|phr|Where are you from? I'm from Iran.
-I'm from…|aɪm frʌm|من اهل … هستم|📍|phr|I'm from Iran, but I live in Canada.
+hi|haɪ|سلام (خودمانی)|🙋|phr|Hi, Sara! How are you?|i|با دوست، همکار و آشنا؛ رایج‌ترین سلام روزمره
+good morning|ɡʊd ˈmɔːrnɪŋ|صبح بخیر|🌅|phr|Good morning, everyone!|n|تا ظهر؛ در محل کار و جاهای رسمی هم مناسب
+good afternoon|ɡʊd ˌæftərˈnuːn|بعدازظهر بخیر|🌤️|phr|Good afternoon. Can I help you?|f|ظهر تا حدود ساعت ۶؛ بیشتر رسمی و کاری
+good evening|ɡʊd ˈiːvnɪŋ|عصربخیر / شب بخیر (هنگام دیدار)|🌆|phr|Good evening, sir.|f|از غروب، موقع دیدن کسی؛ رسمی (رستوران، هتل)
+good night|ɡʊd ˈnaɪt|شب بخیر (هنگام خداحافظی و خواب)|🌙|phr|Good night! See you tomorrow.|n|فقط موقع خداحافظی یا رفتن به خواب، نه برای سلام
+How are you?|haʊ ɑːr juː|حالت چطور است؟|🙂|phr|Hi, Ali! How are you?|n|بعد از سلام؛ جوابش معمولاً کوتاه است
+I'm fine, thanks.|aɪm faɪn θæŋks|خوبم، ممنون.|👍|phr|I'm fine, thanks. And you?|n|جواب کتابی؛ نیتیوها بیشتر I'm good می‌گویند
+What's your name?|wʌts jʊr neɪm|اسمت چیست؟|❓|phr|Hi! What's your name?|n|برای پرسیدن اسم؛ در جمع رسمی‌تر: May I have your name?
+My name is…|maɪ neɪm ɪz|اسم من … است|🪪|phr|My name is Rasta.|n|معرفی خود؛ خودمونی‌تر: I'm …
+Nice to meet you.|naɪs tə miːt juː|از آشنایی‌ات خوشحالم.|🤝|phr|Nice to meet you, Maryam.|n|بار اولی که کسی را می‌بینی
+Where are you from?|wer ɑːr juː frʌm|اهل کجایی؟|🌍|phr|Where are you from? I'm from Iran.|n|پرسیدن اهل کجا بودن
+I'm from…|aɪm frʌm|من اهل … هستم|📍|phr|I'm from Iran, but I live in Canada.|n|گفتن اهل کجا بودن
 live|lɪv|زندگی کردن|🏠|v|I live in Tehran.
 spell|spel|هجی کردن|🔤|v|How do you spell your name?
-please|pliːz|لطفاً|🙏|adv|Please sit down.
-thank you|ˈθæŋk juː|متشکرم|💐|phr|Thank you very much!
-You're welcome.|jʊr ˈwelkəm|خواهش می‌کنم (در جواب تشکر)|😊|phr|"Thank you!" "You're welcome."
-excuse me|ɪkˈskjuːz miː|ببخشید (برای جلب توجه)|✋|phr|Excuse me, where is the bank?
-sorry|ˈsɑːri|متأسفم / ببخشید (عذرخواهی)|😔|adj|Sorry, I'm late.
-goodbye|ɡʊdˈbaɪ|خداحافظ|👋|phr|Goodbye! Have a nice day.
-See you later.|siː juː ˈleɪtər|بعداً می‌بینمت.|🫡|phr|Bye, Sara! See you later.
-Mr.|ˈmɪstər|آقای …|👨‍💼|n|Good morning, Mr. Khan.
-Ms.|mɪz|خانم … (رسمی)|👩‍💼|n|This is Ms. Ahmadi, our teacher.
+please|pliːz|لطفاً|🙏|adv|Please sit down.|n|هر درخواستی؛ نگفتنش بی‌ادبی حساب می‌شود
+thank you|ˈθæŋk juː|متشکرم|💐|phr|Thank you very much!|n|همه‌جا؛ خودمونی: Thanks!
+You're welcome.|jʊr ˈwelkəm|خواهش می‌کنم (در جواب تشکر)|😊|phr|"Thank you!" "You're welcome."|n|جواب تشکر؛ خودمونی: No problem / Sure
+excuse me|ɪkˈskjuːz miː|ببخشید (برای جلب توجه)|✋|phr|Excuse me, where is the bank?|n|برای جلب توجه یا رد شدن از کنار کسی
+sorry|ˈsɑːri|متأسفم / ببخشید (عذرخواهی)|😔|adj|Sorry, I'm late.|n|عذرخواهی؛ برای جلب توجه هم گاهی
+goodbye|ɡʊdˈbaɪ|خداحافظ|👋|phr|Goodbye! Have a nice day.|f|کمی رسمی و قطعی؛ در روزمره بیشتر Bye
+See you later.|siː juː ˈleɪtər|بعداً می‌بینمت.|🫡|phr|Bye, Sara! See you later.|i|خداحافظی دوستانه؛ حتی اگر معلوم نیست کی همدیگر را می‌بینید
+Mr.|ˈmɪstər|آقای …|👨‍💼|n|Good morning, Mr. Khan.|f|با فامیلی مرد: Mr. Karimi
+Ms.|mɪz|خانم … (رسمی)|👩‍💼|n|This is Ms. Ahmadi, our teacher.|f|با فامیلی زن (بدون اشاره به تأهل)
 first name|ˈfɜːrst neɪm|نام (کوچک)|🏷️|n|My first name is Rasta.
 last name|ˈlæst neɪm|نام خانوادگی|📛|n|What's your last name?
 country|ˈkʌntri|کشور|🗺️|n|Iran is a big country.
-job|dʒɑːb|شغل|💼|n|What's your job? I'm a nurse.`},
+job|dʒɑːb|شغل|💼|n|What's your job? I'm a nurse.
+hey|heɪ|سلام (خیلی خودمونی؛ با دوست‌ها)|🙌|phr|Hey, Sara! Long time no see.|i|فقط با دوست و هم‌سن‌ها؛ با رئیس یا غریبه نه
+Hey there!|heɪ ðer|سلام! (خودمونی و گرم)|😃|phr|Hey there! How's it going?|i|گرم و خودمونی
+Hiya!|ˈhaɪjə|سلام (خودمونی، بیشتر بریتانیایی)|🇬🇧|phr|Hiya! You all right?|i|خودمونی، بیشتر بریتانیا
+Morning!|ˈmɔːrnɪŋ|صبح بخیر (کوتاه و خودمونی)|☕|phr|Morning! Did you sleep well?|i|کوتاه‌شدهٔ Good morning بین همکارها و دوست‌ها
+How's it going?|haʊz ɪt ˈɡoʊɪŋ|چطوری؟ اوضاع چطوره؟ (خودمونی)|🤙|phr|Hey Ali, how's it going?|i|بسیار رایج بین دوست‌ها و همکارها
+How are you doing?|haʊ ər jə ˈduːɪŋ|حالت چطوره؟ (دوستانه)|🙂|phr|Hi Maryam, how are you doing?|i|دوستانه؛ جواب: I'm doing well / Good
+What's up?|wʌts ˈʌp|چه خبر؟ (خیلی خودمونی؛ جوابش معمولاً Not much)|🤘|phr|Hey, what's up?|s|عامیانه، فقط با دوست؛ جواب: Not much
+What's new?|wʌts ˈnuː|چه خبر تازه؟|🆕|phr|Long time no see! What's new?|i|وقتی مدتی همدیگر را ندیده‌اید
+How have you been?|haʊ əv jə ˈbɪn|این مدت چطور بودی؟ (برای کسی که مدتی ندیدی)|🫂|phr|Hi! How have you been?|n|برای کسی که مدتی ندیده‌ای
+Long time no see!|ˌlɔːŋ taɪm noʊ ˈsiː|چه عجب! خیلی وقته ندیدمت! (خودمونی)|⌛|phr|Reza! Long time no see!|i|خودمونی؛ بعد از مدت طولانی
+Good to see you.|ˈɡʊd tə ˈsiː jə|خوشحالم می‌بینمت.|😊|phr|Good to see you again!|n|دیدن آشنا؛ رسمی‌تر: It's good to see you
+How's everything?|haʊz ˈevriθɪŋ|همه چیز روبه‌راهه؟|🌈|phr|How's everything at work?|i|پرسیدن احوال کلی
+How's your day going?|haʊz jər ˈdeɪ ˈɡoʊɪŋ|روزت چطور داره می‌گذره؟|📆|phr|Hi! How's your day going?|n|همکار، فروشنده، آشنا
+How do you do?|haʊ də jə ˈduː|از آشنایی‌تون خوشوقتم (خیلی رسمی؛ سؤال نیست، جوابش هم همینه)|🎩|phr|"How do you do?" "How do you do?"|f|بسیار رسمی و قدیمی؛ امروز کم استفاده می‌شود
+Pleased to meet you.|ˈpliːzd tə ˈmiːt jə|از آشنایی‌تون خوشوقتم (رسمی)|🤝|phr|Pleased to meet you, Mr. Brown.|f|آشنایی رسمی و کاری
+It's a pleasure to meet you.|ɪts ə ˈpleʒər tə ˈmiːt jə|از آشنایی با شما خیلی خوشحالم (رسمی و مؤدبانه)|💐|phr|It's a pleasure to meet you, Dr. Karimi.|f|خیلی مؤدبانه؛ جلسهٔ کاری، مهمان مهم
+Nice to meet you too.|ˈnaɪs tə ˈmiːt jə ˈtuː|منم از آشنایی‌ات خوشحالم.|🤝|phr|"Nice to meet you." "Nice to meet you too."|n|جواب Nice to meet you
+I'm good, thanks. And you?|aɪm ˈɡʊd θæŋks ən ˈjuː|خوبم، ممنون. تو چطوری؟ (رایج‌ترین جواب)|👍|phr|"How are you?" "I'm good, thanks. And you?"|n|رایج‌ترین جواب واقعی نیتیوها
+Pretty good.|ˈprɪti ˈɡʊd|خوبم، بد نیستم (خودمونی)|😌|phr|"How's it going?" "Pretty good."|i|جواب خودمونی
+Not bad.|ˌnɑːt ˈbæd|بد نیستم.|👌|phr|"How are you?" "Not bad, thanks."|i|جواب خودمونی
+Not much.|ˌnɑːt ˈmʌtʃ|خبری نیست (جواب What's up?)|🤷|phr|"What's up?" "Not much. You?"|i|جواب What's up?
+Can't complain.|ˌkænt kəmˈpleɪn|شکایتی ندارم؛ خوبم (خودمونی)|😄|phr|"How are things?" "Can't complain."|i|جواب خودمونی و شوخ
+So-so.|ˈsoʊ soʊ|ای، بد نیستم؛ معمولی|😐|phr|"How was your day?" "So-so."|i|وقتی حالت خیلی خوب نیست
+I'm doing well.|aɪm ˈduːɪŋ ˈwel|خوبم (کمی رسمی‌تر)|🌟|phr|"How are you doing?" "I'm doing well, thank you."|f|جواب کمی رسمی و مؤدبانه
+Excuse me, are you…?|ɪkˈskjuːz mi ɑːr jə|ببخشید، شما … هستید؟|❔|phr|Excuse me, are you Sara?|n|پیدا کردن کسی که قرار داری
+This is…|ðɪs ɪz|ایشون … هستن (برای معرفی کسی)|👉|phr|This is my friend, Ali.|n|معرفی کسی به دیگران
+Bye!|baɪ|خداحافظ! (خودمونی)|👋|phr|Bye! See you tomorrow.|i|رایج‌ترین خداحافظی روزمره
+See you soon.|ˈsiː jə ˈsuːn|به زودی می‌بینمت.|🔜|phr|Thanks for coming. See you soon!|n|وقتی به‌زودی همدیگر را می‌بینید
+See you tomorrow.|ˈsiː jə təˈmɑːroʊ|فردا می‌بینمت.|➡️|phr|Good night! See you tomorrow.|n|همکار و همکلاسی
+Talk to you later.|ˈtɔːk tə jə ˈleɪtər|بعداً باهات حرف می‌زنم (آخر تماس یا پیام)|📱|phr|I have to go. Talk to you later!|i|آخر تماس تلفنی یا پیام
+Take care!|ˌteɪk ˈker|مراقب خودت باش!|❤️|phr|Bye, Maryam. Take care!|i|خداحافظی گرم با دوست و خانواده
+Have a nice day!|hæv ə ˈnaɪs ˈdeɪ|روز خوبی داشته باشی!|🌞|phr|Thank you! Have a nice day!|n|فروشنده، مشتری، همکار؛ خیلی رایج
+Have a good one!|hæv ə ˈɡʊd wʌn|روز/شب خوبی داشته باشی! (خودمونی، آمریکایی)|✌️|phr|Thanks, man. Have a good one!|s|عامیانهٔ آمریکایی
+Catch you later!|ˈkætʃ jə ˈleɪtər|بعداً می‌بینمت! (عامیانه)|🏃|phr|Gotta go. Catch you later!|s|عامیانه، بین جوان‌ها
+Nice talking to you.|ˈnaɪs ˈtɔːkɪŋ tə jə|از صحبت باهات خوشحال شدم (آخر گفتگو)|💬|phr|Nice talking to you. Bye!|n|پایان گفتگو با کسی که تازه آشنا شدی
+Goodbye for now.|ɡʊdˈbaɪ fər ˈnaʊ|فعلاً خداحافظ.|🙋|phr|That's all for today. Goodbye for now!|n|فعلاً خداحافظ؛ کلاس، تلفن`},
 { id:'things', en:'Things Around Me', fa:'وسایل شخصی و کلاس', icon:'🎒', hue:205,
   gram:'a / an، this / these، اسم جمع، و حروف اضافهٔ مکان (in, on, under, next to)',
   talk:'بگو وسایلت کجاست و بپرس «Where is my…?»؛ چیزهای دور و برت را نام ببر.',
