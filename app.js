@@ -517,7 +517,7 @@ function router() {
   if (!G.users.length || !G.active || !G.users.some(u => u.id === G.active)) { if (!G.users.length) return viewWelcome(); loadUser(G.users[0].id); }
   if (!U) loadUser(G.active);
   const [r, ...args] = (location.hash.slice(1) || 'home').split('/');
-  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat' }[r] || r)));
+  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', theater: 'library', practice: 'home', vision: 'home', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat' }[r] || r)));
   (routes[r] || routes.home)(...args.map(decodeURIComponent));
 }
 addEventListener('hashchange', router);
@@ -577,6 +577,7 @@ routes.home = () => {
     <div class="grid2 small"><span>درس‌های قبول‌شده: <b class="num">${faNum(p.mastered)}</b> از ${faNum(ALL_UNITS.length)}</span><span>واژه‌های تثبیت‌شده: <b>${faNum(learnedCount())}</b></span>
     <span>سرعت: <b>${faNum(p.perWeek)}</b> درس در هفته</span><span>${p.eta ? `پیش‌بینی پایان سطح متوسط: <b>${jLabel(p.eta, true)}</b>` : 'پیش‌بینی بعد از اولین درس'}</span></div>
     ${U.badges.length ? `<div class="row">${U.badges.map(b => { const x = BADGES.find(y => y.id === b); return x ? `<span class="pill mark" title="${x.fa}">${x.ic} ${x.fa}</span>` : ''; }).join('')}</div>` : ''}</div>
+  ${(() => { const f = forecast(); const m = f.milestones.find(x => !x.done); return m ? `<a class="card row" href="#vision" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span style="font-size:30px">🔭</span><div class="grow"><b>چشم‌انداز تو</b><div class="small">با همین سرعت، تا <b>${jLabel(m.date, true)}</b> می‌توانی ${esc(m.t)}.</div></div><span class="muted">›</span></a>` : ''; })()}
   ${LEVELS.map(Lv => `<div class="sec">${esc(Lv.fa)} <small class="en">${esc(Lv.en)}</small></div><div class="units">${ALL_UNITS.filter(u => u.level === Lv.id).map(unitCard).join('')}</div>`).join('')}
   ${WORD_TRACK.map(Lv => `<div class="sec">${esc(Lv.fa)} <small class="en">${esc(Lv.en)}</small></div><div class="units">${WS_UNITS.filter(u => u.level === Lv.id).map(unitCard).join('')}</div>`).join('')}
   ${U.custom.length ? `<div class="sec">درس‌های خودم</div><div class="units">${U.custom.map(c => unitCard({ ...c, idx: 1000, baseWords: c.words })).join('')}</div>` : ''}
@@ -585,7 +586,7 @@ routes.home = () => {
   </div>`;
   $$('[data-u]').forEach(b => b.onclick = () => { loadUser(b.dataset.u); router(); });
   $('#cu') && ($('#cu').onclick = () => { catchUpPlan(); toast(`برنامهٔ جبرانی ساخته شد: روزی ${faNum(U.plan.minutes)} دقیقه تا همان تاریخ هدف.`, 5000); go('plan'); });
-  if (!U.plan && !lsGet('zd:planAsked:' + G.active, false)) { lsSet('zd:planAsked:' + G.active, true); setTimeout(() => { const bg = sheet(`<div class="stack"><div class="big-ic">🗓️</div><b>برنامهٔ شخصی‌ات را بسازیم؟</b><span class="small muted">بگو تا کی می‌خواهی به کجا برسی و روزی چقدر وقت داری؛ برنامه روی تقویم شمسی چیده می‌شود، یادآوری می‌کند و اگر عقب بیفتی برنامهٔ جبرانی می‌دهد.</span><a class="btn" href="#plan" onclick="this.closest('.sheet-bg').remove()">بله، بسازیم</a><button class="btn ghost" onclick="this.closest('.sheet-bg').remove()">بعداً</button></div>`); }, 800); }
+  if (!U.plan && !lsGet('zd:planAsked:' + G.active, false)) { setTimeout(() => { if (!['', '#home'].includes(location.hash) || $('.sheet-bg')) return; lsSet('zd:planAsked:' + G.active, true); const bg = sheet(`<div class="stack"><div class="big-ic">🗓️</div><b>برنامهٔ شخصی‌ات را بسازیم؟</b><span class="small muted">بگو تا کی می‌خواهی به کجا برسی و روزی چقدر وقت داری؛ برنامه روی تقویم شمسی چیده می‌شود، یادآوری می‌کند و اگر عقب بیفتی برنامهٔ جبرانی می‌دهد.</span><a class="btn" href="#plan" onclick="this.closest('.sheet-bg').remove()">بله، بسازیم</a><button class="btn ghost" onclick="this.closest('.sheet-bg').remove()">بعداً</button></div>`); }, 800); }
 };
 function unitCard(u) {
   const open = isOpen(u), m = u.idx < 1000 || u.track === 'ws' ? isMastered(u) : false, cur = !m && open && (u.track === 'ws' ? u.id === currentWS().id : u.idx === currentUnit().idx);
@@ -625,6 +626,7 @@ routes.unit = (id, sub) => {
   <div id="ua"></div><div class="stack" id="ub"><button class="btn ghost sm" id="mkaudio">🎧 صوت کامل درس (واژه‌ها + مکالمه) برای گوش دادن آفلاین و دانلود</button></div></div>
   ${!words.length ? `<div class="notice">لغات این سرفصل هنوز ساخته نشده. با یک دکمه هوش مصنوعی همهٔ واژه‌ها و افعال کاربردی‌اش را می‌سازد.</div>` : ''}
   <ul class="steps">${STEPS.map((s, i) => `<li><a class="step${st.steps[s.k] || (s.k === 'exam' && st.mastered) ? ' done' : ''}" href="#${s.k === 'words' ? 'unit/' + u.id + '/w' : s.k + '/' + u.id}"><span class="n">${st.steps[s.k] || (s.k === 'exam' && st.mastered) ? '✓' : faNum(i + 1)}</span><span class="grow"><b>${s.ic} ${s.fa}</b><br><span class="small muted">${s.d}</span></span></a></li>`).join('')}</ul>
+  <div class="grid2"><a class="btn ghost" href="#practice/${u.id}">✍️ تمرین‌ها (آفلاین و هوشمند)</a><a class="btn ghost" href="#theater">🎬 داستان صوتی با این واژه‌ها</a></div>
   <div class="sec">واژه‌ها و افعال <small>${faNum(words.length)} مورد</small><span class="grow"></span><button class="btn ghost sm" id="more">${words.length ? '+ بانک کامل لغات، افعال و جمله‌ها' : 'ساخت بانک کامل لغات این درس'}</button></div>
   <div class="row"><button class="btn sm" id="playall">${I.spk} پخش همه</button><span class="small muted">رنگ نقطه: نارنجی = تازه، فیروزه‌ای = در حال تثبیت، سبز = تثبیت‌شده</span></div>
   <div class="stack" id="wl">${(() => { const groups = {}; words.forEach(w => (groups[w.g || 'واژه‌های اصلی درس'] = groups[w.g || 'واژه‌های اصلی درس'] || []).push(w)); return Object.entries(groups).map(([g, ws]) => `<details class="card" ${Object.keys(groups).length < 3 ? 'open' : ''}><summary>${esc(g)} <span class="pill">${faNum(ws.length)}</span></summary><div class="words" style="margin-top:8px">${ws.map(w => wordRow(u, w)).join('')}</div></details>`).join(''); })()}</div></div>`;
@@ -1072,6 +1074,9 @@ setInterval(() => { // یادآور درون‌برنامه‌ای
 /* ───────── ابزارها ───────── */
 routes.tools = () => {
   setTop('ابزارها'); const T = [
+    ['theater', '🎬', 'تئاتر داستان صوتی', 'داستان با سناریو، صحنه‌های تصویری، صداپیشه و موسیقی متن، با واژه‌های خودت.'],
+    ['practice', '✍️', 'تمرین آفلاین و هوشمند', 'جای خالی، مرتب کردن، دیکته، ترجمه و جواب‌نویسی با تصحیح؛ و تمرین مشابه برای هر اشتباه.'],
+    ['vision', '🔭', 'چشم‌انداز من', 'با همین سرعت کی به کجا می‌رسی؛ تاریخ‌ها روی تقویم شمسی.'],
     ['dict', '📕', 'دیکشنری کامل', 'انگلیسی↔فارسی با تلفظ آمریکایی و بریتانیایی، معانی، همنشین‌ها، اصطلاحات و اشتباه‌های رایج.'],
     ['howto', '🤔', '«چطور بگم؟»', 'جملهٔ فارسی بنویس؛ انگلیسی طبیعی در دو حالت رسمی و خودمانی بگیر.'],
     ['fix', '📝', 'اصلاح نوشته', 'متن انگلیسی‌ات با توضیح فارسی هر اشتباه اصلاح می‌شود.'],
@@ -1082,7 +1087,7 @@ routes.tools = () => {
     ['import', '📥', 'درس از کتاب خودم', 'لغت‌های هر درس کتابت را وارد کن یا با AI درس تازه بساز.'],
     ['role', '🎭', 'نقش‌آفرینی عمان', 'موقعیت‌های واقعی زندگی در عمان.']
   ];
-  view().innerHTML = `<div class="tools">${T.map(([k, ic, t, d]) => `<a class="tool" href="#${k === 'role' ? 'role' : k === 'dict' ? 'dict' : 'tool/' + k}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>`;
+  view().innerHTML = `<div class="tools">${T.map(([k, ic, t, d]) => `<a class="tool" href="#${['role', 'dict', 'theater', 'vision'].includes(k) ? k : k === 'practice' ? 'practice/' + currentUnit().id : 'tool/' + k}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>`;
 };
 routes.tool = k => (TOOLS[k] || routes.tools)();
 const TOOLS = {
@@ -1210,6 +1215,9 @@ routes.guide = () => {
     ['🎯', 'مربی تلفظ و لهجه', 'صدایت را گوش می‌دهد، می‌گوید کدام صدا را اشتباه گفتی، چرا (تأثیر فارسی) و زبان و لب را چطور بگذاری؛ آمریکایی یا بریتانیایی.', '#tool/shadow'],
     ['🗣', 'مثل نیتیوها حرف بزن', 'نشان می‌دهد نیتیوها در مکالمهٔ واقعی جمله‌ها را چطور به هم می‌چسبانند (مثلاً Nice to meet you ← «نایس تِ میچو»).', '#tool/shadow'],
     ['💬', 'گپ آزاد و نقش‌آفرینی عمان', 'دربارهٔ هر چیزی حرف بزن یا در تاکسی مسقط، داروخانه، مصاحبهٔ کاری و… تمرین کن؛ آخرش نمره و جمله‌های بهتر می‌گیری.', '#chat'],
+    ['🎬', 'تئاتر داستان صوتی', 'داستان‌هایی با سناریو، تصویر هر صحنه، صدای جدا برای هر شخصیت و موسیقی متن — با همان واژه‌هایی که داری یاد می‌گیری.', '#theater'],
+    ['✍️', 'تمرین آفلاین و هوشمند', 'بدون اینترنت هم تمرین کن؛ تصحیح فوری و تمرین مشابه برای هر اشتباه.', '#practice/' + currentUnit().id],
+    ['🔭', 'چشم‌انداز واقعی', 'بر اساس وقت و سرعت خودت می‌گوید تا چه تاریخی دربارهٔ خرید، کار، سفر و… روان صحبت می‌کنی.', '#vision'],
     ['📖', 'کتابخانهٔ دوزبانه', 'کتاب‌های ساده تا پیشرفته با ترجمهٔ زیر هر پاراگراف، معنی هر واژه با یک لمس و پخش صوتی.', '#library/online'],
     ['📕', 'دیکشنری کامل', 'انگلیسی↔فارسی با تلفظ آمریکایی و بریتانیایی، همهٔ معانی، همنشین‌ها، اصطلاحات، اشتباه‌های رایج و لینک به لانگمن.', '#dict'],
     ['🤔', 'چطور بگم؟ و اصلاح نوشته', 'جملهٔ فارسی بنویس و معادل رسمی و خودمانی بگیر؛ متن انگلیسی‌ات را با توضیح فارسی اصلاح کن.', '#tools'],
