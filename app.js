@@ -607,14 +607,14 @@ const routes = {};
 let routeGen = 0;
 function router() {
   if (/access_token|error_description|[?&]code=/.test(location.hash + location.search) && window.handleAuthRedirect) { if (!G.active && G.users[0]) loadUser(G.users[0].id); return handleAuthRedirect(); }
-  stopSpeak(); window.scrollTo(0, 0); view().onclick = null; $('nav.bottom').hidden = false; $$('.sheet-bg').forEach(x => x.remove()); document.body.classList.toggle('session', /^#(cards|quiz|exam|guide)\b/.test(location.hash));
+  if (!window.BGP?.on) stopSpeak(); window.scrollTo(0, 0); view().onclick = null; $('nav.bottom').hidden = false; $$('.sheet-bg').forEach(x => x.remove()); document.body.classList.toggle('session', /^#(cards|quiz|exam|guide)\b/.test(location.hash));
   if (!G.users.length || !G.active || !G.users.some(u => u.id === G.active)) { if (!G.users.length) return viewWelcome(); loadUser(G.users[0].id); }
   if (!U) loadUser(G.active);
   if (!U.online && !window.TEST_MODE && !/access_token|type=recovery/.test(location.hash)) return viewWelcome('in', true); // بدون حساب نمی‌شود وارد برنامه شد
   routeGen++; const [r, ...args] = (location.hash.slice(1) || 'home').split('/');
   if (['unit', 'lesson', 'cards', 'quiz', 'teach', 'talk', 'dialog', 'exam', 'practice', 'sleep', 'myradio'].includes(r) && args[0]) { const gu = unitById(decodeURIComponent(args[0])); if (!gu) { location.hash = 'home'; return; } if (gu.idx < 1000 && !isOpen(gu)) { toast(`این درس هنوز قفل است؛ اول درس قبلی را با نمرهٔ ${faNum(G.settings.passScore)} قبول شو.`); location.hash = 'home'; return; } }
   if (['role', 'gclass'].includes(r) && !args[0]) { location.hash = r === 'role' ? 'chat' : 'grammar'; return; }
-  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', theater: 'library', practice: 'home', vision: 'home', rooms: 'chat', path: 'home', u: 'home', admin: 'me', dm: 'chat', grammar: 'tools', gclass: 'tools', verbs: 'tools', leitner: 'tools', lesson: 'home', listen: 'tools', vclass: 'tools', news: 'tools', sleep: 'home', myradio: 'chat', music: 'tools', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat', coach: 'chat' }[r] || r)));
+  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', theater: 'library', practice: 'home', vision: 'home', rooms: 'chat', path: 'home', u: 'home', admin: 'me', dm: 'chat', grammar: 'tools', gclass: 'tools', verbs: 'tools', wtopics: 'tools', leitner: 'tools', lesson: 'home', listen: 'tools', vclass: 'tools', news: 'tools', sleep: 'home', myradio: 'chat', music: 'tools', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat', coach: 'chat' }[r] || r)));
   (routes[r] || routes.home)(...args.map(decodeURIComponent));
 }
 addEventListener('hashchange', router);
@@ -750,7 +750,7 @@ routes.home = () => {
   <div class="today">
     <div class="row"><span class="grow small muted">${jLabel(isoDay(), true)} · ${faNum(Math.round(L.min))} دقیقه مطالعهٔ امروز</span><span class="pill mark">🔥 ${faNum(streakOf(U))} روز</span></div>
     <b style="font-size:19px">درس ${faNum(cur.idx + 1)}: ${esc(cur.fa)} <span class="en" style="opacity:.7;font-size:14px">${esc(cur.en)}</span></b>
-    <ul class="tasks">${tasks.map(t => `<li class="${taskDone(t) ? 'done' : ''}"><span class="chk">${taskDone(t) ? '✓' : ''}</span>${esc(t.t)}</li>`).join('')}</ul>
+    <ul class="tasks">${tasks.map(t => `<li class="${taskDone(t) ? 'done' : ''}" data-tk="${esc(t.k || '')}" style="cursor:pointer"><span class="chk">${taskDone(t) ? '✓' : ''}</span><span class="grow">${esc(t.t)}</span>${taskLink(t) ? `<a href="${taskLink(t)}" class="small" onclick="event.stopPropagation()">برو ›</a>` : ''}</li>`).join('')}</ul>
     <div class="row"><a class="btn" href="#unit/${cur.id}">ادامهٔ یادگیری</a><a class="btn ghost" style="background:transparent;color:inherit;box-shadow:inset 0 0 0 1.5px currentColor" href="#leitner">🗃️ لایتنر${due ? ' · ' + faNum(due) + ' امروز' : ''}</a></div>
   </div>
   <div id="install-box">${installHTML()}</div>
@@ -772,6 +772,7 @@ routes.home = () => {
   ${!U.placement ? `<a class="btn ghost wide" href="#placement">تعیین سطح با هوش مصنوعی</a>` : ''}
   </div>`;
   $$('[data-u]').forEach(b => b.onclick = () => { loadUser(b.dataset.u); router(); });
+  $$('[data-tk]').forEach(li => li.onclick = () => { const k = isoDay() + '|' + li.dataset.tk; U.mdone = U.mdone || {}; if (U.mdone[k]) delete U.mdone[k]; else { U.mdone[k] = 1; addXP(3); toast('آفرین! در برنامهٔ امروز علامت خورد ✓'); } saveU(); routes.home(); });
   window.homeOnline && homeOnline(); bindInstall();
   $('#cu') && ($('#cu').onclick = () => { catchUpPlan(); toast(`برنامهٔ جبرانی ساخته شد: روزی ${faNum(U.plan.minutes)} دقیقه تا همان تاریخ هدف.`, 5000); go('plan'); });
   if (!U.plan && !lsGet('zd:planAsked:' + G.active, false)) { setTimeout(() => { if (!['', '#home'].includes(location.hash) || $('.sheet-bg')) return; lsSet('zd:planAsked:' + G.active, true); const bg = sheet(`<div class="stack"><div class="big-ic">🗓️</div><b>برنامهٔ شخصی‌ات را بسازیم؟</b><span class="small muted">بگو تا کی می‌خواهی به کجا برسی و روزی چقدر وقت داری؛ برنامه روی تقویم شمسی چیده می‌شود، یادآوری می‌کند و اگر عقب بیفتی برنامهٔ جبرانی می‌دهد.</span><a class="btn" href="#plan" onclick="this.closest('.sheet-bg').remove()">بله، بسازیم</a><button class="btn ghost" onclick="this.closest('.sheet-bg').remove()">بعداً</button></div>`); }, 800); }
@@ -784,7 +785,9 @@ function unitCard(u) {
     <span class="tile" style="--h:${u.hue}">${esc(u.icon)}</span>${u.track === 'ws' ? `<span class="tiny muted">سرفصل ${faNum(u.wsi + 1)}</span>` : u.idx < 1000 ? `<span class="tiny muted" style="font-weight:700">درس ${faNum(u.n)}</span>` : ''}<b>${esc(u.fa)}</b><span class="en">${esc(u.en)}</span>
     <div class="bar mark"><i style="width:${words.length ? Math.round(learned / words.length * 100) : 0}%"></i></div></a>`;
 }
+function taskLink(t) { const k = t.k || ''; if (k.startsWith('topic:')) return '#verbs/' + encodeURIComponent('⭐ ' + k.slice(6)); if (k.startsWith('wtopic:')) return '#wtopics/' + encodeURIComponent(k.slice(7)); if (k.startsWith('step:')) { const [, id, st] = k.split(':'); return st === 'words' ? `#unit/${id}/words` : st === 'dialog' ? `#unit/${id}/conv` : st === 'teach' ? `#unit/${id}/gram` : `#${st}/${id}`; } if (k.startsWith('exam:')) return '#exam/' + k.split(':')[1]; if (k === 'cards') return '#leitner'; if (k === 'radio') return '#listen'; if (k === 'news') return '#news'; return ''; }
 function taskDone(t) {
+  if ((U.mdone || {})[isoDay() + '|' + t.k]) return true;
   const cur = currentUnit(); const st = unitState(cur);
   if (t.k === 'news' || t.k === 'radio') return listenDone(t);
   if (t.k === 'cards') return dueIds().length === 0;
@@ -1220,16 +1223,46 @@ function buildPlan({ start = isoDay(), days = 120, minutes = 60, target = 'l1', 
   for (let i = 0; i < days; i++) { const d = addDays(start, i); if (!out[d]) out[d] = { unit: null, review: true, tasks: [{ k: 'cards', t: 'روز مرور: همهٔ فلش‌کارت‌های موعددار' }, { k: 'story', t: 'داستان با واژه‌های ضعیفم' }, { k: 'free', t: 'گپ آزاد ۱۵ دقیقه' }, { k: 'min', t: `${faNum(Math.round(minutes / 2))} دقیقه` }] }; }
   return { start, days, minutes, target, reminder, review, per, created: isoDay(), units: units.length, days: out, dayCount: days };
 }
+/* هدف آزاد (نوشتنی یا صوتی) → برنامه */
+function parseGoalLocal(txt) {
+  const t = txt.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)); const out = { target: /متوسط|سطح ?۳|سطح ?3|B1|پیشرفته/i.test(t) ? 'l3' : 'l1', topics: [] };
+  const mi = J_MONTHS.findIndex(m => t.includes(m)); if (mi >= 0) { let d = isoDay(); let last = null; for (let i = 0; i < 800; i++) { const x = addDays(isoDay(), i); const j = toJ(x); if (j.m === mi + 1) last = x; else if (last) break; } const mm = new RegExp('(\\d{1,2})\\s*' + J_MONTHS[mi]).exec(t); if (last) { if (mm && !/آخر/.test(t)) { const j0 = toJ(last); last = addDays(last, -(j0.d - +mm[1])); } out.days = Math.round((parseDay(last) - parseDay(isoDay())) / DAY) + 1; } }
+  const mh = /(\d+(?:\.\d+)?)\s*ساعت/.exec(t), mm2 = /(\d+)\s*دقیقه/.exec(t); if (mh) out.minutes = Math.round(+mh[1] * 60); else if (mm2) out.minutes = +mm2[1]; else if (/نیم ?ساعت/.test(t)) out.minutes = 30;
+  const tm = /ساعت\s*(\d{1,2})(?::(\d\d))?\s*(صبح|عصر|شب|بعدازظهر)?/.exec(t); if (tm && !mh) { let h = +tm[1]; if (/عصر|شب|بعدازظهر/.test(tm[3] || '') && h < 12) h += 12; out.reminder = String(h).padStart(2, '0') + ':' + (tm[2] || '00'); }
+  const m = t.match(/(?:زمینه|موضوع|مباحث|تاپیک)(?:ِ|‌ی)?\s*([^.،؛\n]+)/g) || []; m.forEach(x => x.replace(/^(?:زمینه|موضوع|مباحث|تاپیک)(?:ِ|‌ی)?\s*/, '').split(/\s*(?:،|,| و | یا |یا مثلا|مثلا)\s*/).map(y => y.replace(/^(?:های|ی)\s*/, '').replace(/\s*(کردن|هم|حتی|بشم|مسلط).*$/, '').trim()).filter(y => y.length > 1 && y.length < 25).forEach(y => out.topics.includes(y) || out.topics.push(y)));
+  return out;
+}
+async function goalToPlan(txt) {
+  let g = parseGoalLocal(txt);
+  if (hasAI() || firstKeyed()) try { const r = await ai({ max: 600, temp: 0.1, system: 'Extract a study goal. Today is ' + isoDay() + ' (Jalali ' + jLabel(isoDay(), true) + ').', messages: [{ role: 'user', content: `Learner goal (Persian): "${txt}". JSON {"target":"l1 (beginner/elementary) or l3 (up to intermediate)","endDate":"YYYY-MM-DD Gregorian or empty","minutes":minutes per day or 0,"reminder":"HH:MM or empty","topics":["Persian short topic names the learner wants to master, e.g. ترید، پوشاک، خرید"]}` }] });
+    if (r) { if (/^l[13]$/.test(r.target)) g.target = r.target; if (r.endDate && /^\d{4}-\d\d-\d\d$/.test(r.endDate)) { const d = Math.round((parseDay(r.endDate) - parseDay(isoDay())) / DAY) + 1; if (d > 6) g.days = d; } if (r.minutes > 9) g.minutes = r.minutes; if (/^\d\d:\d\d$/.test(r.reminder || '')) g.reminder = r.reminder; if (Array.isArray(r.topics) && r.topics.length) g.topics = r.topics.slice(0, 12); } } catch { }
+  const n = (g.target === 'l1' ? ALL_UNITS.filter(u => u.level === 'intro' || u.level === 'l1').length : ALL_UNITS.length) - currentUnit().idx;
+  g.days = g.days || (g.target === 'l1' ? 90 : 180); if (!g.minutes) g.minutes = clamp(Math.round(n / (g.days * 6 / 7) * 4.5 * 30 / 10) * 10, 30, 180);
+  const P = buildPlan({ days: g.days, minutes: g.minutes, target: g.target, reminder: g.reminder || '20:00', review: 6 });
+  const days = Object.keys(P.days).sort(); g.topics.forEach((tp, i) => { for (let k = i * 2; k < days.length; k += Math.max(3, g.topics.length * 2)) { const d = P.days[days[k]]; if (!d.review) d.tasks.splice(d.tasks.length - 1, 0, { k: (k / Math.max(3, g.topics.length * 2)) % 2 ? 'wtopic:' + tp : 'topic:' + tp, t: (k / Math.max(3, g.topics.length * 2)) % 2 ? `واژه‌ها و عبارت‌های «${tp}» (۱۵ دقیقه)` : `فعل‌های «${tp}» + کوییز (۱۵ دقیقه)` }); } });
+  P.goal = txt; P.topics = g.topics; return P;
+}
+function goalBox() { return `<div class="card stack"><b>🎯 هدفت را بنویس یا بگو</b><span class="small muted">مثلاً: «می‌خوام تا آخر بهمن سطح مقدماتی رو تموم کنم و تا آخر خرداد به سطح متوسط برسم. در زمینهٔ ترید، پوشاک و خرید هم مسلط بشم. روزی یک ساعت، ساعت ۸ شب وقت دارم.» برنامه خودش وقت روزانه را حساب می‌کند و کار هر روز را روی تقویم می‌چیند.</span>
+  <div class="row" style="flex-wrap:nowrap;align-items:stretch"><textarea id="goal" class="in grow" rows="4" placeholder="هدفم این است که…">${esc(U.plan?.goal || '')}</textarea><button class="btn ghost" id="gmic" aria-label="گفتن با صدا" style="min-width:52px">🎤</button></div>
+  <button class="btn" id="gmk">✨ برنامه‌ام را از روی هدفم بساز</button><div id="gmsg"></div></div>`; }
+function bindGoal() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition; const mic = $('#gmic');
+  if (!SR) mic.onclick = () => toast('ضبط صدا در این مرورگر پشتیبانی نمی‌شود؛ از کیبورد صوتی گوشی (🎤 روی کیبورد) استفاده کن.');
+  else mic.onclick = () => { const r = new SR(); r.lang = 'fa-IR'; r.interimResults = true; r.continuous = true; const base = $('#goal').value; mic.textContent = '⏺'; r.onresult = e => { $('#goal').value = (base ? base + ' ' : '') + [...e.results].map(x => x[0].transcript).join(' '); }; r.onend = () => mic.textContent = '🎤'; r.onerror = () => { mic.textContent = '🎤'; toast('صدا گرفته نشد؛ دوباره امتحان کن.'); }; r.start(); mic.onclick = () => r.stop(); };
+  $('#gmk').onclick = async () => { const txt = $('#goal').value.trim(); if (txt.length < 8) return toast('هدفت را کمی کامل‌تر بنویس.'); $('#gmsg').innerHTML = loading('برنامه را می‌چینم…'); const P = await goalToPlan(txt); U.plan = P; saveU(); addXP(10);
+    toast(`برنامه ساخته شد: روزی ${faNum(P.minutes)} دقیقه تا ${jLabel(addDays(P.start, P.dayCount - 1), true)}${P.topics?.length ? ' · موضوع‌ها: ' + P.topics.join('، ') : ''}`, 6000); routes.plan(); };
+}
 routes.plan = (mOffset = '0') => {
   setTop('تقویم آموزشی'); const v = view(); const P = U.plan;
   if (!P) {
-    v.innerHTML = `<div class="stack"><div class="card stack"><div class="big-ic">🗓️</div><b>برنامهٔ آموزشی شخصی‌ات را بسازیم</b><span class="small muted">برنامه بر اساس سطح فعلی، وقت روزانه و هدفت روی تقویم شمسی چیده می‌شود. هر روز دقیقاً می‌دانی چه کار کنی، و اگر عقب بیفتی برنامه خودش را به‌روز می‌کند.</span>
+    v.innerHTML = `<div class="stack">${goalBox()}<div class="card stack"><div class="big-ic">🗓️</div><b>یا برنامه را دستی بساز</b><span class="small muted">برنامه بر اساس سطح فعلی، وقت روزانه و هدفت روی تقویم شمسی چیده می‌شود. هر روز دقیقاً می‌دانی چه کار کنی، و اگر عقب بیفتی برنامه خودش را به‌روز می‌کند.</span>
     <label class="f">هدف<select id="tg" class="in"><option value="l1">پایان مقدماتی و سطح ۱ (۲۰ درس) + واژگان موضوعی پایه</option><option value="l3">پایان سطح ۳ — متوسط (۳۸ درس) + همهٔ واژگان موضوعی</option></select></label>
     <div class="grid2"><label class="f">مدت (روز)<input id="dy" class="in" type="number" min="30" max="365" value="120"></label><label class="f">وقت روزانه (دقیقه)<input id="mn" class="in" type="number" min="15" max="240" value="60"></label></div>
     <div class="grid2"><label class="f">ساعت یادآور<input id="rm" class="in" type="time" value="20:00"></label><label class="f">روز مرور هفتگی<select id="rv" class="in">${['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'].map((d, i) => `<option value="${i}"${i === 6 ? ' selected' : ''}>${d}</option>`).join('')}</select></label></div>
     <div class="notice soft small" id="est"></div><button class="btn" id="mk">ساخت برنامه</button></div></div>`;
     const est = () => { const n = $('#tg').value === 'l1' ? ALL_UNITS.filter(u => u.level === 'intro' || u.level === 'l1').length - currentUnit().idx : ALL_UNITS.length - currentUnit().idx; const d = +$('#dy').value * 6 / 7; const per = d / Math.max(1, n); $('#est').textContent = `${faNum(Math.max(0, n))} درس در ${faNum(+$('#dy').value)} روز ≈ هر درس ${faNum(per.toFixed(1))} روز مطالعه. ${per < 3 ? 'این برنامه خیلی فشرده است؛ روزی حداقل ۹۰ دقیقه لازم داری.' : per < 5 ? 'برنامهٔ جدی ولی شدنی؛ روزی یک ساعت کافی است.' : 'برنامهٔ راحت و پایدار.'} رسیدن به سطح متوسط (B1) در ۴ ماه با مطالعهٔ منظم روزانه شدنی است؛ صحبت کاملاً روان معمولاً تمرین مکالمهٔ بیشتری بعد از آن می‌خواهد.`; };
     ['tg', 'dy'].forEach(i => $('#' + i).oninput = est); est();
+    bindGoal();
     $('#mk').onclick = () => { U.plan = buildPlan({ days: +$('#dy').value, minutes: +$('#mn').value, target: $('#tg').value, reminder: $('#rm').value, review: +$('#rv').value }); saveU(); addXP(10); routes.plan(); };
     return;
   }
@@ -1241,14 +1274,15 @@ routes.plan = (mOffset = '0') => {
   const behind = Object.keys(P.days).filter(x => x < isoDay() && status(x) === 'miss').length;
   const planned = P.days[isoDay()]?.unit; const cu = currentUnit(); const planIdx = planned ? unitById(planned).idx : cu.idx; const gap = planIdx - cu.idx;
   v.innerHTML = `<div class="stack">
+  ${P.goal ? `<div class="notice soft small">🎯 ${esc(P.goal)}${P.topics?.length ? `<div>موضوع‌ها: ${P.topics.map(esc).join('، ')}</div>` : ''}</div>` : ''}
   <div class="card stack"><div class="row"><b class="grow">هدف: ${P.target === 'l1' ? 'پایان سطح ۱' : 'پایان سطح متوسط'} تا ${jLabel(addDays(P.start, P.dayCount - 1), true)}</b><span class="pill">${faNum(P.minutes)} دقیقه در روز</span></div>
   <div class="small">${gap > 0 ? `<span class="pill bad">${faNum(gap)} درس عقب‌تر از برنامه</span>` : gap < 0 ? `<span class="pill ok">${faNum(-gap)} درس جلوتر از برنامه 👏</span>` : '<span class="pill ok">طبق برنامه</span>'} · روزهای ازدست‌رفته: ${faNum(behind)}</div>
-  <div class="row"><button class="btn sm" id="upd">${gap > 0 ? 'برنامهٔ جبرانی (همان تاریخ هدف)' : 'به‌روزرسانی برنامه از امروز'}</button><button class="btn ghost sm" id="aiu">تنظیم با هوش مصنوعی</button><button class="btn ghost sm" id="ics">افزودن یادآورها به تقویم گوشی</button><button class="btn ghost sm" id="ntf">اعلان در برنامه</button><button class="btn line sm" id="rst">برنامهٔ تازه</button></div><div id="aim"></div></div>
+  <div class="row"><button class="btn sm" id="upd">${gap > 0 ? 'برنامهٔ جبرانی (همان تاریخ هدف)' : 'به‌روزرسانی برنامه از امروز'}</button><button class="btn ghost sm" id="aiu">تنظیم با هوش مصنوعی</button><button class="btn ghost sm" id="ics">افزودن یادآورها به تقویم گوشی</button><button class="btn ghost sm" id="ntf">اعلان در برنامه</button><button class="btn line sm" id="rst">🎯 هدف / برنامهٔ تازه</button></div><div id="aim"></div></div>
   <div class="card stack"><div class="row"><button class="icon-btn" onclick="routes.plan(${off - 1})">${I.back}</button><b class="grow" style="text-align:center">${J_MONTHS[jm.m - 1]} ${faNum(jm.y)}</b><button class="icon-btn" style="transform:scaleX(-1)" onclick="routes.plan(${off + 1})">${I.back}</button></div>
   <div class="cal">${J_WEEK.map(w => `<span class="h">${w}</span>`).join('')}${Array(weekdayIdx(first)).fill('<span class="d empty"></span>').join('')}${cells.map(c => { const p = P.days[c]; const u = p?.unit && unitById(p.unit); return `<button class="d ${status(c)} ${c === isoDay() ? 'today' : ''}" data-d="${c}"><span class="num">${faNum(toJ(c).d)}</span><span class="e">${p ? (p.review ? '🔁' : u?.icon || '') : ''}</span></button>`; }).join('')}</div>
   <div class="row tiny muted"><span class="pill ok">انجام شد</span><span class="pill bad">جا ماند</span><span class="pill acc">روز مرور</span></div></div>
   <div id="dd"></div></div>`;
-  const showDay = day => { const p = P.days[day]; $$('.cal .d').forEach(b => b.classList.toggle('sel', b.dataset.d === day)); $('#dd').innerHTML = p ? `<div class="card stack"><b>${jLabel(day, true)}${p.unit ? ' · ' + esc(unitById(p.unit).fa) : ' · روز مرور'}</b><ul class="list">${p.tasks.map(t => `<li>${day === isoDay() && taskDone(t) ? '✅ ' : ''}${esc(t.t)}</li>`).join('')}</ul>${U.log[day] ? `<span class="small muted">مطالعه: ${faNum(Math.round(U.log[day].min))} دقیقه · ${faNum(U.log[day].xp)} امتیاز</span>` : ''}${day === isoDay() && p.unit ? `<a class="btn sm" href="#unit/${cu.id}">شروع کار امروز</a>` : ''}</div>` : '<div class="card small muted">برای این روز برنامه‌ای نیست.</div>'; };
+  const showDay = day => { const p = P.days[day]; $$('.cal .d').forEach(b => b.classList.toggle('sel', b.dataset.d === day)); $('#dd').innerHTML = p ? `<div class="card stack"><b>${jLabel(day, true)}${p.unit ? ' · ' + esc(unitById(p.unit).fa) : ' · روز مرور'}</b><ul class="list">${p.tasks.map(t => `<li>${day === isoDay() && taskDone(t) ? '✅ ' : ''}${esc(t.t)}${day === isoDay() && taskLink(t) ? ` <a href="${taskLink(t)}" class="small">برو ›</a>` : ''}</li>`).join('')}</ul>${U.log[day] ? `<span class="small muted">مطالعه: ${faNum(Math.round(U.log[day].min))} دقیقه · ${faNum(U.log[day].xp)} امتیاز</span>` : ''}${day === isoDay() && p.unit ? `<a class="btn sm" href="#unit/${cu.id}">شروع کار امروز</a>` : ''}</div>` : '<div class="card small muted">برای این روز برنامه‌ای نیست.</div>'; };
   $$('.cal .d[data-d]').forEach(b => b.onclick = () => showDay(b.dataset.d)); showDay(isoDay());
   $('#upd').onclick = () => { catchUpPlan(); toast('برنامهٔ جبرانی تا همان تاریخ هدف ساخته شد.'); routes.plan(); }; $('#upd_old') && ($('#upd_old').onclick = () => { const left = P.dayCount - Math.round((parseDay(isoDay()) - parseDay(P.start)) / DAY); U.plan = buildPlan({ ...P, start: isoDay(), days: Math.max(14, left) }); U.plan.dayCount = U.plan.days ? Object.keys(U.plan.days).length : left; saveU(); toast('برنامه از امروز و بر اساس پیشرفت واقعی‌ات دوباره چیده شد.'); routes.plan(); });
   $('#rst').onclick = () => { U.plan = null; saveU(); routes.plan(); };
@@ -1290,6 +1324,7 @@ routes.tools = () => {
     ['listen', '🎧', 'شنیدن روزانه: رادیو و خبر', 'رادیوی زندهٔ آمریکایی یا بریتانیایی، خبر واقعی امروز به زبان ساده و برنامهٔ شنیداری روزانه.'],
     ['leitner', '🗃️', 'جعبهٔ لایتنر', 'کارت‌های امروز، تازه و آموخته‌شده؛ دسته‌ها و افزودن کارت دستی.'],
     ['grammar', '📐', 'گرامر کامل', 'همهٔ زمان‌ها و مباحث از مقدماتی تا متوسط با توضیح فارسی، مثال صوتی و تمرین.'],
+    ['wtopics', '🗂️', 'واژه‌ها بر اساس موضوع', 'هر موضوعی بنویس (فرودگاه، ترید، پوشاک…)؛ همهٔ واژه‌ها با رسمی/عامیانه، کاربرد و مثال.'],
     ['verbs', '🔁', 'افعال کاربردی', 'فعل‌های پرکاربرد دسته‌بندی‌شده با سه شکل فعل، معنی، مثال و آزمون.'],
     ['theater', '🎬', 'تئاتر داستان صوتی', 'داستان با سناریو، صحنه‌های تصویری، صداپیشه و موسیقی متن، با واژه‌های خودت.'],
     ['practice', '✍️', 'تمرین آفلاین و هوشمند', 'جای خالی، مرتب کردن، دیکته، ترجمه و جواب‌نویسی با تصحیح؛ و تمرین مشابه برای هر اشتباه.'],
@@ -1304,7 +1339,7 @@ routes.tools = () => {
     ['import', '📥', 'درس از کتاب خودم', 'لغت‌های هر درس کتابت را وارد کن یا با AI درس تازه بساز.'],
     ['role', '🎭', 'نقش‌آفرینی موقعیت‌های واقعی', 'موقعیت‌های واقعی زندگی روزمره.']
   ];
-  view().innerHTML = `<div class="tools">${T.map(([k, ic, t, d]) => `<a class="tool" href="#${['role', 'dict', 'theater', 'vision', 'grammar', 'verbs', 'leitner', 'listen'].includes(k) ? k : k === 'practice' ? 'practice/' + currentUnit().id : 'tool/' + k}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>`;
+  view().innerHTML = `<div class="tools">${T.map(([k, ic, t, d]) => `<a class="tool" href="#${['role', 'dict', 'theater', 'vision', 'grammar', 'verbs', 'wtopics', 'leitner', 'listen'].includes(k) ? k : k === 'practice' ? 'practice/' + currentUnit().id : 'tool/' + k}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>`;
 };
 routes.tool = k => (TOOLS[k] || routes.tools)();
 const TOOLS = {

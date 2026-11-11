@@ -47,7 +47,7 @@ Long time no see!|ˌlɔːŋ taɪm noʊ ˈsiː|چه عجب! خیلی وقته ن�
 Good to see you.|ˈɡʊd tə ˈsiː jə|خوشحالم می‌بینمت.|😊|phr|Good to see you again!|n|دیدن آشنا؛ رسمی‌تر: It's good to see you
 How's everything?|haʊz ˈevriθɪŋ|همه چیز روبه‌راهه؟|🌈|phr|How's everything at work?|i|پرسیدن احوال کلی
 How's your day going?|haʊz jər ˈdeɪ ˈɡoʊɪŋ|روزت چطور داره می‌گذره؟|📆|phr|Hi! How's your day going?|n|همکار، فروشنده، آشنا
-How do you do?|haʊ də jə ˈduː|از آشنایی‌تون خوشوقتم (خیلی رسمی؛ سؤال نیست، جوابش هم همینه)|🎩|phr|"How do you do?" "How do you do?"|f|بسیار رسمی و قدیمی؛ امروز کم استفاده می‌شود
+How do you do?|haʊ də jə ˈduː|از آشنایی‌تون خوشوقتم (خیلی رسمی؛ سؤال نیست، جوابش هم همینه)|🎩|phr|A: How do you do, Mr. Brown? B: How do you do?|f|بسیار رسمی و قدیمی؛ امروز کم استفاده می‌شود
 Pleased to meet you.|ˈpliːzd tə ˈmiːt jə|از آشنایی‌تون خوشوقتم (رسمی)|🤝|phr|Pleased to meet you, Mr. Brown.|f|آشنایی رسمی و کاری
 It's a pleasure to meet you.|ɪts ə ˈpleʒər tə ˈmiːt jə|از آشنایی با شما خیلی خوشحالم (رسمی و مؤدبانه)|💐|phr|It's a pleasure to meet you, Dr. Karimi.|f|خیلی مؤدبانه؛ جلسهٔ کاری، مهمان مهم
 Nice to meet you too.|ˈnaɪs tə ˈmiːt jə ˈtuː|منم از آشنایی‌ات خوشحالم.|🤝|phr|"Nice to meet you." "Nice to meet you too."|n|جواب Nice to meet you
