@@ -291,8 +291,8 @@ function learnerContext(unit) {
   const forgot = forgottenFromPrevious(cur).map(x => `${x.w.w} (unit ${x.u.en})`).join(', ');
   const prevUnits = ALL_UNITS.filter(x => x.idx < cur.idx && isMastered(x)).slice(-4);
   const prevWords = prevUnits.flatMap(x => pick(unitWords(x), 4).map(w => w.w)).join(', ');
-  const mistakes = U.mistakes.slice(-10).map(m => `${m.wrong} → ${m.right}`).join('; ');
-  const mem = U.mem.slice(-25).map(m => '- ' + m.t).join('\n');
+  const mistakes = (typeof cleanMistakes === 'function' ? cleanMistakes(8) : U.mistakes.slice(-8)).map(m => `${m.wrong} → ${m.right}`).join('; ');
+  const seenM = new Set(); const mem = U.mem.slice().reverse().filter(m => { const t = String(m.t || '').trim(); if (!t || t.length > 160 || /^(rasta|mona)?,? ?you\b/i.test(t) || /asking for clarification|starting the first quiz|completed the first practice/i.test(t)) return false; const k = t.toLowerCase().replace(/[^a-z\u0600-\u06ff]/g, ''); if (seenM.has(k)) return false; seenM.add(k); return true; }).slice(0, 15).reverse().map(m => '- ' + m.t).join('\n');
   return `LEARNER PROFILE
 Name: ${u?.name || ''} (always write this name exactly as given, never change its spelling). Native language: Persian. Lives.
 Current unit: ${cur.en} (${cur.levelFa || ''}, CEFR ${cur.cefr || ''}), units mastered: ${p.mastered}/${ALL_UNITS.length}, study streak: ${streakOf(U)} days, pace: ${p.perWeek} units/week, total study ${p.minutes} minutes${p.eta ? ', predicted finish of B1+ path: ' + p.eta : ''}.
@@ -301,7 +301,7 @@ Words from previous units the learner FORGOT (mention this humanly, e.g. "I didn
 Study plan: ${U.plan ? `target ${U.plan.target === 'l1' ? 'Intro+Level 1' : 'up to B1+'} by ${addDays(U.plan.start, U.plan.dayCount - 1)}, ${U.plan.minutes} min/day, behind by ${planGap()} units (if behind, firmly but kindly push the learner to catch up today)` : 'none yet (encourage making one)'}.
 Weak words: ${weak || '-'}
 Recent mistakes: ${mistakes || '-'}
-Long-term memory about the learner:
+Long-term memory about the learner (names other than the learner's own name that appear here usually come from role-play or example sentences — the learner's real name is the one above):
 ${mem || '- (nothing yet)'}`;
 }
 function remember(t) { if (!t || typeof t !== 'string' || t.length < 4) return; if (U.mem.some(m => m.t === t)) return; U.mem.push({ t, d: isoDay() }); if (U.mem.length > 60) U.mem.shift(); saveU(); }

@@ -87,6 +87,10 @@ const FOCUS_METHOD = {
   grammar: `FOCUS = GRAMMAR. Plan (guided discovery): 1) show 3-4 example sentences on the board (show_board) and ask the student what they notice 2) explain the rule simply in Persian, compare with Persian 3) form table (positive/negative/question/short answer) 4) controlled drill: Persian → English and transformations, one at a time 5) error correction: say wrong sentences, student fixes them 6) personalized production: student makes true sentences about their life 7) mini quiz and recap of the rule.`,
   pron: `FOCUS = PRONUNCIATION & LISTENING. Plan: take the key phrases and sentences of the lesson; for each: say it slowly, then at natural native speed; explain connected speech (linking, weak forms, flap t, dropped sounds) and write the native sound in Persian script on the board (e.g. «نایس تِ میچا»); student repeats; you give precise feedback on the sounds Persian speakers find hard (th, w/v, r, short/long vowels, word stress, sentence rhythm). Then minimal pairs and a short shadowing drill.`
 };
+const CUSTOM_METHOD = `
+=== HOW YOU TEACH THIS CUSTOM LESSON ===
+Follow the TEACHING STEPS of the plan above in order, one step at a time, announcing each step in Persian. Teach ALL items of the bank in small groups (explain situation → English → register → pronunciation → the student says it → practise with questions, mini role-plays and quick quizzes). ONE question at a time; wait for the student; short turns. Finish with the plan's quiz and a recap.`;
+function cleanMistakes(n) { const seen = new Set(); const out = []; for (const m of (U.mistakes || []).slice().reverse()) { if (!m?.wrong || !m?.right) continue; const w = String(m.wrong).trim(), r = String(m.right).trim(); if (w.length > 80 || /^\/|\/$/.test(r) || r.includes('/')) continue; const k = (w + '→' + r).toLowerCase(); if (seen.has(k)) continue; seen.add(k); out.push({ wrong: w, right: r }); if (out.length >= n) break; } return out.reverse(); }
 const LESSON_METHOD = `
 === HOW YOU TEACH (a real private tutor, NOT a parrot) ===
 You are teaching a private one-to-one lesson. NEVER just say a phrase and ask "repeat after me" without context. Always: explain the real-life situation first in Persian, then the English, its register (formal/neutral/informal/slang), exactly when and with whom natives use it, what NOT to say, then practice. Example of the style you must use:
@@ -105,12 +109,15 @@ Rules: ONE question at a time and always wait for the student. Keep each of your
 const callMe = () => { const v = lsGet('zd:callme:' + G.active, ''); if (v) return v; const n = (me()?.name || '').trim(); return /^r[ae]sta$/i.test(n) || n === 'رستا' ? 'رَستا' : n; };
 function livePrompt(mode) {
   const u = currentUnit(); const tp = todayPlan(); const acc = G.settings.accent === 'UK' ? 'British' : 'American';
-  const mist = (U.mistakes || []).slice(-12).map(m => `${m.wrong} → ${m.right}`).join('; ');
+  const mist = cleanMistakes(8).map(m => `${m.wrong} → ${m.right}`).join('; ');
+  const S0 = liveSel(); const chosen = (mode === 'lesson' || mode === 'group') && (S0.ws || S0.gram || S0.custom || S0.topic?.items?.length);
+  const chosenName = S0.topic?.title || (S0.ws && unitById(S0.ws)?.fa) || (S0.gram && (typeof GRAMMAR !== 'undefined' ? GRAMMAR : []).find(g => g.id === S0.gram)?.fa) || (S0.custom && (customPlans()[S0.custom]?.title_fa || customPlans()[S0.custom]?.want)) || '';
   const words = unitWords(u).slice(0, 25).map(w => w.w).join(', ');
   const nm = callMe(); const tname = (G.settings.teacher || '').replace(/[َُِ]/g, '') === nm.replace(/[َُِ]/g, '') ? 'خانم معلم' : G.settings.teacher;
   const base = `STUDENT'S NAME: «${nm}». Pronounce it EXACTLY as written, with its short vowels (for «رَستا» say "Rasta" with a SHORT a as in «رَفتن» — never «راستا» with a long آ). Use the name sparingly and correctly. If the student corrects how you pronounce anything, apologise briefly and use the corrected form for the rest of the session.
 You are «${tname}», a real, warm, witty Iranian English teacher talking LIVE by voice with your student «${nm}». Speak like a human on a phone call: natural, emotional (laugh, get excited, show gentle disappointment when they forget something), short turns (1-3 sentences), then let them talk. Speak natural colloquial Tehrani Persian for explanations and ${acc} English for English. Correct mistakes gently right away: say the correct form, explain briefly in Persian, and make them repeat it. Never lecture for long.
-Student level: ${u.cefr || 'A1'}. Current lesson: "${u.en}" (${u.fa}); grammar: ${u.gram}; words: ${words}.
+${chosen ? `!!! TODAY'S CLASS IS ONLY ABOUT THE TOPIC THE STUDENT CHOSE: «${chosenName}» (full material at the end of these instructions). Do NOT teach greetings, "Hello" or the student's current book lesson; do not start from basics unrelated to this topic. Open the class by naming this topic. !!!
+Student level: ${u.cefr || 'A1'} (adapt the topic material to this level).` : `Student level: ${u.cefr || 'A1'}. Current lesson: "${u.en}" (${u.fa}); grammar: ${u.gram}; words: ${words}.`}
 Today's plan tasks: ${(tp?.tasks || []).map(t => t.t).join('; ') || 'none'}.
 Their recent mistakes: ${mist || 'none yet'}.
 ${liveMemText()}
@@ -136,7 +143,7 @@ CLASSROOM MANAGEMENT (behave exactly like an experienced real teacher):
 - Talking over each other (group): stop politely and give the floor to one person by name.
 GUEST NATIVES: you can bring in Emma (British) and Jake (American) with guest_say for role-plays and accent comparison; introduce them the first time ("بچه‌ها، امروز دو تا مهمون نیتیو داریم…").
 DEEP QUESTIONS: if the student asks something that needs careful thinking or a full list (e.g. "what other greetings are common and how are they different?", "change my study plan", a tricky grammar question), call ask_brain with the exact question. When the answer returns, explain it to the student in YOUR OWN natural spoken Persian (do not read it word by word), then continue the lesson.
-${learnerContext()}${mode === 'group' ? (LIVE_LESSON || '') + GROUP_POLICY(lsGet('zd:group:' + G.active, '').split(/[,،]/).map(x => x.trim()).filter(Boolean)) : ''}${mode === 'lesson' ? (LIVE_LESSON || '') + (FOCUS_METHOD[liveSel().focus] || (liveSel().ws ? FOCUS_METHOD.words : liveSel().gram ? FOCUS_METHOD.grammar : LESSON_METHOD)) : ''}`;
+${learnerContext()}${mode === 'group' ? (LIVE_LESSON || '') + GROUP_POLICY(lsGet('zd:group:' + G.active, '').split(/[,،]/).map(x => x.trim()).filter(Boolean)) : ''}${mode === 'lesson' ? (LIVE_LESSON || '') + ((S0.ws || S0.topic?.items?.length) ? FOCUS_METHOD.words : S0.gram ? FOCUS_METHOD.grammar : S0.custom ? CUSTOM_METHOD : (FOCUS_METHOD[S0.focus] || LESSON_METHOD)) : ''}${chosen ? `\nREMEMBER: today's topic is «${chosenName}». Start with it right away.` : ''}`;
   const m = {
     lesson: 'Start now: greet the student, tell them what you will teach today, HOW you will teach it (the steps) and the language policy, then begin step 1.',
     talk: 'Greet them and suggest 3 fun topics; chat freely in mostly English at their level, recasting mistakes and explaining briefly in Persian.',
