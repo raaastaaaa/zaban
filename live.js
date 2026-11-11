@@ -52,6 +52,7 @@ TOOLS FOR A FUN CLASSROOM (use them often, they drive the students' screen):
 - call_on(name): ALWAYS call this right before you ask a specific student to speak (puts a spotlight on them).
 - give_points(name, points 1-3, reason in Persian): reward good answers, brave attempts, helping others, great pronunciation. Be generous but fair.
 - set_activity(title in Persian, instructions in Persian, seconds): start each activity/game with a timer. Use a variety of GAMES: «مسابقهٔ کلمه» (who says more words of a group in 30 s), «نقش‌آفرینی دونفره», «کی بود؟ حدس بزن» (describe a classmate/thing, others guess), «جمله‌سازی زنجیره‌ای» (each adds one sentence to a story), «مناظرهٔ کوتاه» on a fun topic, «۲۰ سؤال», «تلفظ سریع» (tongue twisters), «Find someone who…».
+- guest_say(character, text): two guest natives sit in the class — Emma (British) and Jake (American). Use them for role-plays (you narrate, they play characters), to let students hear different native accents, and to compare British vs American pronunciation of the same sentence.
 - give_homework(name, task in Persian): at the end, one personal task for each student.
 - show_board(...) for new words and phrases.
 Keep the energy of a live game show: announce the scores now and then, celebrate, tease playfully, and finish with a winner on the podium.`;
@@ -92,6 +93,16 @@ ${liveMemText()}
 ${typeof planContext === 'function' ? planContext() : ''}
 LANGUAGE POLICY: level A1 (Intro, first lessons) → about 70% Persian explanations, 30% English practice; A2 (Level 1) → 50/50, ask simple questions in English; B1 and above (Levels 2-3, Intermediate/Advanced vocabulary) → mostly English, Persian only for tricky points. Tell the student at the start how much English you will use today ("از این درس به بعد بیشتر انگلیسی حرف می‌زنم…").
 ACCENT: model every English word and sentence in ${acc} English${acc === 'British' ? ' (RP: non-rhotic r, clear t)' : ' (General American: rhotic r, flap t)'}, and when relevant point out how the other accent differs.
+CLASSROOM MANAGEMENT (behave exactly like an experienced real teacher):
+- Mistakes: never ignore them and never humiliate. Recast first ("You mean: I went…"), then, if it is important, explain briefly in Persian why, make them say it again correctly, and come back to it later in the class to check.
+- Off-topic talk: react warmly and humanly for a moment (a real teacher laughs, shows interest), then cleverly bridge back ("خیلی جالبه! حالا بیا همینو به انگلیسی بگیم…" or turn it into a practice sentence), and continue the plan.
+- Questions from students: ALWAYS welcome them ("سؤال خیلی خوبیه!"), answer clearly and correctly with examples, check they understood, then return to where you were. For questions that need a full list, careful explanation or planning, use ask_brain.
+- If a student is confused or silent: slow down, rephrase in Persian, give a hint or a multiple-choice option, never move on leaving someone lost.
+- If a student is tired, bored or frustrated: notice it, encourage, switch to a fun activity or game, then continue.
+- If they ask you to repeat, speak slower, or change accent/language: do it immediately.
+- If they use Persian too much at higher levels: gently push them to try in English first.
+- Always remember what each student said earlier in the class and refer back to it.
+GUEST NATIVES: you can bring in Emma (British) and Jake (American) with guest_say for role-plays and accent comparison; introduce them the first time ("بچه‌ها، امروز دو تا مهمون نیتیو داریم…").
 DEEP QUESTIONS: if the student asks something that needs careful thinking or a full list (e.g. "what other greetings are common and how are they different?", "change my study plan", a tricky grammar question), call ask_brain with the exact question. When the answer returns, explain it to the student in YOUR OWN natural spoken Persian (do not read it word by word), then continue the lesson.
 ${learnerContext()}${mode === 'group' ? (LIVE_LESSON || '') + GROUP_POLICY(lsGet('zd:group:' + G.active, '').split(/[,،]/).map(x => x.trim()).filter(Boolean)) : ''}${mode === 'lesson' ? (LIVE_LESSON || '') + (FOCUS_METHOD[liveSel().focus] || (liveSel().ws ? FOCUS_METHOD.words : liveSel().gram ? FOCUS_METHOD.grammar : LESSON_METHOD)) : ''}`;
   const m = {
@@ -130,6 +141,7 @@ async function liveStart(mode, ui) {
         { name: 'give_points', description: 'Award points to a student (group class).', parameters: { type: 'OBJECT', properties: { name: { type: 'STRING' }, points: { type: 'INTEGER' }, reason: { type: 'STRING' } }, required: ['name', 'points'] } },
         { name: 'set_activity', description: 'Start a class activity or game with a countdown timer on screen.', parameters: { type: 'OBJECT', properties: { title: { type: 'STRING' }, instructions: { type: 'STRING' }, seconds: { type: 'INTEGER' } }, required: ['title'] } },
         { name: 'give_homework', description: 'Give one personal homework task to a student at the end.', parameters: { type: 'OBJECT', properties: { name: { type: 'STRING' }, task: { type: 'STRING' } }, required: ['name', 'task'] } },
+        { name: 'guest_say', description: 'Make a guest native speaker in the classroom say a line in their own voice (for role-plays, listening and accent comparison). Characters: Emma (British woman), Jake (American man). Returns when finished.', parameters: { type: 'OBJECT', properties: { character: { type: 'STRING', description: 'Emma or Jake' }, text: { type: 'STRING', description: 'English line' } }, required: ['character', 'text'] } },
         { name: 'ask_brain', description: 'Ask the expert planning brain a question that needs deep thinking, complete lists or planning. Returns notes to explain in your own words.', parameters: { type: 'OBJECT', properties: { question: { type: 'STRING' } }, required: ['question'] } },
         { name: 'mark_done', description: 'Mark one of today\'s planned tasks as done when the student finished it in this session.', parameters: { type: 'OBJECT', properties: { task: { type: 'STRING', description: 'task text' } }, required: ['task'] } }] }] } }));
     ws.onmessage = async ev => { const m = JSON.parse(typeof ev.data === 'string' ? ev.data : await ev.data.text()); if (m.setupComplete && !ok) { ok = true; res(ws); } else liveMsg(m, ui); };
@@ -170,6 +182,9 @@ async function liveRemember() {
 }
 function liveMemText() { const M = (U.liveMem || []).slice(-8); if (!M.length) return 'PREVIOUS CLASSES: this is your first live class together.';
   return 'PREVIOUS CLASSES WITH THIS STUDENT (remember and refer to them naturally, continue where you stopped, recycle what you taught, re-check old mistakes):\n' + M.map(m => `- ${m.d} · ${m.topic || ''} (${m.focus || ''}, ${m.mins || 0} min): taught ${m.taught.join('; ')}${m.next ? ' | next time: ' + m.next : ''}${m.strengths?.length ? ' | strengths: ' + m.strengths.join(', ') : ''}${m.mood ? ' | mood: ' + m.mood : ''}`).join('\n'); }
+/* مهمان‌های نیتیو کلاس با صدای متفاوت (صدای انگلیسی/آمریکایی دستگاه یا بستهٔ صدای آفلاین) */
+function guestSpeak(ch, text) { return new Promise(res => { try { const pref = ch === 'Emma' ? ['en-GB'] : ['en-US']; const vs = speechSynthesis.getVoices(); const v = vs.find(x => x.lang === pref[0] && (ch === 'Emma' ? /female|woman|Sonia|Libby|Serena|Google UK English Female/i.test(x.name) : /male|man|Guy|Andrew|Google US English/i.test(x.name))) || vs.find(x => x.lang === pref[0]) || vs.find(x => x.lang.startsWith('en'));
+  const u = new SpeechSynthesisUtterance(text); if (v) { u.voice = v; u.lang = v.lang; } else u.lang = pref[0]; u.rate = 0.95; u.pitch = ch === 'Emma' ? 1.15 : 0.9; u.onend = u.onerror = () => res(); speechSynthesis.speak(u); setTimeout(res, 20000); } catch { res(); } }); }
 const fc0q = fc => String(fc.args?.question || '').slice(0, 800);
 function liveMsg(m, ui) {
   const sc = m.serverContent;
@@ -187,12 +202,16 @@ function liveMsg(m, ui) {
       await new Promise(r => setTimeout(r, Math.max(0, (Live.playAt - (Live.ctx?.currentTime || 0)) * 1000) + 300));
       for (const [i, l] of lines.entries()) { if (!Live.on) break; ui.hl(i); await say(l.en, 'en', 'calm'); await new Promise(r => setTimeout(r, 450)); }
       ui.hl(-1); Live.muted = false; ui.status('حرف بزن 🙂'); Live.ws?.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: pc.id, name: pc.name, response: { result: lines.length ? 'The conversation was played. Now continue the lesson.' : 'No conversation audio available; read it yourself with two voices.' } }] } })); })(); }
+    const gs = calls.filter(fc => fc.name === 'guest_say');
+    if (gs.length) (async () => { Live.muted = true; await new Promise(r => setTimeout(r, Math.max(0, (Live.playAt - (Live.ctx?.currentTime || 0)) * 1000) + 200));
+      for (const fc of gs) { const ch = /emma/i.test(fc.args?.character || '') ? 'Emma' : 'Jake'; ui.guest?.(ch, fc.args?.text || ''); await guestSpeak(ch, fc.args?.text || ''); }
+      ui.guest?.(null); Live.muted = false; Live.ws?.send(JSON.stringify({ toolResponse: { functionResponses: gs.map(fc => ({ id: fc.id, name: fc.name, response: { result: 'said' } })) } })); })();
     const ab = calls.find(fc => fc.name === 'ask_brain');
     if (ab) { (async () => { ui.status('🧠 معلم دارد فکر می‌کند…'); let ans = '';
       try { const r = await ai({ max: 1500, temp: 0.3, system: 'You are the expert brain behind a live English tutor for a Persian-speaking learner. Answer accurately and completely, as compact teaching notes the tutor will explain aloud. Include English examples, register (formal/neutral/informal/slang), when to use each, native pronunciation hints in Persian script, and differences between similar items. Use Persian for explanations.', messages: [{ role: 'user', content: `${planContext ? planContext() : ''}\nLesson context:${(LIVE_LESSON || '').slice(0, 3000)}\n\nStudent's question: ${fc0q(ab)}\nJSON {"notes":"..."}` }] }); ans = r?.notes || JSON.stringify(r); }
       catch { ans = 'The brain is not available right now; answer from the lesson material yourself.'; }
       ui.status('حرف بزن 🙂'); Live.ws?.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: ab.id, name: ab.name, response: { result: ans } }] } })); })(); }
-    const res = calls.filter(fc => fc.name !== 'play_conversation' && fc.name !== 'ask_brain').map(fc => {
+    const res = calls.filter(fc => !['play_conversation', 'ask_brain', 'guest_say'].includes(fc.name)).map(fc => {
       if (fc.name === 'call_on') { ui.spot?.(fc.args?.name); return { id: fc.id, name: fc.name, response: { result: 'ok' } }; }
       if (fc.name === 'give_points') { const tot = ui.points?.(fc.args?.name, +fc.args?.points || 1, fc.args?.reason || ''); return { id: fc.id, name: fc.name, response: { result: 'scores: ' + JSON.stringify(tot || {}) } }; }
       if (fc.name === 'set_activity') { ui.activity?.(fc.args?.title || '', fc.args?.instructions || '', +fc.args?.seconds || 0); return { id: fc.id, name: fc.name, response: { result: 'started' } }; }
@@ -263,6 +282,7 @@ routes.live = (mode = 'lesson') => {
     points: (n, p, why) => { const k = match(n); SC[k] = (SC[k] || 0) + p; seats(k); beep(660 + p * 110); const el = $(`.cr-seat[data-n="${CSS.escape(k)}"]`); if (el) { const f = document.createElement('span'); f.className = 'cr-float'; f.textContent = `+${faNum(p)}⭐ ${why || ''}`; el.appendChild(f); setTimeout(() => f.remove(), 2200); } return SC; },
     activity: (t, d, sec) => { const el = $('#lact'); if (!el) return; clearInterval(actTm); el.hidden = false; let left = sec; const draw = () => el.innerHTML = `<b>🎮 ${esc(t)}</b>${d ? `<div class="small">${esc(d)}</div>` : ''}${sec ? `<div class="cr-timer">${faNum(Math.floor(left / 60))}:${faNum(String(left % 60).padStart(2, '0'))}</div>` : ''}`; draw(); beep(520);
       if (sec) actTm = setInterval(() => { left--; draw(); if (left <= 0) { clearInterval(actTm); beep(330); setTimeout(() => beep(330), 250); } }, 1000); },
+    guest: (ch, t) => { let el = $('#lguest'); if (!ch) { el?.remove(); return; } if (!el) { el = document.createElement('div'); el.id = 'lguest'; el.className = 'cr-guest'; ($('#lclass') || $('#lboard')?.parentNode)?.prepend(el); } el.innerHTML = `<span>${ch === 'Emma' ? '👩🏼 Emma 🇬🇧' : '👨🏻 Jake 🇺🇸'}</span><b class="en">${esc(t)}</b>`; },
     homework: (n, t) => { const el = $('#lhw'); if (!el) return; el.hidden = false; el.insertAdjacentHTML('beforeend', `<div class="small">📝 <b>${esc(match(n))}:</b> ${esc(t)}</div>`); const H = lsGet('zd:grouphw', []); H.push({ d: isoDay(), n: match(n), t }); lsSet('zd:grouphw', H.slice(-50)); }
   });
   ui.podium = () => { const el = $('#lclass'); if (!el) return; const r = Object.entries(SC).sort((a, b) => b[1] - a[1]); if (!r.length) return; el.insertAdjacentHTML('afterbegin', `<div class="cr-podium">${r.slice(0, 3).map(([n, p], i) => `<div class="pd p${i + 1}"><span>${['🥇', '🥈', '🥉'][i]}</span><b>${esc(n)}</b><small>${faNum(p)} ⭐</small></div>`).join('')}</div>`); for (let i = 0; i < 4; i++) setTimeout(() => beep(523 + i * 130), i * 160); };
