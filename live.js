@@ -52,7 +52,7 @@ ${(L?.phrasebook || []).length ? 'PHRASEBOOK: ' + L.phrasebook.map(gr => `[${gr.
 ${c.length ? `CONVERSATION "${L.conversation.title || ''}" (${L.conversation.setting || ''}):\n${c.map((l, i) => `${i + 1}. ${l.who}: ${l.en}  (= ${l.fa})`).join('\n')}` : ''}
 ${g.title ? `LESSON GRAMMAR "${g.title}": ${g.explain || ''} ${(g.rules || []).map(r => r.en).join(' | ')}` : ''}`; } catch (e) { return ''; } }
 const GROUP_POLICY = (names) => `
-=== GROUP CLASS POLICY (several students around ONE phone) ===
+=== GROUP CLASS POLICY (several students — either around one phone, or each on their own phone in a live voice room; you hear them all mixed together) ===
 Students in the room: ${names.join(', ') || 'unknown — ask them'}.
 1) OPENING: greet everyone warmly as a real teacher entering a classroom, explain today's topic, the plan of the class and the rules: one person speaks at a time; say your name before speaking at first.
 2) VOICE ROLL-CALL: ask each student BY NAME, one by one, to introduce themselves in English (name + one fact). Listen carefully and memorise each voice (pitch, accent, speed) and link it to the name. If later you are not sure who is speaking, ask kindly "Sorry, who was that?" — never guess wildly.
@@ -161,7 +161,7 @@ async function liveStart(mode, ui) {
   Live.out = Live.ctx.destination;
   if (G.settings.spatial !== '0' && G.settings.spatial !== 0) { try { const pn = Live.ctx.createPanner(); pn.panningModel = 'HRTF'; pn.distanceModel = 'inverse'; pn.refDistance = 1; pn.rolloffFactor = 0.6; pn.connect(Live.ctx.destination); Live.out = pn; const t0 = Date.now();
     const mv = () => { if (Live.ctx?.state === 'closed') return; const t = (Date.now() - t0) / 1000; const x = Math.sin(t / 7) * 1.1, z = -1.3 - Math.sin(t / 11) * 0.4; try { if (pn.positionX) { pn.positionX.value = x; pn.positionY.value = 0; pn.positionZ.value = z; } else pn.setPosition(x, 0, z); } catch { } Live.mvT = setTimeout(mv, 120); }; mv(); } catch { Live.out = Live.ctx.destination; } }
-  const tryModel = i => new Promise((res, rej) => {
+  const tryModel = (i, auth) => new Promise((res, rej) => {
     const url = auth.key ? `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${encodeURIComponent(auth.key)}`
       : `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained?access_token=${encodeURIComponent(auth.token)}`;
     const ws = new WebSocket(url); let ok = false;
@@ -179,11 +179,19 @@ async function liveStart(mode, ui) {
         { name: 'correct_writing', description: 'Show a correction on the shared board: the wrong text struck through in red, the correct version, and a short Persian reason. Use for EVERY typed message with a mistake, and for important spoken mistakes.', parameters: { type: 'OBJECT', properties: { name: { type: 'STRING', description: 'student name' }, wrong: { type: 'STRING' }, right: { type: 'STRING' }, why: { type: 'STRING', description: 'short Persian explanation of why' } }, required: ['wrong', 'right', 'why'] } },
         { name: 'mark_done', description: 'Mark one of today\'s planned tasks as done when the student finished it in this session.', parameters: { type: 'OBJECT', properties: { task: { type: 'STRING', description: 'task text' } }, required: ['task'] } }] }] } }));
     ws.onmessage = async ev => { const m = JSON.parse(typeof ev.data === 'string' ? ev.data : await ev.data.text()); if (m.setupComplete && !ok) { ok = true; res(ws); } else liveMsg(m, ui); };
-    ws.onerror = () => { if (!ok) rej(new Error('ws')); };
-    ws.onclose = e => { if (!ok) rej(new Error(e.reason || 'closed')); else if (Live.ws === ws) { ui.status(e.reason && /quota|exceed/i.test(e.reason) ? 'سهمیهٔ رایگان امروز کلاس زنده تمام شد؛ فردا دوباره.' : 'تماس تمام شد.'); liveStop(ui, true); } };
+    ws.onerror = () => { if (!ok) setTimeout(() => rej(new Error(ws.__why || 'ws-error')), 400); };
+    ws.onclose = e => { ws.__why = (e.code || '') + ' ' + (e.reason || ''); if (!ok) rej(new Error(ws.__why.trim() || 'closed')); else if (Live.ws === ws) { ui.status(e.reason && /quota|exceed/i.test(e.reason) ? 'سهمیهٔ رایگان امروز کلاس زنده تمام شد؛ فردا دوباره.' : 'تماس تمام شد.'); liveStop(ui, true); } };
   });
-  let ws; try { ws = await tryModel(0).catch(() => auth.key ? tryModel(1) : Promise.reject(new Error('busy'))); }
-  catch { clearTimeout(Live.mvT); return abort('کلاس زنده الان وصل نشد؛ اینترنت را بررسی کن (در ایران فیلترشکن لازم است) و دوباره امتحان کن.', 6000); }
+  let ws, why = '';
+  for (const [i, fresh] of [[0, false], [1, true], [0, true]]) {
+    if (left()) break;
+    try { const a = fresh && !auth.key ? await liveToken() : auth; ws = await tryModel(i, a); break; } catch (e) { why = String(e?.message || e); console.warn('live connect', i, why); }
+  }
+  if (!ws) { clearTimeout(Live.mvT);
+    const loc = /location|region|not supported|unsupported|1007|PERMISSION/i.test(why);
+    return abort(loc ? 'سرور گوگل لوکیشن فیلترشکنت را قبول نکرد. لوکیشن فیلترشکن را روی آلمان، هلند، انگلیس یا آمریکا بگذار و دوباره بزن. (ایران، روسیه، چین و هنگ‌کنگ کار نمی‌کند)'
+      : /quota|exceed|429|RESOURCE/i.test(why) ? 'سهمیهٔ رایگان امروز کلاس زنده تمام شده؛ کمی بعد یا فردا دوباره امتحان کن.'
+      : 'کلاس زنده وصل نشد. فیلترشکن را روی حالت «همهٔ برنامه‌ها/Global» (نه فقط مرورگر) و لوکیشن آلمان یا هلند بگذار و دوباره بزن.' + (why ? ` [${why.slice(0, 60)}]` : ''), 9000); }
   if (left()) { clearTimeout(Live.mvT); try { ws.close(); } catch { } return abort(); }
   Live.ws = ws; Live.starting = false; Live.hash = hash0;
   Live.on = true; Live.started = Date.now(); Live.mic = stream; Live.log = []; ui.live();
@@ -193,15 +201,18 @@ async function liveStart(mode, ui) {
     for (let i = 0; i < n; i++) { const a = Math.floor(i * ratio), bE = Math.min(x.length, Math.floor((i + 1) * ratio)); let sm = 0; for (let k = a; k < bE; k++) sm += x[k]; const v = sm / Math.max(1, bE - a); lvl = Math.max(lvl, Math.abs(v)); pcm[i] = Math.max(-1, Math.min(1, v)) * 0x7fff; }
     ui.level(lvl); let bin = ''; const b = new Uint8Array(pcm.buffer); for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode(...b.subarray(i, i + 0x8000));
     Live.ws.send(JSON.stringify({ realtimeInput: { audio: { data: btoa(bin), mimeType: 'audio/pcm;rate=16000' } } })); };
+  Live.proc = proc; Live.rsrc = []; if (window.VR?.on && VR.host) { vrRemoteStreams().forEach(liveAddRemote); Live.tdest = Live.ctx.createMediaStreamDestination(); vrSetTeacherTrack(Live.tdest.stream.getAudioTracks()[0]); VR_hostSend({ k: 'class', on: true }); }
   const mute = Live.ctx.createGain(); mute.gain.value = 0; src.connect(proc); proc.connect(mute); mute.connect(Live.ctx.destination); Live.node = proc; Live.src = src;
   Live.ws.send(JSON.stringify({ clientContent: { turns: [{ role: 'user', parts: [{ text: 'سلام! شروع کن.' }] }], turnComplete: true } }));
   Live.timer = setInterval(() => { const s = Math.round((Date.now() - Live.started) / 1000); ui.clock(s); const L = todayLog(); L.min = (L.min || 0) + 1 / 60; L.live = (L.live || 0) + 1 / 60; if (s % 30 === 0) saveU(); }, 1000);
   } catch (e) { console.error(e); abort('کلاس زنده به مشکل خورد؛ دوباره امتحان کن.'); }
 }
+function liveAddRemote(st) { try { if (!Live.ctx || !Live.proc || (Live.rIds || (Live.rIds = new Set())).has(st.id)) return; Live.rIds.add(st.id); const n = Live.ctx.createMediaStreamSource(st); n.connect(Live.proc); Live.rsrc.push(n); } catch (e) { console.warn(e); } }
+const VR_hostSend = m => { if (window.VR?.on && VR.host) vrSend(m); };
 function livePlay(b64) {
   const bin = atob(b64); const n = bin.length >> 1; const f = new Float32Array(n);
   for (let i = 0; i < n; i++) { let v = bin.charCodeAt(2 * i) | (bin.charCodeAt(2 * i + 1) << 8); if (v >= 32768) v -= 65536; f[i] = v / 32768; }
-  const buf = Live.ctx.createBuffer(1, n, 24000); buf.copyToChannel(f, 0); const s = Live.ctx.createBufferSource(); s.buffer = buf; s.connect(Live.out || Live.ctx.destination);
+  const buf = Live.ctx.createBuffer(1, n, 24000); buf.copyToChannel(f, 0); const s = Live.ctx.createBufferSource(); s.buffer = buf; s.connect(Live.out || Live.ctx.destination); if (Live.tdest) s.connect(Live.tdest);
   const t = Math.max(Live.ctx.currentTime + 0.03, Live.playAt); s.start(t); Live.playAt = t + buf.duration; Live.queue.push(s); s.onended = () => { Live.queue = Live.queue.filter(x => x !== s); };
 }
 function liveLog(w, t) { const L = Live.log || (Live.log = []); if (L.length && L[L.length - 1].w === w) L[L.length - 1].t += t; else L.push({ w, t }); }
@@ -242,11 +253,11 @@ function liveMsg(m, ui) {
     if (pcs.length) { const [pc, ...extra] = pcs; send(extra.map(fc => ({ id: fc.id, name: fc.name, response: { result: 'already playing' } })));
       (async () => { busy(); ui.status('🎧 در حال پخش مکالمه…'); const lines = LIVE_L?.conversation?.lines || []; if (lines.length) ui.board('🎧 مکالمه', lines.map(l => ({ en: `${l.who}: ${l.en}`, fa: l.fa })));
       await waitPlay(300);
-      for (const [i, l] of lines.entries()) { if (!Live.on || Live.cancel?.has(pc.id)) break; ui.hl(i); await say(l.en, 'en', 'calm'); await new Promise(r => setTimeout(r, 450)); }
+      for (const [i, l] of lines.entries()) { if (!Live.on || Live.cancel?.has(pc.id)) break; ui.hl(i); VR_hostSend({ k: 'say', t: l.en }); await say(l.en, 'en', 'calm'); await new Promise(r => setTimeout(r, 450)); }
       ui.hl(-1); free(); if (!Live.on) return; ui.status('حرف بزن 🙂'); if (!Live.cancel?.has(pc.id)) send([{ id: pc.id, name: pc.name, response: { result: lines.length ? 'The conversation was played. Now continue the lesson.' : 'No conversation audio for this topic; if needed, perform a short dialogue yourself or with guest_say.' } }]); })(); }
     const gs = calls.filter(fc => fc.name === 'guest_say');
     if (gs.length) (async () => { busy(); await waitPlay(200);
-      for (const fc of gs) { if (!Live.on || Live.cancel?.has(fc.id)) continue; const ch = /emma/i.test(fc.args?.character || '') ? 'Emma' : 'Jake'; ui.guest?.(ch, fc.args?.text || ''); await guestSpeak(ch, fc.args?.text || ''); }
+      for (const fc of gs) { if (!Live.on || Live.cancel?.has(fc.id)) continue; const ch = /emma/i.test(fc.args?.character || '') ? 'Emma' : 'Jake'; ui.guest?.(ch, fc.args?.text || ''); VR_hostSend({ k: 'guest', ch, t: fc.args?.text || '' }); await guestSpeak(ch, fc.args?.text || ''); }
       ui.guest?.(null); free(); if (Live.on) send(gs.filter(fc => !Live.cancel?.has(fc.id)).map(fc => ({ id: fc.id, name: fc.name, response: { result: 'said' } }))); })();
     for (const ab of calls.filter(fc => fc.name === 'ask_brain')) (async () => { ui.status('🧠 معلم دارد فکر می‌کند…'); let ans = '';
       try { const r = await ai({ max: 1500, temp: 0.3, system: 'You are the expert brain behind a live English tutor for a Persian-speaking learner. Answer accurately and completely, as compact teaching notes the tutor will explain aloud. Include English examples, register (formal/neutral/informal/slang), when to use each, native pronunciation hints in Persian script, and differences between similar items. Use Persian for explanations.', messages: [{ role: 'user', content: `${typeof planContext === 'function' ? planContext() : ''}\nLesson context:${(LIVE_LESSON || '').slice(0, 3000)}\n\nStudent's question: ${fc0q(ab)}\nJSON {"notes":"..."}` }] }); ans = r?.notes || JSON.stringify(r); }
@@ -271,7 +282,7 @@ function liveMsg(m, ui) {
   if (m.goAway) ui.status('جلسه رو به پایان است؛ بعد از قطع، دوباره وصل شو.');
 }
 function liveStop(ui, silent) {
-  const was = Live.on; Live.on = false; Live.starting = false; Live.busyN = 0; Live.cancel = null; clearInterval(Live.timer); clearTimeout(Live.mvT); try { Live.node?.disconnect(); Live.src?.disconnect(); } catch { } Live.mic?.getTracks().forEach(t => t.stop());
+  const was = Live.on; if (was) VR_hostSend({ k: 'class', on: false }); try { (Live.rsrc || []).forEach(n => n.disconnect()); } catch { } Live.rsrc = []; Live.rIds = null; Live.proc = null; if (Live.tdest && window.VR?.on) vrSetTeacherTrack(null); Live.tdest = null; Live.on = false; Live.starting = false; Live.busyN = 0; Live.cancel = null; clearInterval(Live.timer); clearTimeout(Live.mvT); try { Live.node?.disconnect(); Live.src?.disconnect(); } catch { } Live.mic?.getTracks().forEach(t => t.stop());
   Live.queue.forEach(s => { try { s.stop(); } catch { } }); Live.queue = []; const ws = Live.ws; Live.ws = null; try { ws?.close(); } catch { } try { Live.ctx?.close(); } catch { }
   saveU(); ui?.idle(); if (!silent) ui?.status('تماس تمام شد. آفرین! 👏'); ui?.podium?.(); if (was) liveRemember();
 }
@@ -285,7 +296,10 @@ routes.live = (mode = 'lesson') => {
   <label class="row small" style="gap:6px;flex-wrap:nowrap"><span style="white-space:nowrap">معلم مرا این‌طور صدا کند:</span><input class="in grow" id="lcm" value="${esc(callMe())}" placeholder="مثلاً رَستا"></label>
   <div class="vb-cats" style="flex-wrap:wrap">${Object.entries(LIVE_MODES).map(([k, [ic, t]]) => `<button class="pill ${k === mode ? 'acc' : ''}" data-lm="${k}">${ic} ${t}</button>`).join('')}</div>
   <div class="small muted" id="lmd">${esc(LIVE_MODES[mode][2])}</div>
-  ${mode === 'group' ? `<div class="card stack" style="gap:8px"><b>👥 چه کسانی در کلاس هستند؟</b><input class="in" id="lgn" placeholder="اسم‌ها را با ویرگول جدا کن؛ مثلاً رَستا، ملیحه" value="${esc(lsGet('zd:group:' + G.active, ''))}"><span class="tiny muted">همه کنار هم پشت همین گوشی بنشینید. اول معلم از هر نفر می‌خواهد خودش را معرفی کند تا صدایش را بشناسد؛ بعد درس بخش «درس امروز» را گروهی و با گفتگوی دونفره پیش می‌برد.</span></div>` : ''}
+  ${mode === 'group' ? `<div class="card stack" style="gap:8px"><b>👥 چه کسانی در کلاس هستند؟</b><input class="in" id="lgn" placeholder="اسم‌ها را با ویرگول جدا کن؛ مثلاً رَستا، ملیحه" value="${esc(lsGet('zd:group:' + G.active, ''))}"><span class="tiny muted">اگر همه کنار هم پشت همین گوشی هستید، اسم‌ها را اینجا بنویسید. اول معلم از هر نفر می‌خواهد خودش را معرفی کند تا صدایش را بشناسد.</span></div>
+  <div class="card stack vr-card" id="vrc"><b>🌍 کلاس از راه دور — هر کس از گوشی خودش (تا ${faNum(VR_MAX)} نفر)</b>
+    <span class="small muted">یک نفر «ساختن کلاس» را می‌زند و کد را برای بقیه می‌فرستد؛ بقیه کد را وارد می‌کنند. همه صدای هم را زنده می‌شنوند و میزبان معلم را روشن می‌کند. هدفون بگذارید تا صدا برنگردد.</span>
+    <div id="vrbox"></div></div>` : ''}
   ${mode === 'lesson' ? (() => { const S = liveSel(); const cu = S.unit || currentUnit().id; return `<div class="card stack" style="gap:8px"><b>چه چیزی یادم بدهد؟</b>
     <label class="f">درس کتاب<select class="in" id="lsu"><option value="">— درس فعلی (${esc(currentUnit().fa)}) —</option>${LEVELS.map(Lv => `<optgroup label="${esc(Lv.fa)}">${ALL_UNITS.filter(x => x.level === Lv.id).map(x => `<option value="${x.id}"${S.unit === x.id && !S.ws && !S.gram ? ' selected' : ''}>${esc(x.fa)}</option>`).join('')}</optgroup>`).join('')}</select></label>
     <div class="seg" id="lsf">${Object.entries(LIVE_FOCUS).map(([k, [ic, t]]) => `<button data-v="${k}" class="${S.focus === k && !S.ws && !S.gram ? 'on' : ''}">${ic} ${t}</button>`).join('')}</div>
@@ -309,12 +323,12 @@ routes.live = (mode = 'lesson') => {
     status: t => { $('#lst') && ($('#lst').textContent = t || `${G.settings.teacher} آماده است`); },
     connecting: () => { const b = $('#lgo'); if (b) { b.textContent = '⏳ در حال وصل شدن…'; b.disabled = true; } },
     live: () => { if (!$('#lgo')) return; $('#lgo').disabled = false; $('#lgo').textContent = '⏹ پایان کلاس'; $('#lgo').classList.add('bad'); $('#lav')?.classList.add('on'); ui.status('وصل شدی؛ حرف بزن 🙂'); log.innerHTML = ''; $('#ltx') && ($('#ltx').hidden = false); },
-    idle: () => { $('#ltx') && ($('#ltx').hidden = true); const b = $('#lgo'); if (!b) return; b.disabled = false; b.textContent = '📞 شروع کلاس'; b.classList.remove('bad'); $('#lav')?.classList.remove('on', 'talk'); },
+    idle: () => { $('#ltx') && ($('#ltx').hidden = !window.VR?.on); const b = $('#lgo'); if (!b) return; b.disabled = false; b.textContent = '📞 شروع کلاس'; b.classList.remove('bad'); $('#lav')?.classList.remove('on', 'talk'); },
     level: l => { $('#lav')?.style.setProperty('--lv', Math.min(1, l * 4).toFixed(2)); },
     speaking: on => { $('#lav')?.classList.toggle('talk', on); },
     clock: s => { $('#lclk') && ($('#lclk').textContent = `⏱ ${faNum(Math.floor(s / 60))}:${faNum(String(s % 60).padStart(2, '0'))}`); },
     fix: (n, wr, ri, why) => { const el = $('#lfix'); if (!el) return; el.insertAdjacentHTML('afterbegin', `<div class="lfx">${n ? `<b class="small">${esc(n)}:</b> ` : ''}<s class="en">${esc(wr)}</s> <span class="arr">←</span> <b class="en ok">${esc(ri)}</b><div class="small">💡 ${esc(why)}</div></div>`); el.firstElementChild?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); },
-    say: (w, t) => { if (w === 'end') { cur = null; who = null; return; } if (who !== w || !cur) { cur = document.createElement('div'); cur.className = 'll ' + w; cur.innerHTML = `<b>${w === 'me' ? 'تو' : esc(G.settings.teacher)}:</b> <span></span>`; log.appendChild(cur); who = w; } cur.querySelector('span').textContent += t; cur.scrollIntoView({ block: 'nearest' }); }
+    say: (w, t) => { if (w === 'end') { cur = null; who = null; return; } if (who !== w || !cur) { cur = document.createElement('div'); cur.className = 'll ' + w; cur.innerHTML = `<b>${w === 'me' ? 'تو' : w === 'g' ? '👥 کلاس' : esc(G.settings.teacher)}:</b> <span></span>`; log.appendChild(cur); who = w; } cur.querySelector('span').textContent += t; cur.scrollIntoView({ block: 'nearest' }); }
   };
   const saveSel = p => { const S = Object.assign(liveSel(), p); lsSet('zd:livesel:' + G.active, S); LIVE_LESSON = null; liveLessonText(); };
   if (mode === 'lesson') {
@@ -350,11 +364,45 @@ routes.live = (mode = 'lesson') => {
   });
   ui.podium = () => { const el = $('#lclass'); if (!el) return; el.querySelector('.cr-podium')?.remove(); const r = Object.entries(SC).sort((a, b) => b[1] - a[1]); if (!r.length) return; el.insertAdjacentHTML('afterbegin', `<div class="cr-podium">${r.slice(0, 3).map(([n, p], i) => `<div class="pd p${i + 1}"><span>${['🥇', '🥈', '🥉'][i]}</span><b>${esc(n)}</b><small>${faNum(p)} ⭐</small></div>`).join('')}</div>`); for (let i = 0; i < 4; i++) setTimeout(() => beep(523 + i * 130), i * 160); };
   if (mode === 'group') { seats(); } window.__liveUI = ui;
+  if (mode === 'group') {
+    // پخش رویدادهای صفحهٔ معلم برای همهٔ اعضای اتاق (فقط میزبان)
+    ['board', 'hl', 'fix', 'spot', 'points', 'activity', 'homework', 'guest'].forEach(k => { const f = ui[k]; if (!f) return; ui[k] = (...a) => { VR_hostSend({ k: 'ui', n: k, a }); return f(...a); }; });
+    const sayF = ui.say; ui.say = (w, t) => { VR_hostSend({ k: 'tr', w, t }); return sayF(w, t); };
+    const drawVR = () => { const box = $('#vrbox'); if (!box) return;
+      if (!VR.on) { box.innerHTML = `<div class="row"><button class="btn sm" id="vrh">➕ ساختن کلاس</button><input class="in grow en" id="vrk" maxlength="5" placeholder="کد کلاس" style="text-transform:uppercase"><button class="btn line sm" id="vrj">ورود</button></div>`;
+        $('#vrh').onclick = async () => { const ok = await vrJoin(vrCode(), true); if (ok) { toast('کلاس ساخته شد؛ کد را برای بقیه بفرست.'); drawVR(); } };
+        $('#vrj').onclick = async () => { const k = $('#vrk').value.trim().toUpperCase(); if (k.length !== 5) return toast('کد ۵ حرفی را وارد کن.'); if (await vrJoin(k, false)) drawVR(); }; return; }
+      const M = Object.entries(VR.members); const names = M.map(([, v]) => v.name);
+      box.innerHTML = `<div class="vr-code">کد کلاس: <b class="en">${VR.code}</b> <button class="btn line sm" id="vrcp">کپی/اشتراک</button></div>
+        <div class="vr-ppl">${M.map(([k, v]) => `<span class="vr-p${k === VR.id ? ' me' : ''}${VR.peers[k]?.pc?.connectionState === 'connected' ? ' ok' : ''}">${v.host ? '👑' : '🎧'} ${esc(v.name)}${k === VR.id ? ' (تو)' : ''}</span>`).join('')}</div>
+        <div class="row"><button class="btn line sm" id="vrm">${VR.muted ? '🎙 روشن کردن میکروفون' : '🔇 بی‌صدا کردن من'}</button><button class="btn ghost sm" id="vrl">خروج از کلاس</button></div>
+        <span class="tiny muted">${VR.host ? 'تو میزبانی: وقتی همه آمدند «شروع کلاس» را بزن.' : 'منتظر بمان تا میزبان کلاس را شروع کند؛ صدای معلم و بقیه را همین‌جا می‌شنوی.'}</span>`;
+      if (VR.host) { lsSet('zd:group:' + G.active, names.join('، ')); $('#lgn') && ($('#lgn').value = names.join('، ')); seats(); }
+      $('#lgo').hidden = !VR.host; $('#ltx') && ($('#ltx').hidden = false);
+      $('#vrcp').onclick = async () => { const txt = `بیا کلاس زندهٔ انگلیسی 🎧\nکد کلاس: ${VR.code}\n${location.origin + location.pathname}#live/group`; try { if (navigator.share) await navigator.share({ text: txt }); else { await navigator.clipboard.writeText(txt); toast('کپی شد.'); } } catch { } };
+      $('#vrm').onclick = () => { vrMute(!VR.muted); drawVR(); };
+      $('#vrl').onclick = async () => { if (Live.on) liveStop(ui, true); await vrLeave(); $('#lgo').hidden = false; drawVR(); }; };
+    const onVR = ev => { if (!$('#vrbox')) return;
+      if (ev.t === 'members' || ev.t === 'state' || ev.t === 'left') drawVR();
+      if (ev.t === 'members' && VR.host && Live.on) vrSend({ k: 'class', on: true });
+      if (ev.t === 'remote' && VR.host && Live.on) liveAddRemote(ev.stream);
+      if (ev.t === 'msg') { const m = ev.m;
+        if (m.k === 'chat' && VR.host) { if (!typedToTeacher(m.n, m.t)) { ui.say('g', `✍️ ${m.n}: ${m.t}`); ui.say('end'); } }
+        if (VR.host) return;
+        if (m.k === 'ui' && ui[m.n]) ui[m.n](...(m.a || []));
+        if (m.k === 'tr') { if (m.w === 'end') ui.say('end'); else ui.say(m.w === 'me' ? 'g' : m.w, m.t); }
+        if (m.k === 'class') { ui.status(m.on ? '🎓 کلاس شروع شد؛ حرف بزن 🙂' : 'کلاس تمام شد. آفرین! 👏'); $('#lav')?.classList.toggle('on', m.on); }
+        if (m.k === 'guest') { ui.guest?.(m.ch, m.t); guestSpeak(m.ch, m.t).then(() => ui.guest?.(null)); }
+        if (m.k === 'say') say(m.t, 'en', 'calm'); } };
+    VR.listeners = [onVR]; drawVR();
+  }
   $('#lgn') && ($('#lgn').onchange = e => { lsSet('zd:group:' + G.active, e.target.value.trim()); seats(); });
   $('#lcm').onchange = e => lsSet('zd:callme:' + G.active, e.target.value.trim());
-  const sendTyped = () => { const i = $('#lti'); const t = i.value.trim(); if (!t || !Live.on || !Live.ws) return; i.value = ''; let n = mode === 'group' ? '' : callMe(), msg = t; const m2 = t.match(/^([^:：]{1,20})[:：]\s*(.+)$/); if (m2) { n = m2[1].trim(); msg = m2[2]; }
-    ui.say('me', `✍️ ${n ? n + ': ' : ''}${msg}`); ui.say('end'); liveLog('S', `(typed by ${n || 'student'}) ${msg}`);
-    Live.ws.send(JSON.stringify({ clientContent: { turns: [{ role: 'user', parts: [{ text: `[TYPED MESSAGE from ${n || 'a student'}]: ${msg}\n(Check it carefully. If it has ANY mistake — spelling, grammar, word choice, punctuation, capital letters — call correct_writing with the wrong part, the correct version and a short Persian reason, then reply.)` }] }], turnComplete: true } })); };
+  const typedToTeacher = (n, msg) => { if (!Live.on || !Live.ws) return false; ui.say('me', `✍️ ${n ? n + ': ' : ''}${msg}`); ui.say('end'); liveLog('S', `(typed by ${n || 'student'}) ${msg}`);
+    Live.ws.send(JSON.stringify({ clientContent: { turns: [{ role: 'user', parts: [{ text: `[TYPED MESSAGE from ${n || 'a student'}]: ${msg}\n(Check it carefully. If it has ANY mistake — spelling, grammar, word choice, punctuation, capital letters — call correct_writing with the wrong part, the correct version and a short Persian reason, then reply.)` }] }], turnComplete: true } })); return true; };
+  const sendTyped = () => { const i = $('#lti'); const t = i.value.trim(); if (!t) return; let n = mode === 'group' ? (window.VR?.on ? VR.name : '') : callMe(), msg = t; const m2 = !window.VR?.on && t.match(/^([^:：]{1,20})[:：]\s*(.+)$/); if (m2) { n = m2[1].trim(); msg = m2[2]; }
+    if (window.VR?.on && !VR.host) { vrSend({ k: 'chat', n, t: msg }); ui.say('me', `✍️ ${msg}`); ui.say('end'); i.value = ''; return; }
+    if (typedToTeacher(n, msg)) i.value = ''; };
   $('#ltb').onclick = sendTyped; $('#lti').onkeydown = e => { if (e.key === 'Enter') sendTyped(); };
   $('#lgo').onclick = () => Live.starting ? null : Live.on ? liveStop(ui) : liveStart(mode, ui);
   $$('[data-lm]', v).forEach(b => b.onclick = () => { if (Live.on) liveStop(ui, true); go('live/' + b.dataset.lm); });
@@ -362,5 +410,5 @@ routes.live = (mode = 'lesson') => {
   const gptPrompt = () => `${livePrompt(mode)}\n\nIMPORTANT: This is a voice conversation in the ChatGPT app. Start right now by greeting me in Persian and beginning.`;
   $('#gpt').onclick = () => { const p = gptPrompt(); try { navigator.clipboard.writeText(p); } catch { } window.open('https://chatgpt.com/?q=' + encodeURIComponent(p.slice(0, 6000)), '_blank'); };
   $('#gptc').onclick = async () => { try { await navigator.clipboard.writeText(gptPrompt()); toast('دستور کپی شد؛ در ChatGPT بچسبان و بفرست.'); } catch { toast('کپی نشد.'); } };
-  const myHash = location.hash; addEventListener('hashchange', function h() { if (location.hash !== myHash) { if (Live.on && Live.hash === myHash) liveStop(null, true); removeEventListener('hashchange', h); } });
+  const myHash = location.hash; addEventListener('hashchange', function h() { if (location.hash !== myHash) { if (Live.on && Live.hash === myHash) liveStop(null, true); if (window.VR?.on && !/^#live\/group/.test(location.hash)) vrLeave(); removeEventListener('hashchange', h); } });
 };

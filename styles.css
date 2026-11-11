@@ -448,3 +448,6 @@ body.nopron .pron{display:none!important}
 .lfx s{color:#e11d48;text-decoration:line-through;text-decoration-color:#e11d48;text-decoration-thickness:2px}
 .lfx .ok{color:#059669}.lfx .arr{opacity:.6;margin:0 4px}
 @keyframes lfxIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.vr-code{font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.vr-code b{font-size:22px;letter-spacing:4px;color:var(--acc,#14b8a6)}
+.vr-ppl{display:flex;flex-wrap:wrap;gap:6px}.vr-p{padding:5px 10px;border-radius:999px;background:var(--card2,rgba(0,0,0,.05));font-size:13px;border:1px solid transparent}
+.vr-p.ok{border-color:#10b981}.vr-p.me{font-weight:700}
