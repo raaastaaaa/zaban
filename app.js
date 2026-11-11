@@ -1335,7 +1335,7 @@ function goalReview(g) {
   $('#gmsg').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 routes.plan = (mOffset = '0') => {
-  setTop('تقویم آموزشی'); const v = view(); const P = U.plan;
+  setTop('تقویم و برنامه‌ریزی'); const v = view(); const P = U.plan;
   if (!P) {
     v.innerHTML = `<div class="stack">${goalBox()}<div class="card stack"><div class="big-ic">🗓️</div><b>یا برنامه را دستی بساز</b><span class="small muted">برنامه بر اساس سطح فعلی، وقت روزانه و هدفت روی تقویم شمسی چیده می‌شود. هر روز دقیقاً می‌دانی چه کار کنی، و اگر عقب بیفتی برنامه خودش را به‌روز می‌کند.</span>
     <label class="f">هدف<select id="tg" class="in"><option value="l1">پایان مقدماتی و سطح ۱ (۲۰ درس) + واژگان موضوعی پایه</option><option value="l3">پایان سطح ۳ — متوسط (۳۸ درس) + همهٔ واژگان موضوعی</option></select></label>
