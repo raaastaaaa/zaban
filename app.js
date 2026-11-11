@@ -624,7 +624,7 @@ function router() {
   routeGen++; const [r, ...args] = (location.hash.slice(1) || 'home').split('/');
   if (['unit', 'lesson', 'cards', 'quiz', 'teach', 'talk', 'dialog', 'exam', 'practice', 'sleep', 'myradio'].includes(r) && args[0]) { const gu = unitById(decodeURIComponent(args[0])); if (!gu) { location.hash = 'home'; return; } if (gu.idx < 1000 && !isOpen(gu)) { toast(`این درس هنوز قفل است؛ اول درس قبلی را با نمرهٔ ${faNum(G.settings.passScore)} قبول شو.`); location.hash = 'home'; return; } }
   if (['role', 'gclass'].includes(r) && !args[0]) { location.hash = r === 'role' ? 'chat' : 'grammar'; return; }
-  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', theater: 'library', practice: 'home', vision: 'home', rooms: 'chat', path: 'home', u: 'home', admin: 'me', dm: 'chat', grammar: 'tools', gclass: 'tools', verbs: 'tools', wtopics: 'tools', feedback: 'tools', live: 'home', leitner: 'tools', lesson: 'home', listen: 'tools', vclass: 'tools', news: 'tools', sleep: 'home', myradio: 'chat', music: 'tools', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat', coach: 'chat' }[r] || r)));
+  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', theater: 'library', practice: 'home', vision: 'home', rooms: 'chat', path: 'home', u: 'home', admin: 'me', dm: 'chat', grammar: 'tools', gclass: 'tools', verbs: 'tools', wtopics: 'tools', feedback: 'tools', live: 'home', progress: 'me', leitner: 'tools', lesson: 'home', listen: 'tools', vclass: 'tools', news: 'tools', sleep: 'home', myradio: 'chat', music: 'tools', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat', coach: 'chat' }[r] || r)));
   { const a0 = decodeURIComponent(args[0] || ''); const lv = wsLevelOf(a0) || (r === 'course' && WORD_TRACK.some(l => l.id === a0) ? a0 : null); if (lv && !WS_UNITS.some(u => u.level === lv && u.baseWords.length)) { view().innerHTML = loading('واژه‌ها را باز می‌کنم…'); const h = location.hash; return wsLoad(lv).then(() => { if (location.hash === h) router(); }); } }
   (routes[r] || routes.home)(...args.map(decodeURIComponent));
 }
@@ -650,9 +650,9 @@ function viewIntro(i = 0) {
   view().innerHTML = `<div class="auth intro"><div class="hero2" style="min-height:380px;justify-content:center"><img class="logo" src="icon-192.png" alt=""><div style="font-weight:800;font-size:15px;opacity:.9">آموزش زبان رستا</div>
     <div style="font-size:54px;line-height:1">${ic}</div><h2>${t}</h2><span style="opacity:.88;line-height:1.9">${d}</span>
     <div class="row" style="gap:6px;justify-content:center">${INTRO.map((_, k) => `<span style="width:${k === i ? 22 : 8}px;height:8px;border-radius:9px;background:${k === i ? 'var(--mark)' : 'color-mix(in srgb,var(--hero-ink) 35%,transparent)'}"></span>`).join('')}</div></div>
-    <div class="form"><button class="btn wide" id="nx">${i < INTRO.length - 1 ? 'بعدی' : 'شروع کنیم'}</button><button class="btn line wide" id="sk">رد شدن و ورود</button></div></div>`;
+    <div class="form"><button class="btn wide" id="nx">${i < INTRO.length - 1 ? 'بعدی' : 'شروع کنیم'}</button>${lsGet('zd:introSeen', 0) ? '<button class="btn line wide" id="sk">رد شدن و ورود</button>' : ''}</div></div>`;
   const end = () => { lsSet('zd:introSeen', 1); viewWelcome('in'); };
-  $('#nx').onclick = () => i < INTRO.length - 1 ? viewIntro(i + 1) : end(); $('#sk').onclick = end;
+  $('#nx').onclick = () => i < INTRO.length - 1 ? viewIntro(i + 1) : end(); $('#sk') && ($('#sk').onclick = end);
 }
 function viewWelcome(tab = 'in', returning = false) {
   if (!G.users.length && !lsGet('zd:introSeen', 0)) return viewIntro(0);
@@ -757,6 +757,7 @@ routes.course = id => {
   $('.lrow.current')?.scrollIntoView({ block: 'center' });
 };
 routes.home = () => {
+  if (!lsGet('zd:tourDone:' + G.active, false) && !window.TEST_MODE) return go('guide');
   setTop('زبان رستا');
   const cur = currentUnit(); const due = dueIds().length; const p = paceInfo(); const tp = todayPlan(); const L = U.log[isoDay()] || { xp: 0, min: 0 };
   const board = G.users.map(u => ({ u, d: userData(u.id) })).map(x => ({ ...x, w: weekXP(x.d) })).sort((a, b) => b.w - a.w);
@@ -1351,7 +1352,7 @@ routes.plan = (mOffset = '0') => {
     <div class="notice soft small" id="est"></div><button class="btn" id="mk">ساخت برنامه</button></div></div>`;
     const est = () => { const n = $('#tg').value === 'l1' ? ALL_UNITS.filter(u => u.level === 'intro' || u.level === 'l1').length - currentUnit().idx : ALL_UNITS.length - currentUnit().idx; const d = +$('#dy').value * 6 / 7; const per = d / Math.max(1, n); $('#est').textContent = `${faNum(Math.max(0, n))} درس در ${faNum(+$('#dy').value)} روز ≈ هر درس ${faNum(per.toFixed(1))} روز مطالعه. ${per < 3 ? 'این برنامه خیلی فشرده است؛ روزی حداقل ۹۰ دقیقه لازم داری.' : per < 5 ? 'برنامهٔ جدی ولی شدنی؛ روزی یک ساعت کافی است.' : 'برنامهٔ راحت و پایدار.'} رسیدن به سطح متوسط (B1) در ۴ ماه با مطالعهٔ منظم روزانه شدنی است؛ صحبت کاملاً روان معمولاً تمرین مکالمهٔ بیشتری بعد از آن می‌خواهد.`; };
     ['tg', 'dy'].forEach(i => $('#' + i).oninput = est); est();
-    bindGoal();
+    bindGoal(); if (lsGet('zd:goalFirst', 0)) { lsSet('zd:goalFirst', 0); $('#goal').focus(); toast('هدفت را بنویس یا 🎤 را بزن و بگو؛ بقیه‌اش با ما.', 6000); }
     $('#mk').onclick = () => { U.plan = buildPlan({ days: +$('#dy').value, minutes: +$('#mn').value, target: $('#tg').value, reminder: $('#rm').value, review: +$('#rv').value }); saveU(); addXP(10); routes.plan(); };
     return;
   }
@@ -1530,7 +1531,7 @@ const TOOLS = {
 routes.me = () => {
   setTop('من'); const p = paceInfo(); const last = [...Array(14)].map((_, i) => addDays(isoDay(), -13 + i)); const mx = Math.max(10, ...last.map(d => U.log[d]?.min || 0));
   view().innerHTML = `<div class="stack">
-  <div class="card stack"><div class="row"><span class="avatar" style="width:48px;height:48px;font-size:26px">${avHTML(me())}</span><div class="grow"><b style="font-size:18px">${esc(me().name)}</b><div class="small muted">${rankOf(U.xp)} · ${faNum(U.xp)} امتیاز · سطح ورودی: ${esc(U.placement?.level || '—')}</div></div><a class="btn ghost sm" href="#guide">امکانات</a><a class="btn ghost sm" href="#users">کاربران</a></div>
+  <div class="card stack"><div class="row"><span class="avatar" style="width:48px;height:48px;font-size:26px">${avHTML(me())}</span><div class="grow"><b style="font-size:18px">${esc(me().name)}</b><div class="small muted">${rankOf(U.xp)} · ${faNum(U.xp)} امتیاز · سطح ورودی: ${esc(U.placement?.level || '—')}</div></div><a class="btn ghost sm" href="#progress">📈 پیشرفت</a><a class="btn ghost sm" href="#guide">امکانات</a><a class="btn ghost sm" href="#users">کاربران</a></div>
   <div class="grid2 small"><span>درس‌های قبول: <b>${faNum(p.mastered)}</b></span><span>واژهٔ تثبیت‌شده: <b>${faNum(learnedCount())}</b></span><span>کل مطالعه: <b>${faNum(p.minutes)}</b> دقیقه</span><span>روزهای پیاپی: <b>${faNum(streakOf(U))}</b></span></div>
   <div><div class="small muted">دقیقه‌های مطالعه در ۱۴ روز اخیر</div><div style="display:flex;align-items:flex-end;gap:4px;height:70px">${last.map(d => `<div title="${jLabel(d)}: ${Math.round(U.log[d]?.min || 0)}" style="flex:1;background:${d === isoDay() ? 'var(--mark)' : 'var(--accent)'};opacity:${U.log[d]?.min ? 1 : .2};height:${Math.max(4, (U.log[d]?.min || 0) / mx * 100)}%;border-radius:4px 4px 0 0"></div>`).join('')}</div></div>
   <button class="btn ghost" id="coach">نظر معلم دربارهٔ پیشرفتم</button><div id="co"></div></div>
@@ -1554,43 +1555,70 @@ routes.me = () => {
 
 /* ───────── راهنمای امکانات ───────── */
 routes.guide = () => {
+  const first = !lsGet('zd:tourDone:' + G.active, false);
   const F = [
-    ['👩‍🏫', `معلم صوتی ${G.settings.teacher}`, 'به فارسی روان و با احساس درس می‌دهد، سؤال می‌پرسد، تشویقت می‌کند، اشتباه‌هایت را همان لحظه درست می‌کند و همه‌چیز را دربارهٔ تو به خاطر می‌سپارد.', '#teach/' + currentUnit().id],
-    ['📚', 'درس‌ها از مقدماتی تا متوسط', '۳۸ درس مکالمه‌محور + ۳۵ سرفصل واژگان موضوعی؛ هر درس: واژه‌ها با تصویر و تلفظ، فلش‌کارت، مکالمه، گرامر، صحبت، کوییز و آزمون نهایی. درس بعد فقط با نمرهٔ ' + faNum(G.settings.passScore) + ' باز می‌شود.', '#home'],
-    ['🧠', 'هیچ‌چیز فراموش نمی‌شود', 'فلش‌کارت هوشمند با فاصله‌های ۱ تا ۱۲۰ روزه؛ واژه‌های درس‌های قبل مدام در کارت‌ها، داستان‌ها و گفتگوها برمی‌گردند.', '#cards/due'],
-    ['🗓️', 'تقویم شمسی شخصی', 'هدف و وقت روزانه‌ات را می‌گیرد، برنامه می‌چیند، یادآوری می‌کند و اگر عقب بیفتی برنامهٔ جبرانی می‌دهد تا از هدف دور نشوی.', '#plan'],
-    ['🎯', 'مربی تلفظ و لهجه', 'صدایت را گوش می‌دهد، می‌گوید کدام صدا را اشتباه گفتی، چرا (تأثیر فارسی) و زبان و لب را چطور بگذاری؛ آمریکایی یا بریتانیایی.', '#tool/shadow'],
-    ['🗣', 'مثل نیتیوها حرف بزن', 'نشان می‌دهد نیتیوها در مکالمهٔ واقعی جمله‌ها را چطور به هم می‌چسبانند (مثلاً Nice to meet you ← «نایس تِ میچو»).', '#tool/shadow'],
-    ['💬', 'گپ آزاد و نقش‌آفرینی موقعیت‌های واقعی', 'دربارهٔ هر چیزی حرف بزن یا در تاکسی، داروخانه، مصاحبهٔ کاری و… تمرین کن؛ آخرش نمره و جمله‌های بهتر می‌گیری.', '#chat'],
-    ['📐', 'گرامر کامل و افعال کاربردی', 'همهٔ زمان‌ها و ساختارها با توضیح فارسی و تمرین؛ و فعل‌های پرکاربرد دسته‌بندی‌شده با سه شکل فعل.', '#grammar'],
-    ['💬', 'پیام خصوصی و چراغ آنلاین', 'ببین چه کسی الان آنلاین است، آخرین بار کی آمده، و به او یا به مدیر پیام بده.', '#dm'],
-    ['🎬', 'تئاتر داستان صوتی', 'داستان‌هایی با سناریو، تصویر هر صحنه، صدای جدا برای هر شخصیت و موسیقی متن — با همان واژه‌هایی که داری یاد می‌گیری.', '#theater'],
-    ['✍️', 'تمرین آفلاین و هوشمند', 'بدون اینترنت هم تمرین کن؛ تصحیح فوری و تمرین مشابه برای هر اشتباه.', '#practice/' + currentUnit().id],
-    ['🔭', 'چشم‌انداز واقعی', 'بر اساس وقت و سرعت خودت می‌گوید تا چه تاریخی دربارهٔ خرید، کار، سفر و… روان صحبت می‌کنی.', '#vision'],
-    ['📖', 'کتابخانهٔ دوزبانه', 'کتاب‌های ساده تا پیشرفته با ترجمهٔ زیر هر پاراگراف، معنی هر واژه با یک لمس و پخش صوتی.', '#library/online'],
-    ['📕', 'دیکشنری کامل', 'انگلیسی↔فارسی با تلفظ آمریکایی و بریتانیایی، همهٔ معانی، همنشین‌ها، اصطلاحات، اشتباه‌های رایج و لینک به لانگمن.', '#dict'],
-    ['🤔', 'چطور بگم؟ و اصلاح نوشته', 'جملهٔ فارسی بنویس و معادل رسمی و خودمانی بگیر؛ متن انگلیسی‌ات را با توضیح فارسی اصلاح کن.', '#tools'],
-    ['📷', 'عکس بگیر، یاد بگیر', 'از هر چیزی عکس بگیر؛ اسم انگلیسی‌اش را یاد بگیر و به فلش‌کارت‌ها اضافه کن.', '#tool/photo'],
-    ['🎧', 'صوت آفلاین', 'صوت کامل هر درس و فصل کتاب را بساز، دانلود کن و همیشه، حتی بدون اینترنت، گوش بده.', '#unit/' + currentUnit().id],
-    ['🏆', 'رقابت با دوستان', 'امتیاز، نشان، روزهای پیاپی و جدول رقابت هفتگی بین کاربران.', '#home']
+    ['👋', `سلام ${me().name}! خوش اومدی`, 'در چند صفحهٔ کوتاه همهٔ امکانات «آموزش زبان رستا» را نشانت می‌دهم. آخرش هدفت را (حتی با صدا) می‌گویی و برنامه‌ات چیده می‌شود.', '#home'],
+    ['🎯', 'هدفت را بگو؛ برنامه با ما', 'فقط بگو تا کی می‌خواهی به چه سطحی برسی، در چه موضوع‌هایی (مثلاً ترید، خرید، سفر) و روزی چقدر وقت داری؛ با تایپ یا با صدا. برنامه بررسی می‌کند شدنی است یا نه، وقت روزانه را حساب می‌کند و کار هر روز را روی تقویم می‌چیند. تو فقط هر روز طبق برنامه جلو برو.', '#plan'],
+    ['📈', 'نمودار پیشرفت', 'هر روز می‌بینی چه چیزهایی یاد گرفته‌ای، چقدر تا سطح بعد مانده، کجای برنامه هستی و اگر عقب افتادی، برنامه خودش جبرانی می‌چیند و خبرت می‌کند.', '#progress'],
+    ['📖', 'درس‌ها مثل کتاب', '۴۳ درس از مقدماتی تا متوسط، هر درس با بخش‌های جدا: مکالمه، متن، گرامر، واژه‌ها، همهٔ عبارت‌ها از رسمی تا عامیانه، تمرین و آزمون. ترجمه، تلفظ نیتیو به خط فارسی و صدای آمریکایی یا بریتانیایی، همه آفلاین.', '#path'],
+    ['📞', 'کلاس زنده با معلم', 'مثل تماس تلفنی با یک معلم خصوصی: درس امروز را قدم‌به‌قدم درس می‌دهد، مکالمه پخش می‌کند، با تو نقش‌آفرینی می‌کند، اشتباه‌هایت را به فارسی می‌گوید و کارهای برنامه‌ات را تیک می‌زند.', '#live'],
+    ['🗂️', 'بانک کامل واژه‌ها (Word Skills)', '۲۸۰ موضوع و حدود ۹۵۰۰ واژه در سه سطح؛ هر واژه با معنی، کاربرد، رسمی یا عامیانه بودن، مثال و ترجمه. هر موضوع دیگری هم بخواهی می‌نویسی و برایت ساخته می‌شود.', '#path'],
+    ['🔁', 'افعال و موضوع‌های موقعیتی', 'فعل‌های فرودگاه، تاکسی، مرتب کردن خانه، آشپزی و… با سه شکل فعل، جمله، ترجمه، تلفظ و فرق فعل‌های شبیه؛ می‌توانی انگلیسی یا فارسی را پنهان کنی و از خودت بپرسی.', '#verbs'],
+    ['🧠', 'لایتنر هوشمند', 'هر واژه‌ای را با یک دکمه به جعبهٔ لایتنر می‌فرستی؛ به‌موقع یادآوری می‌شود و از خودت کوییز می‌گیری.', '#leitner'],
+    ['📻', 'رادیو، خبر و موسیقی', 'رادیوی قدیمی با پیچ تنظیم برای شنیدن ناخودآگاه، خبر سادهٔ روز، مرور قبل از خواب و آهنگ‌های انگیزشی داخل برنامه.', '#listen'],
+    ['🗣', 'تلفظ و مربی صدا', 'جمله را بگو؛ مربی می‌گوید کجا را اشتباه گفتی و چطور درستش کنی، به فارسی.', '#tool/shadow'],
+    ['🧭', 'مشاور برنامه', 'هر وقت گیر کردی یا عقب افتادی، با مشاور حرف بزن تا برنامه‌ات را واقع‌بینانه تنظیم کند.', '#coach/advisor'],
+    ['💡', 'نظرت مهم است', 'هر ایده، درخواست یا ایرادی داشتی، از «انتقادات و پیشنهادات» با صدا یا متن بفرست؛ مستقیم به دست مدیر می‌رسد.', '#feedback'],
+    ['🧭', 'هر چیزی کجاست؟', 'پایین صفحه: خانه = کار امروز · تقویم و برنامه‌ریزی · کتابخانه · گفتگو = معلم و کلاس زنده · ابزارها = دیکشنری، افعال، واژه‌ها، تلفظ · من = پیشرفت و تنظیمات. دکمهٔ 🌙 بالای صفحه روز و شب را عوض می‌کند.', '#home']
   ];
-  F.unshift(['👋', `سلام ${me().name}!`, '«زبان رستا» قدم‌به‌قدم تو را تا مکالمهٔ روان انگلیسی می‌برد. در چند صفحهٔ کوتاه نشانت می‌دهم هر بخش کجاست و چه می‌کند. اگر آشنایی، «رد کردن» را بزن.', '#home']);
-  F.push(['🧭', 'هر چیزی کجاست؟', 'پایین صفحه (در کامپیوتر: کنار صفحه): خانه = درس امروز و رقابت · تقویم = برنامهٔ شخصی · کتابخانه = کتاب و داستان صوتی · گفتگو = معلم، گپ و انجمن · ابزارها = دیکشنری، تمرین، تلفظ · من = پیشرفت، حساب آنلاین، تنظیمات و پنل مدیر.', '#home']);
-  const KEEP = ['👋', '👩‍🏫', '🧠', '🗓️', '🎯', '💬', '🧭']; const T = F.filter(f => KEEP.includes(f[0])).slice(0, 7); F.length = 0; F.push(...T);
   let i = 0;
   const draw = () => {
     const [ic, t, d, h] = F[i]; const last = i === F.length - 1;
     view().innerHTML = `<div class="stack" style="min-height:calc(100vh - 220px);justify-content:center"><div class="card stack" style="align-items:center;text-align:center;padding:32px 22px;gap:16px">
-      <div style="font-size:72px;line-height:1">${ic}</div><b style="font-size:22px">${esc(t)}</b><div style="max-width:52ch;color:var(--muted)">${esc(d)}</div>
+      <div style="font-size:72px;line-height:1">${ic}</div><b style="font-size:22px">${esc(t)}</b><div style="max-width:52ch;color:var(--muted);line-height:1.9">${esc(d)}</div>
+      <div class="tiny muted">${faNum(i + 1)} از ${faNum(F.length)}</div>
       <div class="row" style="justify-content:center;gap:6px">${F.map((_, k) => `<span style="width:${k === i ? 22 : 8}px;height:8px;border-radius:9px;background:${k === i ? 'var(--accent)' : 'var(--line)'};transition:width .2s"></span>`).join('')}</div></div>
-      <div class="row"><button class="btn line" id="skp">رد کردن</button><span class="grow"></span>${i ? '<button class="btn ghost" id="prv">قبلی</button>' : ''}<button class="btn" id="nxt">${last ? 'شروع یادگیری' : 'بعدی'}</button></div>
-      ${i && h !== '#home' ? `<a class="small" style="text-align:center" href="${h}">همین الان امتحانش کن ←</a>` : ''}</div>`;
-    const end = () => { lsSet('zd:tourDone:' + G.active, true); go(U.plan ? 'home' : 'plan'); };
-    $('#skp').onclick = end; $('#nxt').onclick = () => { if (last) end(); else { i++; draw(); } }; $('#prv') && ($('#prv').onclick = () => { i--; draw(); });
+      <div class="row">${first ? '' : '<button class="btn line" id="skp">بستن</button>'}<span class="grow"></span>${i ? '<button class="btn ghost" id="prv">قبلی</button>' : ''}<button class="btn" id="nxt">${last ? (first ? '🎯 حالا هدفم را بگویم' : 'تمام') : 'بعدی'}</button></div></div>`;
+    const end = () => { lsSet('zd:tourDone:' + G.active, true); if (first && !U.plan) { lsSet('zd:goalFirst', 1); go('plan'); } else go('home'); };
+    $('#skp') && ($('#skp').onclick = end); $('#nxt').onclick = () => { if (last) end(); else { i++; draw(); } }; $('#prv') && ($('#prv').onclick = () => { i--; draw(); });
   };
-  setTop('راهنمای برنامه'); draw();
+  setTop('آشنایی با امکانات'); if (first) $('nav.bottom').hidden = true; draw();
 };
 
+/* ───────── نمودار پیشرفت ───────── */
+function progressData(d = U) {
+  const lv = LEVELS.map(L => { const us = ALL_UNITS.filter(u => u.level === L.id); const m = us.filter(u => d.units[u.id]?.mastered); return { L, us, m, rest: us.filter(u => !d.units[u.id]?.mastered) }; });
+  const learned = Object.values(d.srs || {}).filter(s => s.box >= 4).length, seen = Object.keys(d.srs || {}).length;
+  const ws = WORD_TRACK.map(L => { const us = WS_UNITS.filter(u => u.level === L.id); const m = us.filter(u => d.units[u.id]?.mastered); return { L, us, m }; });
+  const gdone = Object.keys(lsGet('zd:gdone:' + G.active, {})).length;
+  const days = [...Array(30)].map((_, i) => addDays(isoDay(), i - 29)); const mins = days.map(x => Math.round(d.log?.[x]?.min || 0));
+  const live = days.reduce((a, x) => a + (d.log?.[x]?.live || 0), 0), radio = days.reduce((a, x) => a + (d.log?.[x]?.radio || 0), 0);
+  return { lv, ws, learned, seen, gdone, days, mins, live, radio };
+}
+routes.progress = () => {
+  setTop('نمودار پیشرفت من', true); const v = view(); const D = progressData(); const cur = currentUnit(); const curL = D.lv.find(x => x.L.id === cur.level) || D.lv[0];
+  const P = U.plan; const mx = Math.max(10, ...D.mins);
+  const gap = P ? planGap() : 0; const md = P ? (typeof missedDays === 'function' ? missedDays() : 0) : 0;
+  const bar = (n, t, c = 'var(--accent)') => `<div class="pbar"><i style="width:${t ? Math.round(n / t * 100) : 0}%;background:${c}"></i></div>`;
+  v.innerHTML = `<div class="stack">
+  <div class="today"><b style="font-size:18px">📈 ${esc(me().name)}، الان اینجایی:</b>
+    <div>درس ${faNum(cur.n || cur.idx + 1)}: <b>${esc(cur.fa)}</b> · سطح <b>${esc(curL.L.fa)}</b> (${esc(CEFR_OF[cur.level] || '')})</div>
+    ${P ? `<div class="small">${gap > 0 ? `⚠️ ${faNum(gap)} درس عقب‌تر از برنامه${md ? ` · ${faNum(md)} روز درس نخوانده‌ای` : ''}` : gap < 0 ? `👏 ${faNum(-gap)} درس جلوتر از برنامه` : '✅ دقیقاً طبق برنامه'} · هدف: ${jLabel(addDays(P.start, P.dayCount - 1), true)}</div>` : '<a class="btn sm" href="#plan" style="align-self:flex-start">🎯 هدف و برنامه‌ام را بسازم</a>'}</div>
+  <div class="card stack"><b>🏁 سطح‌ها</b>${D.lv.map(x => `<div><div class="row small"><span class="grow"><b>${esc(x.L.fa)}</b> <span class="en muted">${esc(CEFR_OF[x.L.id] || '')}</span></span><span>${faNum(x.m.length)} از ${faNum(x.us.length)} درس</span></div>${bar(x.m.length, x.us.length)}</div>`).join('')}</div>
+  <div class="card stack"><b>🧭 تا سطح بعد چه مانده؟ (${esc(curL.L.fa)})</b>
+    ${curL.rest.length ? `<div class="small">${faNum(curL.rest.length)} درس دیگر: ${curL.rest.map(u => `<a href="#unit/${u.id}" class="pill">${esc(u.icon)} ${esc(u.fa)}</a>`).join(' ')}</div>` : '<div class="small">🎉 این سطح را کامل کرده‌ای!</div>'}
+    <div class="small muted">برای قبولی هر درس نمرهٔ ${faNum(G.settings.passScore)} در آزمون پایانی لازم است.</div></div>
+  <div class="card stack"><b>🧠 آنچه یاد گرفته‌ای</b>
+    <div class="grid2 small"><span>واژه‌های تثبیت‌شده: <b>${faNum(D.learned)}</b></span><span>واژه‌های در حال یادگیری: <b>${faNum(Math.max(0, D.seen - D.learned))}</b></span>
+    <span>مبحث‌های گرامر خوانده‌شده: <b>${faNum(D.gdone)}</b> از ${faNum(typeof GRAMMAR !== 'undefined' ? GRAMMAR.length : 0)}</span><span>درس‌های قبول‌شده: <b>${faNum(masteredCount())}</b> از ${faNum(ALL_UNITS.length)}</span>
+    <span>کلاس زندهٔ ۳۰ روز: <b>${faNum(Math.round(D.live))}</b> دقیقه</span><span>رادیو و شنیدن ۳۰ روز: <b>${faNum(Math.round(D.radio))}</b> دقیقه</span></div>
+    ${D.ws.map(x => `<div><div class="row small"><span class="grow">${esc(x.L.fa)}</span><span>${faNum(x.m.length)} از ${faNum(x.us.length)} موضوع</span></div>${bar(x.m.length, x.us.length, 'var(--warn)')}</div>`).join('')}</div>
+  <div class="card stack"><b>⏱ دقیقه‌های مطالعه در ۳۰ روز اخیر</b>
+    <div class="pchart">${D.days.map((d, i) => `<div title="${jLabel(d)}: ${D.mins[i]}" style="height:${Math.max(3, D.mins[i] / mx * 100)}%;${P && P.days[d] && !P.days[d].review ? `background:${D.mins[i] >= P.minutes * 0.5 ? 'var(--ok)' : 'var(--bad)'}` : ''}${d === isoDay() ? ';outline:2px solid var(--mark)' : ''}"></div>`).join('')}</div>
+    <div class="row tiny muted"><span>${jLabel(D.days[0])}</span><span class="grow"></span><span>امروز</span></div>
+    ${P ? `<div class="tiny muted">سبز = طبق برنامه خواندی · قرمز = کمتر از نصف برنامه · هدف روزانه ${faNum(P.minutes)} دقیقه</div>` : ''}</div>
+  <a class="btn ghost" href="#coach/advisor">🧭 دربارهٔ پیشرفتم با مشاور حرف بزنم</a></div>`;
+};
 /* ───────── تنظیمات ───────── */
 routes.settings = () => {
   setTop('تنظیمات', true); const S = G.settings;

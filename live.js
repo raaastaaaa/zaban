@@ -7,6 +7,7 @@ const LIVE_MODES = {
   ask: ['🙋', 'ازم سؤال بپرس', 'معلم سؤال می‌پرسد و تو جواب می‌دهی'],
   mistakes: ['🔁', 'مرور اشتباه‌هایم', 'اشتباه‌های قبلی‌ات را با هم تمرین می‌کنید'],
   role: ['🎭', 'نقش‌آفرینی', 'فرودگاه، رستوران، مصاحبهٔ کاری…'],
+  group: ['👥', 'کلاس گروهی', 'چند نفر پشت یک گوشی: معلم صدای هر نفر را می‌شناسد، از هر کس سؤال می‌پرسد و شما را به گفتگو با هم وامی‌دارد'],
   advisor: ['🧭', 'مشاور برنامه', 'دربارهٔ هدف و برنامه‌ات حرف بزن']
 };
 let LIVE_LESSON = null, LIVE_L = null, LIVE_PLANS = null;
@@ -36,6 +37,17 @@ QUIZ: ${P.quiz.join(' | ')}` : `WORDS: ${W.slice(0, 40).map(w => `${w.w} = ${w.f
 ${(L?.phrasebook || []).length ? 'PHRASEBOOK: ' + L.phrasebook.map(gr => `[${gr.group}] ` + (gr.items || []).map(x => `${x.en} = ${x.fa} (${x.register}; ${x.use || ''})`).join(' / ')).join('\n') : ''}
 ${c.length ? `CONVERSATION "${L.conversation.title || ''}" (${L.conversation.setting || ''}):\n${c.map((l, i) => `${i + 1}. ${l.who}: ${l.en}  (= ${l.fa})`).join('\n')}` : ''}
 ${g.title ? `LESSON GRAMMAR "${g.title}": ${g.explain || ''} ${(g.rules || []).map(r => r.en).join(' | ')}` : ''}`; } catch (e) { return ''; } }
+const GROUP_POLICY = (names) => `
+=== GROUP CLASS POLICY (several students around ONE phone) ===
+Students in the room: ${names.join(', ') || 'unknown — ask them'}.
+1) OPENING: greet everyone warmly as a real teacher entering a classroom, explain today's topic, the plan of the class and the rules: one person speaks at a time; say your name before speaking at first.
+2) VOICE ROLL-CALL: ask each student BY NAME, one by one, to introduce themselves in English (name + one fact). Listen carefully and memorise each voice (pitch, accent, speed) and link it to the name. If later you are not sure who is speaking, ask kindly "Sorry, who was that?" — never guess wildly.
+3) FAIR TURN-TAKING: always address a specific student by name ("Maliheh, what about you?"). Keep a mental score and make sure everyone speaks about the same amount; gently draw out quiet students and kindly limit dominant ones.
+4) TEACH the lesson material step by step (same method as a private lesson) but turn practice into PAIR and GROUP work: ask two students to role-play the conversation together (A and B, then swap), ask one student to ask another a question, run short debates or "find someone who…" games on the topic, and small competitions (who remembers more words) with points.
+5) CORRECTION: correct each student by name, briefly and kindly, in Persian when needed; remember each student's own mistakes and level, and adapt difficulty per student.
+6) EMOTIONS: be a lively, human teacher — laugh, praise specific achievements, show playful competitiveness in games, keep energy high, never embarrass anyone.
+7) PLAN & HOMEWORK: at the end give each student, by name, one personal tip and one small task for tomorrow, and announce the team score.
+Never let two students speak over each other for long: ask them to take turns.`;
 const FOCUS_METHOD = {
   full: null,
   conv: `FOCUS = CONVERSATION. Plan: 1) set the scene in Persian (who, where, why) 2) pre-teach 4-5 key chunks from it 3) call play_conversation (gist question first: "کی با کی حرف می‌زنه و دربارهٔ چی؟") 4) detail questions 5) line by line: meaning, natural native pronunciation and the reusable chunk 6) shadowing: student repeats each line after you 7) role-play A/B, then swap 8) variation: change details (names, places) and replay 9) a personal version of the dialogue about the student's own life.`,
@@ -69,17 +81,19 @@ You are «${tname}», a real, warm, witty Iranian English teacher talking LIVE b
 Student level: ${u.cefr || 'A1'}. Current lesson: "${u.en}" (${u.fa}); grammar: ${u.gram}; words: ${words}.
 Today's plan tasks: ${(tp?.tasks || []).map(t => t.t).join('; ') || 'none'}.
 Their recent mistakes: ${mist || 'none yet'}.
+${liveMemText()}
 ${typeof planContext === 'function' ? planContext() : ''}
 LANGUAGE POLICY: level A1 (Intro, first lessons) → about 70% Persian explanations, 30% English practice; A2 (Level 1) → 50/50, ask simple questions in English; B1 and above (Levels 2-3, Intermediate/Advanced vocabulary) → mostly English, Persian only for tricky points. Tell the student at the start how much English you will use today ("از این درس به بعد بیشتر انگلیسی حرف می‌زنم…").
 ACCENT: model every English word and sentence in ${acc} English${acc === 'British' ? ' (RP: non-rhotic r, clear t)' : ' (General American: rhotic r, flap t)'}, and when relevant point out how the other accent differs.
 DEEP QUESTIONS: if the student asks something that needs careful thinking or a full list (e.g. "what other greetings are common and how are they different?", "change my study plan", a tricky grammar question), call ask_brain with the exact question. When the answer returns, explain it to the student in YOUR OWN natural spoken Persian (do not read it word by word), then continue the lesson.
-${learnerContext()}${mode === 'lesson' ? (LIVE_LESSON || '') + (FOCUS_METHOD[liveSel().focus] || (liveSel().ws ? FOCUS_METHOD.words : liveSel().gram ? FOCUS_METHOD.grammar : LESSON_METHOD)) : ''}`;
+${learnerContext()}${mode === 'group' ? (LIVE_LESSON || '') + GROUP_POLICY(lsGet('zd:group:' + G.active, '').split(/[,،]/).map(x => x.trim()).filter(Boolean)) : ''}${mode === 'lesson' ? (LIVE_LESSON || '') + (FOCUS_METHOD[liveSel().focus] || (liveSel().ws ? FOCUS_METHOD.words : liveSel().gram ? FOCUS_METHOD.grammar : LESSON_METHOD)) : ''}`;
   const m = {
     lesson: 'Start now: greet the student, tell them what you will teach today, HOW you will teach it (the steps) and the language policy, then begin step 1.',
     talk: 'Greet them and suggest 3 fun topics; chat freely in mostly English at their level, recasting mistakes and explaining briefly in Persian.',
     ask: 'Interview them: ask one personal question at a time in simple English (Persian help if they get stuck), react with real interest, correct mistakes, ask follow-ups.',
     mistakes: 'Review their recent mistakes one by one: give a situation, let them say it, praise or correct, and repeat until it is right.',
     role: 'Offer a real-life role-play (airport, café, hotel, job interview, shopping). Explain their role in Persian, then play the other person in English. After ~10 exchanges, step out and give feedback in Persian.',
+    group: 'Start now with the OPENING of the group class policy, then the voice roll-call.',
     advisor: 'You are now their study ADVISOR. Speak only Persian. Discuss their goal, progress, missed days and a realistic plan, with concrete numbers. Ask one question at a time.'
   }[mode];
   return base + '\n' + m;
@@ -91,7 +105,7 @@ async function liveToken() {
 }
 const Live = { ws: null, ctx: null, mic: null, node: null, src: null, playAt: 0, queue: [], on: false, mode: 'lesson', started: 0, timer: 0 };
 async function liveStart(mode, ui) {
-  if (Live.on) return; Live.mode = mode; Live.muted = false; ui.status('در حال آماده کردن درس و وصل شدن به معلم…'); if (mode === 'lesson') LIVE_LESSON = await liveLessonText(); stopSpeak(); if (window.BGP?.on) BGP.stop();
+  if (Live.on) return; Live.mode = mode; Live.muted = false; ui.status('در حال آماده کردن درس و وصل شدن به معلم…'); if (mode === 'lesson' || mode === 'group') LIVE_LESSON = await liveLessonText(); stopSpeak(); if (window.BGP?.on) BGP.stop();
   let auth; try { auth = await liveToken(); } catch (e) { ui.status(''); ui.idle(); return aiErr(e); }
   let stream; try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
   catch { ui.status(''); ui.idle(); return toast('اجازهٔ میکروفون داده نشده؛ از تنظیمات مرورگر اجازه بده.'); }
@@ -113,7 +127,7 @@ async function liveStart(mode, ui) {
   });
   try { Live.ws = await tryModel(0).catch(() => auth.key ? tryModel(1) : Promise.reject(new Error('busy'))); }
   catch { stream.getTracks().forEach(t => t.stop()); Live.ctx.close(); ui.status(''); ui.idle(); return toast('کلاس زنده الان وصل نشد؛ اینترنت را بررسی کن (در ایران فیلترشکن لازم است) و دوباره امتحان کن.', 6000); }
-  Live.on = true; Live.started = Date.now(); Live.mic = stream; ui.live();
+  Live.on = true; Live.started = Date.now(); Live.mic = stream; Live.log = []; ui.live();
   // میکروفون → PCM ۱۶ کیلوهرتز
   const src = Live.ctx.createMediaStreamSource(stream); const proc = Live.ctx.createScriptProcessor(4096, 1, 1); const ratio = Live.ctx.sampleRate / 16000;
   proc.onaudioprocess = e => { if (!Live.on || Live.muted || Live.ws?.readyState !== 1) return; const x = e.inputBuffer.getChannelData(0); const n = Math.floor(x.length / ratio); const pcm = new Int16Array(n); let lvl = 0;
@@ -130,14 +144,29 @@ function livePlay(b64) {
   const buf = Live.ctx.createBuffer(1, n, 24000); buf.copyToChannel(f, 0); const s = Live.ctx.createBufferSource(); s.buffer = buf; s.connect(Live.ctx.destination);
   const t = Math.max(Live.ctx.currentTime + 0.03, Live.playAt); s.start(t); Live.playAt = t + buf.duration; Live.queue.push(s); s.onended = () => { Live.queue = Live.queue.filter(x => x !== s); };
 }
+function liveLog(w, t) { const L = Live.log || (Live.log = []); if (L.length && L[L.length - 1].w === w) L[L.length - 1].t += t; else L.push({ w, t }); }
+/* حافظهٔ کلاس: بعد از هر جلسه خلاصهٔ آموزش، اشتباه‌ها و نکته‌های شخصی ذخیره می‌شود و دفعهٔ بعد به معلم داده می‌شود */
+async function liveRemember() {
+  const L = Live.log || []; Live.log = []; const text = L.map(x => `${x.w === 'S' ? 'Student' : 'Teacher'}: ${x.t}`).join('\n'); if (text.length < 120) return;
+  const sel = liveSel(); const topic = sel.ws ? unitById(sel.ws)?.fa : sel.gram ? (GRAMMAR.find(g => g.id === sel.gram)?.fa) : (unitById(sel.unit) || currentUnit()).fa;
+  let r = null; try { r = await ai({ max: 1200, temp: 0.2, system: 'Summarize an English lesson transcript for the tutor\'s long-term memory about this student.', messages: [{ role: 'user', content: `Transcript (may be imperfect speech-to-text):\n${text.slice(-12000)}\nJSON {"taught":["what was taught/practised, short English"],"stopped_at":"where the lesson stopped / what to do next time","mistakes":[{"wrong":"","right":"","why":"Persian"}],"strengths":["..."],"facts":["durable personal facts the student shared (job, family, likes, goals), short"],"mood":"how the student felt, short"}` }] }); } catch { }
+  const day = isoDay(); U.liveMem = U.liveMem || [];
+  U.liveMem.push({ d: day, topic, focus: sel.focus, taught: r?.taught || [], next: r?.stopped_at || '', strengths: r?.strengths || [], mood: r?.mood || '', mins: Math.round((Date.now() - Live.started) / 60000) });
+  U.liveMem = U.liveMem.slice(-30);
+  if (r?.mistakes?.length) logMistakes(r.mistakes, 'live');
+  (r?.facts || []).forEach(f => { if (f && !U.mem.some(m => m.t === f)) U.mem.push({ t: f, d: day }); }); U.mem = U.mem.slice(-80);
+  saveU(); toast('🧠 معلم خلاصهٔ این جلسه را به خاطر سپرد.');
+}
+function liveMemText() { const M = (U.liveMem || []).slice(-8); if (!M.length) return 'PREVIOUS CLASSES: this is your first live class together.';
+  return 'PREVIOUS CLASSES WITH THIS STUDENT (remember and refer to them naturally, continue where you stopped, recycle what you taught, re-check old mistakes):\n' + M.map(m => `- ${m.d} · ${m.topic || ''} (${m.focus || ''}, ${m.mins || 0} min): taught ${m.taught.join('; ')}${m.next ? ' | next time: ' + m.next : ''}${m.strengths?.length ? ' | strengths: ' + m.strengths.join(', ') : ''}${m.mood ? ' | mood: ' + m.mood : ''}`).join('\n'); }
 const fc0q = fc => String(fc.args?.question || '').slice(0, 800);
 function liveMsg(m, ui) {
   const sc = m.serverContent;
   if (sc) {
     if (sc.interrupted) { Live.queue.forEach(s => { try { s.stop(); } catch { } }); Live.queue = []; Live.playAt = 0; }
     for (const p of sc.modelTurn?.parts || []) if (p.inlineData?.data) { livePlay(p.inlineData.data); ui.speaking(true); }
-    if (sc.inputTranscription?.text) ui.say('me', sc.inputTranscription.text);
-    if (sc.outputTranscription?.text) ui.say('t', sc.outputTranscription.text);
+    if (sc.inputTranscription?.text) { ui.say('me', sc.inputTranscription.text); liveLog('S', sc.inputTranscription.text); }
+    if (sc.outputTranscription?.text) { ui.say('t', sc.outputTranscription.text); liveLog('T', sc.outputTranscription.text); }
     if (sc.turnComplete) { ui.say('end'); setTimeout(() => ui.speaking(false), Math.max(0, (Live.playAt - Live.ctx.currentTime) * 1000)); }
   }
   if (m.toolCall) {
@@ -163,7 +192,7 @@ function liveMsg(m, ui) {
 function liveStop(ui, silent) {
   Live.on = false; clearInterval(Live.timer); try { Live.node?.disconnect(); Live.src?.disconnect(); } catch { } Live.mic?.getTracks().forEach(t => t.stop());
   Live.queue.forEach(s => { try { s.stop(); } catch { } }); Live.queue = []; const ws = Live.ws; Live.ws = null; try { ws?.close(); } catch { } try { Live.ctx?.close(); } catch { }
-  saveU(); ui?.idle(); if (!silent) ui?.status('تماس تمام شد. آفرین! 👏');
+  saveU(); ui?.idle(); if (!silent) ui?.status('تماس تمام شد. آفرین! 👏'); liveRemember();
 }
 
 routes.live = (mode = 'lesson') => {
@@ -175,6 +204,7 @@ routes.live = (mode = 'lesson') => {
   <label class="row small" style="gap:6px;flex-wrap:nowrap"><span style="white-space:nowrap">معلم مرا این‌طور صدا کند:</span><input class="in grow" id="lcm" value="${esc(callMe())}" placeholder="مثلاً رَستا"></label>
   <div class="vb-cats" style="flex-wrap:wrap">${Object.entries(LIVE_MODES).map(([k, [ic, t]]) => `<button class="pill ${k === mode ? 'acc' : ''}" data-lm="${k}">${ic} ${t}</button>`).join('')}</div>
   <div class="small muted" id="lmd">${esc(LIVE_MODES[mode][2])}</div>
+  ${mode === 'group' ? `<div class="card stack" style="gap:8px"><b>👥 چه کسانی در کلاس هستند؟</b><input class="in" id="lgn" placeholder="اسم‌ها را با ویرگول جدا کن؛ مثلاً رَستا، ملیحه" value="${esc(lsGet('zd:group:' + G.active, ''))}"><span class="tiny muted">همه کنار هم پشت همین گوشی بنشینید. اول معلم از هر نفر می‌خواهد خودش را معرفی کند تا صدایش را بشناسد؛ بعد درس بخش «درس امروز» را گروهی و با گفتگوی دونفره پیش می‌برد.</span></div>` : ''}
   ${mode === 'lesson' ? (() => { const S = liveSel(); const cu = S.unit || currentUnit().id; return `<div class="card stack" style="gap:8px"><b>چه چیزی یادم بدهد؟</b>
     <label class="f">درس کتاب<select class="in" id="lsu"><option value="">— درس فعلی (${esc(currentUnit().fa)}) —</option>${LEVELS.map(Lv => `<optgroup label="${esc(Lv.fa)}">${ALL_UNITS.filter(x => x.level === Lv.id).map(x => `<option value="${x.id}"${S.unit === x.id && !S.ws && !S.gram ? ' selected' : ''}>${esc(x.fa)}</option>`).join('')}</optgroup>`).join('')}</select></label>
     <div class="seg" id="lsf">${Object.entries(LIVE_FOCUS).map(([k, [ic, t]]) => `<button data-v="${k}" class="${S.focus === k && !S.ws && !S.gram ? 'on' : ''}">${ic} ${t}</button>`).join('')}</div>
@@ -206,6 +236,7 @@ routes.live = (mode = 'lesson') => {
     $('#lsf').onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('#lsf button').forEach(x => x.classList.toggle('on', x === b)); saveSel({ focus: b.dataset.v, ws: '', gram: '' }); $('#lsw').value = ''; $('#lsg').value = ''; };
     $('#lsa').onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('#lsa button').forEach(x => x.classList.toggle('on', x === b)); G.settings.accent = b.dataset.v; saveG('settings'); };
   }
+  $('#lgn') && ($('#lgn').onchange = e => lsSet('zd:group:' + G.active, e.target.value.trim()));
   $('#lcm').onchange = e => lsSet('zd:callme:' + G.active, e.target.value.trim());
   $('#lgo').onclick = () => Live.on ? liveStop(ui) : liveStart(mode, ui);
   $$('[data-lm]', v).forEach(b => b.onclick = () => { if (Live.on) liveStop(ui, true); go('live/' + b.dataset.lm); });

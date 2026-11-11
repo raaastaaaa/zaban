@@ -419,3 +419,6 @@ body.nopron .pron{display:none!important}
 .live-board{background:#fffbea;border:2px solid #f3d36b;gap:6px}
 :root[data-theme=dark] .live-board{background:#2a2510;border-color:#6b5a1a}
 .lb-i{padding:4px 6px;border-radius:8px;line-height:1.7}
+
+.pbar{height:10px;border-radius:9px;background:var(--sunk);overflow:hidden;margin-top:4px}.pbar i{display:block;height:100%;border-radius:9px}
+.pchart{display:flex;align-items:flex-end;gap:2px;height:110px;direction:ltr}.pchart div{flex:1;background:var(--accent);border-radius:3px 3px 0 0;min-height:3px}
