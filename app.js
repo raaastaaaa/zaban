@@ -73,6 +73,7 @@ const makeCode = () => 'ZD1.' + btoa(unescape(encodeURIComponent(JSON.stringify(
 function useCode(c) { const d = JSON.parse(decodeURIComponent(escape(atob(c.trim().replace(/^ZD1\./, ''))))); deepMerge(G.settings.prov, d.p || {}); if (d.b) G.settings.brain = d.b; if (d.v) G.settings.voiceFa = d.v; if (d.l) G.settings.listen = d.l; saveG('settings'); }
 function deepMerge(a, b) { for (const k in b) { if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k])) a[k] = deepMerge(a[k] || {}, b[k]); else a[k] = b[k]; } return a; }
 const saveG = k => lsSet('zd:' + k, G[k]);
+G.settings.passScore = 95;
 if (G.settings.teacher === 'سارا') { G.settings.teacher = 'رستا'; lsSet('zd:settings', G.settings); }
 if (G.settings.prov.gemini.model === 'gemini-2.5-flash') { G.settings.prov.gemini.model = 'gemini-3.1-flash-lite'; G.settings.geminiTtsModel = 'gemini-3.8-flash-tts'; saveG('settings'); }
 const GEM_FALLBACK = ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3.5-flash-lite'];
@@ -117,7 +118,7 @@ function weakWords(limit = 20) {
   return Object.entries(U.srs).filter(([, s]) => s.wrong > 0 && s.box <= 2).sort((a, b) => b[1].wrong - a[1].wrong).slice(0, limit).map(([k]) => wordFromId(k)).filter(Boolean);
 }
 function forgottenFromPrevious(cur) { // واژه‌های درس‌های قبل که فراموش شده‌اند
-  return Object.entries(U.srs).filter(([k, s]) => { const u = unitById(k.split(':')[0]); return u && cur && u.idx < cur.idx && s.lastWrong && s.box <= 1; }).slice(0, 12).map(([k]) => wordFromId(k)).filter(Boolean);
+  return Object.entries(U.srs).filter(([k, s]) => { const u = unitById(k.split(':')[0]); return u && cur && u.id !== cur.id && (u.track === 'ws' ? isMastered(u) : u.idx < cur.idx) && s.lastWrong && s.box <= 1; }).slice(0, 12).map(([k]) => wordFromId(k)).filter(Boolean);
 }
 
 /* ───────── پیشرفت، باز شدن درس‌ها و امتیاز ───────── */
@@ -513,6 +514,23 @@ function sheet(html) { const bg = document.createElement('div'); bg.className = 
 const loading = (t = 'در حال فکر کردن…') => `<div class="card row"><span class="typing"><i></i><i></i><i></i></span><span class="muted">${t}</span></div>`;
 function needAI(el) { if (hasAI() || firstKeyed()) return false; el.innerHTML = `<div class="card stack"><b>این بخش با هوش مصنوعی کار می‌کند.</b><span class="muted">یک کلید رایگان Gemini بگیر و در تنظیمات بگذار؛ دو دقیقه طول می‌کشد.</span><a class="btn" href="#settings">رفتن به تنظیمات</a></div>`; return true; }
 
+/* ───────── نصب برنامه (آیکن روی صفحهٔ گوشی و کامپیوتر) ───────── */
+let installEvt = null;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (location.hash === '' || location.hash === '#home') { const b = $('#install-box'); if (b) b.innerHTML = installHTML(); bindInstall(); } });
+addEventListener('appinstalled', () => { installEvt = null; toast('«زبان دوم» نصب شد 🎉 از این به بعد از آیکنش وارد شو.'); $('#install-box') && ($('#install-box').innerHTML = ''); });
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+function installHTML() { if (isStandalone() || lsGet('zd:installHide', '') === isoDay()) return ''; if (!installEvt && !isIOS()) return ''; return `<div class="install"><img src="icon-192.png" alt="" style="width:40px;height:40px;border-radius:10px"><b>«زبان دوم» را روی ${isIOS() ? 'آیفونت' : 'دستگاهت'} نصب کن تا همیشه با یک لمس بازش کنی.</b><button id="inst">نصب</button><button id="insx" aria-label="بعداً" style="background:transparent;color:inherit;padding:8px">✕</button></div>`; }
+function bindInstall() {
+  $('#insx') && ($('#insx').onclick = () => { lsSet('zd:installHide', isoDay()); $('#install-box').innerHTML = ''; });
+  $('#inst') && ($('#inst').onclick = async () => {
+    if (installEvt) { installEvt.prompt(); const r = await installEvt.userChoice; if (r.outcome === 'accepted') installEvt = null; return; }
+    sheet(`<div class="stack" style="text-align:center"><img src="icon-192.png" alt="" style="width:72px;height:72px;border-radius:18px;align-self:center"><b style="font-size:18px">نصب روی آیفون</b>
+    <div class="stack" style="text-align:right"><div>۱. این صفحه باید در <b>Safari</b> باز باشد.</div><div>۲. دکمهٔ <b>اشتراک‌گذاری</b> را بزن (مربع با فلش رو به بالا، پایین صفحه).</div><div>۳. کمی پایین برو و <b>Add to Home Screen</b> را بزن.</div><div>۴. بالا سمت راست <b>Add</b> را بزن.</div></div>
+    <div class="notice soft small">از این به بعد آیکن «زبان دوم» روی صفحهٔ گوشی است و مثل یک اپ بدون نوار آدرس باز می‌شود.</div><button class="btn" onclick="this.closest('.sheet-bg').remove()">فهمیدم</button></div>`);
+  });
+}
+
 /* ───────── مسیریاب ───────── */
 const routes = {};
 function router() {
@@ -529,28 +547,30 @@ addEventListener('hashchange', router);
 /* ───────── خوش‌آمد و کاربران ───────── */
 const avHTML = u => u?.photo ? `<img src="${u.photo}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">` : esc(u?.avatar || '🙂');
 const AVATARS = ['🦊', '🐼', '🦁', '🐯', '🐨', '🦉', '🐬', '🦄', '🐙', '🐝', '🌵', '🚀'];
-function viewWelcome() {
-  $('#top').innerHTML = '<h1>زبان دوم</h1>'; $('nav.bottom').hidden = true;
-  view().innerHTML = `<div class="stack">
-  <div class="today"><div class="big-ic">👋</div><b style="font-size:20px">به «زبان دوم» خوش آمدی</b><span class="muted">معلم هوشمندی که با تو فارسی حرف می‌زند، انگلیسی را از واژه تا مکالمهٔ روان قدم‌به‌قدم یادت می‌دهد و هیچ درسی را فراموش نمی‌کنی.</span></div>
-  <div class="card stack"><b style="font-size:17px">ثبت‌نام</b>
-  <label class="f">اسمت چیست؟<input id="nm" class="in" placeholder="مثلاً رستا" maxlength="24"></label>
-  <label class="f">ایمیل (برای ساختن حساب، یوزرنیم، رقابت با بقیه و ورود دوباره)<input id="em0" class="in" dir="ltr" type="email" autocomplete="email" placeholder="you@gmail.com"></label>
-  <div class="small muted">شکلک پروفایل (بعداً می‌توانی عکس خودت را بگذاری):</div>
-  <div class="row" id="av">${AVATARS.map((a, i) => `<button class="icon-btn${i ? '' : ' on'}" data-a="${a}" style="font-size:20px">${a}</button>`).join('')}</div>
+function viewWelcome(tab = 'up') {
+  $('#top').innerHTML = ''; $('nav.bottom').hidden = true;
+  view().innerHTML = `<div class="auth">
+  <div class="hero2"><img class="logo" src="icon-192.png" alt=""><h2>انگلیسی را مثل یک گفتگوی واقعی یاد بگیر</h2>
+  <span style="opacity:.85">معلم هوشمندی که با تو فارسی حرف می‌زند و قدم‌به‌قدم تا مکالمهٔ روان همراهت است.</span>
+  <ul><li>معلم صوتی با لهجهٔ آمریکایی یا بریتانیایی</li><li>فلش‌کارت هوشمند؛ هیچ واژه‌ای فراموش نمی‌شود</li><li>تقویم شمسی و برنامهٔ شخصی تا رسیدن به هدف</li><li>انجمن، رقابت و داستان‌های صوتی</li></ul></div>
+  <div class="form"><div class="tabs"><button data-t="up" class="${tab === 'up' ? 'on' : ''}">ثبت‌نام</button><button data-t="in" class="${tab === 'in' ? 'on' : ''}">ورود</button></div>
+  ${tab === 'up' ? `<label class="f">نام<input id="nm" class="in" placeholder="مثلاً رستا" maxlength="24" autocomplete="given-name"></label>` : ''}
+  <label class="f">ایمیل<input id="em0" class="in" dir="ltr" type="email" autocomplete="email" placeholder="you@gmail.com"></label>
+  ${tab === 'up' ? `<div class="small muted">تصویر پروفایل</div><div class="row" id="av">${AVATARS.map((a, i) => `<button class="icon-btn${i ? '' : ' on'}" data-a="${a}" style="font-size:20px">${a}</button>`).join('')}</div>` : '<span class="small muted">لینک ورود به ایمیلت فرستاده می‌شود؛ رمز لازم نیست.</span>'}
   <details><summary class="small">کد اتصال هوش مصنوعی دارم</summary><input id="cd" class="in" dir="ltr" placeholder="ZD1…" style="margin-top:6px"></details>
-  <button class="btn wide" id="go">ثبت‌نام و شروع</button>
-  <button class="btn line wide" id="go2">بدون حساب امتحان می‌کنم</button>
-  <div class="small muted" style="text-align:center">قبلاً ثبت‌نام کرده‌ای؟ همین‌جا اسم و ایمیلت را بنویس و «ثبت‌نام و شروع» را بزن؛ لینک ورود برایت می‌آید.</div></div></div>`;
+  <button class="btn wide" id="go">${tab === 'up' ? 'ساخت حساب' : 'فرستادن لینک ورود'}</button>
+  ${tab === 'up' ? '<button class="btn line wide" id="go2">فعلاً بدون حساب امتحان می‌کنم</button>' : ''}
+  <span class="tiny muted" style="text-align:center">با ثبت‌نام، یوزرنیم و صفحهٔ اختصاصی می‌گیری و پیشرفتت در جدول رقابت دیده می‌شود.</span></div></div>`;
+  $$('.tabs button').forEach(b => b.onclick = () => viewWelcome(b.dataset.t));
   let av = AVATARS[0]; $$('#av button').forEach(b => b.onclick = () => { $$('#av button').forEach(x => x.classList.remove('on')); b.classList.add('on'); av = b.dataset.a; });
   const start = (withEmail) => {
-    const n = $('#nm').value.trim(); if (!n) return toast('اسمت را بنویس.');
-    const email = $('#em0').value.trim(); if (withEmail && !/^\S+@\S+\.\S+$/.test(email)) return toast('ایمیلت را درست بنویس (یا «بدون حساب» را بزن).');
+    const n = tab === 'in' ? 'کاربر' : $('#nm').value.trim(); if (!n) return toast('نامت را بنویس.');
+    const email = $('#em0').value.trim(); if (withEmail && !/^\S+@\S+\.\S+$/.test(email)) return toast('ایمیلت را درست بنویس.');
     const c = $('#cd').value.trim(); if (c) { try { useCode(c); toast('هوش مصنوعی وصل شد ✓'); } catch { return toast('کد اتصال درست نیست؛ دوباره کپی کن.'); } }
-    addUser(n, av); $('nav.bottom').hidden = false; go('guide'); router();
-    if (withEmail && window.loginSheet) setTimeout(() => { loginSheet(() => go('home')); window._loginSheetEmail && _loginSheetEmail(email); }, 300);
+    addUser(n, av); $('nav.bottom').hidden = false; go(tab === 'in' ? 'home' : 'guide'); router();
+    if (withEmail && window.loginSheet) setTimeout(() => { loginSheet(async p => { if (tab === 'in' && p?.display_name) { me().name = p.display_name; if (p.avatar) me().avatar = p.avatar; if (p.photo) me().photo = p.photo; saveG('users'); router(); } }); window._loginSheetEmail && _loginSheetEmail(email); }, 300);
   };
-  $('#go').onclick = () => start(true); $('#go2').onclick = () => start(false);
+  $('#go').onclick = () => start(true); $('#go2') && ($('#go2').onclick = () => start(false));
 }
 function addUser(name, avatar) { const u = { id: uid(), name, avatar, created: isoDay() }; G.users.push(u); saveG('users'); loadUser(u.id); saveU(); return u; }
 routes.users = () => {
@@ -586,6 +606,7 @@ routes.home = () => {
     <ul class="tasks">${tasks.map(t => `<li class="${taskDone(t) ? 'done' : ''}"><span class="chk">${taskDone(t) ? '✓' : ''}</span>${esc(t.t)}</li>`).join('')}</ul>
     <div class="row"><a class="btn" href="#unit/${cur.id}">ادامهٔ یادگیری</a>${due ? `<a class="btn ghost" style="background:transparent;color:inherit;box-shadow:inset 0 0 0 1.5px currentColor" href="#cards/due">مرور ${faNum(due)} واژه</a>` : ''}</div>
   </div>
+  <div id="install-box">${installHTML()}</div>
   <div id="online-home"></div>
   ${planGap() > 0 ? `<div class="notice stack"><b>⚠ ${faNum(planGap())} درس از برنامه‌ات عقبی</b><span class="small">هدفت عقب نمی‌افتد: برنامهٔ جبرانی همان تاریخ پایان را نگه می‌دارد و وقت روزانه را کمی بیشتر می‌کند.</span><button class="btn sm" id="cu" style="align-self:flex-start">ساخت برنامهٔ جبرانی</button></div>` : ''}
   ${!hasAI() && !firstKeyed() ? `<div class="notice">برای فعال شدن معلم صوتی و گفتگو، در <a href="#settings">تنظیمات</a> یک کلید رایگان Gemini بگذار.</div>` : ''}
@@ -605,7 +626,7 @@ routes.home = () => {
   ${!U.placement ? `<a class="btn ghost wide" href="#placement">تعیین سطح با هوش مصنوعی</a>` : ''}
   </div>`;
   $$('[data-u]').forEach(b => b.onclick = () => { loadUser(b.dataset.u); router(); });
-  window.homeOnline && homeOnline();
+  window.homeOnline && homeOnline(); bindInstall();
   $('#cu') && ($('#cu').onclick = () => { catchUpPlan(); toast(`برنامهٔ جبرانی ساخته شد: روزی ${faNum(U.plan.minutes)} دقیقه تا همان تاریخ هدف.`, 5000); go('plan'); });
   if (!U.plan && !lsGet('zd:planAsked:' + G.active, false)) { setTimeout(() => { if (!['', '#home'].includes(location.hash) || $('.sheet-bg')) return; lsSet('zd:planAsked:' + G.active, true); const bg = sheet(`<div class="stack"><div class="big-ic">🗓️</div><b>برنامهٔ شخصی‌ات را بسازیم؟</b><span class="small muted">بگو تا کی می‌خواهی به کجا برسی و روزی چقدر وقت داری؛ برنامه روی تقویم شمسی چیده می‌شود، یادآوری می‌کند و اگر عقب بیفتی برنامهٔ جبرانی می‌دهد.</span><a class="btn" href="#plan" onclick="this.closest('.sheet-bg').remove()">بله، بسازیم</a><button class="btn ghost" onclick="this.closest('.sheet-bg').remove()">بعداً</button></div>`); }, 800); }
 };
@@ -1278,11 +1299,11 @@ routes.settings = () => {
   <div class="card stack"><b>تصاویر واژه‌ها</b>${seg('img', [['ai', 'تصویرسازی AI'], ['photo', 'عکس رایگان واقعی'], ['emoji', 'فقط ایموجی (سریع‌ترین)']], S.img)}
   <input class="in" dir="ltr" id="pk" placeholder="Pixabay API key (اختیاری، برای عکس بهتر)" value="${esc(S.pixabayKey)}"><button class="btn line sm" id="ci">پاک کردن تصاویر ذخیره‌شده</button></div>
 
-  <div class="card stack"><b>آموزش</b><div class="grid2"><label class="f">نام معلم<input class="in" id="tn" value="${esc(S.teacher)}"></label><label class="f">حد قبولی آزمون درس<input class="in" type="number" min="60" max="100" id="ps" value="${S.passScore}"></label></div>
+  <div class="card stack"><b>آموزش</b><div class="grid2"><label class="f">نام معلم<input class="in" id="tn" value="${esc(S.teacher)}"></label><div class="f">حد قبولی آزمون درس<div class="in" style="display:flex;align-items:center">${faNum(95)} (ثابت)</div></div></div>
   <label class="f">ظاهر</label>${seg('theme', [['auto', 'خودکار'], ['light', 'روشن'], ['dark', 'تیره']], S.theme)}</div>
   <button class="btn" id="sv">ذخیرهٔ تنظیمات</button></div>`;
   $$('[data-seg]').forEach(g => g.onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('button', g).forEach(x => x.classList.remove('on')); b.classList.add('on'); S[g.dataset.seg] = b.dataset.v; if (g.dataset.seg === 'theme') applyTheme(); saveG('settings'); });
-  const collect = () => { S.brain = $('#brain').value; $$('[data-k]').forEach(i => S.prov[i.dataset.k].key = i.value.trim()); $$('[data-m]').forEach(i => S.prov[i.dataset.m].model = i.value.trim()); $$('[data-b]').forEach(i => S.prov[i.dataset.b].base = i.value.trim()); S.geminiVoice = $('#gv').value; S.openaiVoice = $('#ov').value; S.rate = +$('#rate').value; S.autoSpeak = $('#as').checked; S.pixabayKey = $('#pk').value.trim(); S.teacher = $('#tn').value.trim() || 'رستا'; S.passScore = clamp(+$('#ps').value || 95, 60, 100); saveG('settings'); };
+  const collect = () => { S.brain = $('#brain').value; $$('[data-k]').forEach(i => S.prov[i.dataset.k].key = i.value.trim()); $$('[data-m]').forEach(i => S.prov[i.dataset.m].model = i.value.trim()); $$('[data-b]').forEach(i => S.prov[i.dataset.b].base = i.value.trim()); S.geminiVoice = $('#gv').value; S.openaiVoice = $('#ov').value; S.rate = +$('#rate').value; S.autoSpeak = $('#as').checked; S.pixabayKey = $('#pk').value.trim(); S.teacher = $('#tn').value.trim() || 'رستا'; S.passScore = 95; saveG('settings'); };
   $('#rate').oninput = e => $('#rv').textContent = e.target.value;
   $('#mkc').onclick = async () => { collect(); if (!firstKeyed()) return toast('اول یک کلید وارد کن.'); const c = makeCode(); $('#cc').value = c; try { await navigator.clipboard.writeText(c); toast('کد اتصال کپی شد؛ در واتساپ یا تلگرام بفرست.'); } catch { $('#cc').select(); toast('کد را از کادر زیر کپی کن.'); } };
   $('#usc').onclick = () => { try { useCode($('#cc').value); toast('هوش مصنوعی وصل شد ✓'); routes.settings(); } catch { toast('کد اتصال درست نیست.'); } };
@@ -1297,4 +1318,5 @@ function applyTheme() { const t = G.settings.theme; if (t === 'auto') document.d
 
 /* ───────── شروع ───────── */
 applyTheme();
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { navigator.serviceWorker.register('sw.js').then(r => r.update()).catch(() => { }); let reloaded = false; const hadCtl = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => { if (reloaded || !hadCtl) return; reloaded = true; if (!/^#(teach|talk|exam|rooms|read|theater)/.test(location.hash)) location.reload(); }); }
+try { navigator.storage?.persist?.(); } catch { } // جلوگیری از پاک شدن خودکار داده‌ها توسط مرورگر

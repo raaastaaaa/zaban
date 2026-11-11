@@ -61,7 +61,7 @@ async function handleAuthRedirect() {
   history.replaceState(null, '', location.pathname + '#home');
   const s = await session(); if (!s) { toast('ورود کامل نشد؛ لینک منقضی شده بود. دوباره کد بخواه.', 5000); return router(); }
   const p = await myProfile(true); router();
-  if (p) { U.online = { uid: p.id, username: p.username }; saveU(); toast('خوش آمدی @' + p.username + ' 🎉'); syncNow(); return; }
+  if (p) { U.online = { uid: p.id, username: p.username }; saveU(); if (['کاربر', ''].includes(me().name)) { me().name = p.display_name; if (p.photo) me().photo = p.photo; if (p.avatar) me().avatar = p.avatar; saveG('users'); router(); } toast('خوش آمدی @' + p.username + ' 🎉'); syncNow(); return; }
   const bg = sheet(`<div class="stack"><b style="font-size:18px">ایمیلت تأیید شد ✓</b><label class="f">یک یوزرنیم انتخاب کن (حروف انگلیسی کوچک، عدد و _ ؛ ۳ تا ۲۰ حرف)<input id="un" class="in" dir="ltr" maxlength="20" value="${esc((s.user.email || '').split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20))}"></label><span class="tiny muted" id="unh"></span><button class="btn" id="mk">ساخت صفحهٔ من</button></div>`);
   $('#mk', bg).onclick = async () => { const un = $('#un', bg).value.trim().toLowerCase(); if (!/^[a-z0-9_]{3,20}$/.test(un)) return $('#unh', bg).textContent = 'یوزرنیم معتبر نیست.';
     const { error } = await sb().from('profiles').insert({ id: s.user.id, username: un, display_name: me().name, avatar: me().avatar, photo: me().photo || null });

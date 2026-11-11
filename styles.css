@@ -213,3 +213,43 @@ details.card summary{font-weight:800;cursor:pointer}
 .list{margin:0;padding-inline-start:18px}
 .kbd{font-family:var(--en);background:var(--sunk);padding:0 6px;border-radius:6px;font-size:13px}
 hr.sep{border:0;border-top:1px solid var(--line);margin:4px 0}
+
+/* ───── چیدمان استاندارد دسکتاپ: نوار کناری به‌جای نوار پایین ───── */
+nav.bottom .brand{display:none}
+@media (min-width:900px){
+  body{font-size:15.5px}
+  nav.bottom{inset:0 0 0 auto;width:232px;border-top:0;border-left:1px solid var(--line);padding:calc(18px + env(safe-area-inset-top,0px)) 14px 18px}
+  nav.bottom .in{display:flex;flex-direction:column;height:auto;gap:4px;max-width:none}
+  nav.bottom .brand{display:flex;align-items:center;gap:10px;padding:4px 10px 18px;font-weight:900;font-size:19px;color:var(--ink);text-decoration:none}
+  nav.bottom .brand img{width:36px;height:36px;border-radius:10px}
+  nav.bottom a{flex-direction:row;justify-content:flex-start;gap:12px;font-size:14.5px;padding:11px 12px;border-radius:12px}
+  nav.bottom a:hover{background:var(--sunk)}
+  nav.bottom a.on{background:var(--accent-soft)}
+  body{padding-right:232px}
+  .app{max-width:1080px;margin:0 auto;padding-left:40px;padding-right:40px;padding-bottom:40px}
+  .composer{bottom:16px}
+  #toast{bottom:24px;left:calc(50% - 116px)}
+  .topbar{background:var(--bg)}
+  .words{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .units{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+  .sheet-bg{align-items:center}
+  .sheet{border-radius:20px;max-width:620px}
+}
+@media (min-width:1300px){.words{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* ───── صفحهٔ ورود و ثبت‌نام ───── */
+.auth{display:grid;gap:20px;align-items:stretch;padding-block:24px}
+@media (min-width:900px){.auth{grid-template-columns:1.1fr 1fr;min-height:calc(100vh - 140px);align-items:center}}
+.auth .hero2{background:var(--ink);color:var(--bg);border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:14px}
+.auth .hero2 h2{margin:0;font-size:28px;line-height:1.4}
+.auth .hero2 ul{margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:6px;opacity:.9}
+.auth .logo{width:64px;height:64px;border-radius:18px}
+.auth .form{background:var(--surface);border-radius:24px;padding:28px;box-shadow:0 0 0 1px var(--line),0 12px 40px rgb(0 0 0 / .06);display:flex;flex-direction:column;gap:14px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--sunk);border-radius:12px;padding:4px;gap:4px}
+.tabs button{border:0;background:transparent;border-radius:9px;padding:9px;font-weight:800}
+.tabs button.on{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgb(0 0 0 / .1)}
+
+@media (max-width:899px){.auth{padding-block:12px}.auth .form{order:-1;padding:20px}.auth .hero2{padding:20px}.auth .hero2 ul,.auth .hero2 .logo{display:none}.auth .hero2 h2{font-size:20px}}
+.install{display:flex;gap:10px;align-items:center;background:var(--accent);color:var(--accent-ink);border-radius:14px;padding:10px 14px}
+.install b{flex:1}
+.install button{border:0;border-radius:10px;padding:8px 14px;font-weight:800;background:var(--accent-ink);color:var(--accent)}
