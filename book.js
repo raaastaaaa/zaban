@@ -127,7 +127,7 @@ function noteSheet(u) {
 function bookMenu(u, L, words, playSeq) {
   $('.bk-menu')?.remove();
   const m = document.createElement('div'); m.className = 'bk-menu'; m.setAttribute('role', 'menu');
-  const items = [['dl', '⬇ دانلود همهٔ فایل‌های صوتی درس'], ['audio', '▶ پخش صوتی (آمریکایی / بریتانیایی)'], ['teach', '👩‍🏫 آموزش کامل درس به فارسی'], ['#dict', '🔍 جستجو در دیکشنری'], ['note', '📝 یادداشت‌ها و نشانه‌ها'], ['#unit/' + u.id + '/steps', '✍️ تمرین‌ها، کوییز و آزمون'], ['#leitner', '🗃️ جعبهٔ لایتنر و کوییز از واژه‌هایم'], ['#settings', '⚙️ تنظیمات']];
+  const items = [['#live/lesson', '📞 کلاس زنده با معلم (صوتی)'], ['dl', '⬇ دانلود همهٔ فایل‌های صوتی درس'], ['audio', '▶ پخش صوتی (آمریکایی / بریتانیایی)'], ['teach', '👩‍🏫 آموزش کامل درس به فارسی'], ['#dict', '🔍 جستجو در دیکشنری'], ['note', '📝 یادداشت‌ها و نشانه‌ها'], ['#unit/' + u.id + '/steps', '✍️ تمرین‌ها، کوییز و آزمون'], ['#leitner', '🗃️ جعبهٔ لایتنر و کوییز از واژه‌هایم'], ['#settings', '⚙️ تنظیمات']];
   m.innerHTML = items.map(([k, t]) => k[0] === '#' ? `<a href="${k}" role="menuitem">${t}</a>` : `<button data-b="${k}" role="menuitem">${t}</button>`).join('');
   view().appendChild(m);
   const close = e => { if (!e.target.closest('[data-b="more"]')) { m.remove(); document.removeEventListener('click', close, true); } };

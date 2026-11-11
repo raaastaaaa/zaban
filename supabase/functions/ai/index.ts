@@ -9,7 +9,7 @@ const BANK_DAYS = 30;
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { ...CORS, "content-type": "application/json" } });
 const ALLOWED = /^(gemini|gemma)[\w.\-]*$/;
-const PATHS = new Set(["generateContent"]);
+const PATHS = new Set(["generateContent", "liveToken"]);
 
 function priceOf(model: string, u: Record<string, number> = {}) {
   const inp = u.promptTokenCount ?? 0, out = (u.candidatesTokenCount ?? 0) + (u.thoughtsTokenCount ?? 0);
@@ -49,6 +49,16 @@ Deno.serve(async (req) => {
     if (spent >= LIMIT * days) return json({ error: "BUDGET" }, 402);
   }
 
+  // کلاس زنده (Gemini Live): توکن یک‌بارمصرف و کوتاه‌مدت؛ کلید اصلی هرگز به گوشی نمی‌رسد
+  if (path === "liveToken") {
+    const now = Date.now();
+    for (const key of KEYS) {
+      const r = await fetch("https://generativelanguage.googleapis.com/v1alpha/auth_tokens", { method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": key }, body: JSON.stringify({ uses: 1, expireTime: new Date(now + 35 * 60e3).toISOString(), newSessionExpireTime: new Date(now + 2 * 60e3).toISOString() }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.name) { await admin.rpc("add_ai_usage", { uid: user.id, d: today, amount: 0.05 }); return json({ token: d.name, models }); }
+    }
+    return json({ error: "busy" }, 503);
+  }
   let last = "";
   for (const m of models) {
     for (const key of KEYS) {
@@ -89,13 +99,16 @@ async function chatFallback(p: any) {
     else fbErrors.push("anthropic " + r.status);
   }
   const providers = [
-    { key: Deno.env.get("GROQ_KEY"), url: "https://api.groq.com/openai/v1/chat/completions", models: (Deno.env.get("GROQ_MODEL") ?? "openai/gpt-oss-120b,llama-3.3-70b-versatile,qwen/qwen3-32b,meta-llama/llama-4-maverick-17b-128e-instruct").split(",") },
+    { key: Deno.env.get("GROQ_KEY"), url: "https://api.groq.com/openai/v1/chat/completions", models: (Deno.env.get("GROQ_MODEL") ?? "openai/gpt-oss-120b,openai/gpt-oss-20b,qwen/qwen3-32b").split(",") },
     { key: Deno.env.get("OPENROUTER_KEY"), url: "https://openrouter.ai/api/v1/chat/completions", models: (Deno.env.get("OPENROUTER_MODEL") ?? "openrouter/free,meta-llama/llama-3.3-70b-instruct:free,deepseek/deepseek-chat-v3-0324:free").split(",") },
   ].filter((x) => x.key);
   for (const pr of providers) for (const model of pr.models) {
     const r = await fetch(pr.url, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + pr.key }, body: JSON.stringify({ model: model.trim(), messages: msgs, temperature: p.generationConfig?.temperature ?? 0.8, max_tokens: Math.min(p.generationConfig?.maxOutputTokens ?? 1400, 8000), ...(wantJson ? { response_format: { type: "json_object" } } : {}) }) });
-    if (!r.ok) { fbErrors.push(pr.url.split("/")[2] + " " + model + " " + r.status); continue; }
-    const d = await r.json(); const t = d.choices?.[0]?.message?.content; if (!t) continue;
+    let rr = r;
+    if (!rr.ok && rr.status === 400 && wantJson) rr = await fetch(pr.url, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + pr.key }, body: JSON.stringify({ model: model.trim(), messages: msgs, temperature: p.generationConfig?.temperature ?? 0.8, max_tokens: Math.min(p.generationConfig?.maxOutputTokens ?? 1400, 8000) }) });
+    if (!rr.ok) { fbErrors.push(pr.url.split("/")[2] + " " + model + " " + rr.status); continue; }
+    const d = await rr.json(); let t = d.choices?.[0]?.message?.content; if (!t) continue;
+    if (wantJson && t.includes("{")) t = t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1);
     return { candidates: [{ content: { role: "model", parts: [{ text: t }] } }], usageMetadata: {}, fallback: pr.url.split("/")[2] + " " + model, notes: fbErrors.splice(0) };
   }
   return null;

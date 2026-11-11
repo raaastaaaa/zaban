@@ -399,3 +399,14 @@ body:has(#bgp) .mini-play{bottom:calc(var(--nav) + 76px + env(safe-area-inset-bo
 
 :root[data-theme=dark] .reading-now{background:#5a4a12!important;color:#fff}
 .reading-now .fa-tr,.reading-now .pron{color:inherit}
+
+/* کلاس زنده */
+.live-card{background:linear-gradient(160deg,var(--hero),#0c5f5d);color:var(--hero-ink);border-radius:22px;padding:22px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.live-av{--lv:0;position:relative;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.12);display:grid;place-items:center;font-size:54px;transition:transform .15s}
+.live-av i{position:absolute;inset:-8px;border-radius:50%;border:3px solid rgba(255,255,255,.0);transition:all .1s}
+.live-av.on i{border-color:rgba(255,255,255,.35);transform:scale(calc(1 + var(--lv) * .25))}
+.live-av.talk{animation:lvpulse 1s ease-in-out infinite}
+@keyframes lvpulse{50%{transform:scale(1.07);box-shadow:0 0 0 12px rgba(62,194,188,.25)}}
+.live-go{min-width:180px;font-size:17px;background:#fff;color:#0c5f5d}.live-go.bad{background:var(--bad);color:#fff}
+.live-log{max-height:46vh;overflow:auto;gap:6px}
+.ll{font-size:14px;line-height:1.8}.ll.me{color:var(--accent)}.ll b{font-weight:800}

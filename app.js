@@ -759,7 +759,7 @@ routes.home = () => {
     <div class="row"><span class="grow small muted">${jLabel(isoDay(), true)} · ${faNum(Math.round(L.min))} دقیقه مطالعهٔ امروز</span><span class="pill mark">🔥 ${faNum(streakOf(U))} روز</span></div>
     <b style="font-size:19px">درس ${faNum(cur.idx + 1)}: ${esc(cur.fa)} <span class="en" style="opacity:.7;font-size:14px">${esc(cur.en)}</span></b>
     <ul class="tasks">${tasks.map(t => `<li class="${taskDone(t) ? 'done' : ''}" data-tk="${esc(t.k || '')}" style="cursor:pointer"><span class="chk">${taskDone(t) ? '✓' : ''}</span><span class="grow">${esc(t.t)}</span>${taskLink(t) ? `<a href="${taskLink(t)}" class="small" onclick="event.stopPropagation()">برو ›</a>` : ''}</li>`).join('')}</ul>
-    <div class="row"><a class="btn" href="#unit/${cur.id}">ادامهٔ یادگیری</a><a class="btn ghost" style="background:transparent;color:inherit;box-shadow:inset 0 0 0 1.5px currentColor" href="#leitner">🗃️ لایتنر${due ? ' · ' + faNum(due) + ' امروز' : ''}</a></div>
+    <div class="row"><a class="btn" href="#unit/${cur.id}">ادامهٔ یادگیری</a><a class="btn" style="background:#fff;color:#0c5f5d" href="#live/lesson">📞 کلاس زنده</a><a class="btn ghost" style="background:transparent;color:inherit;box-shadow:inset 0 0 0 1.5px currentColor" href="#leitner">🗃️ لایتنر${due ? ' · ' + faNum(due) + ' امروز' : ''}</a></div>
   </div>
   <div id="install-box">${installHTML()}</div>
   <div id="online-home"></div>
@@ -1056,6 +1056,7 @@ function missedDays() { const P = U.plan; if (!P) return 0; let n = 0; for (let 
 function planContext() { const P = U.plan; if (!P) return 'The learner has no study plan yet.'; const end = addDays(P.start, P.dayCount - 1); const left = Math.max(1, Math.round((parseDay(end) - parseDay(isoDay())) / DAY) + 1);
   return `STUDY PLAN: goal "${P.goal || (P.target === 'l1' ? 'finish Intro + Level 1' : 'reach intermediate')}", target end ${end} (${left} days left), planned ${P.minutes} min/day, topics: ${(P.topics || []).join(', ') || '-'}. Units behind plan: ${planGap()}. Consecutive missed study days: ${missedDays()}. Last 14 days minutes: ${[...Array(14)].map((_, i) => Math.round(U.log[addDays(isoDay(), -i)]?.min || 0)).join(',')}. Today's tasks: ${(todayPlan()?.tasks || []).map(t => t.t + (taskDone(t) ? ' [done]' : '')).join('; ')}.`; }
 const COACH = {
+  live: ['📞', 'کلاس زندهٔ صوتی', 'مثل حالت صوتی ChatGPT: معلم زنده با تو حرف می‌زند، درس امروز را کار می‌کند و اشتباه‌هایت را می‌گوید.', ''],
   advisor: ['🧭', 'مشاور هوشمند برنامه', 'دربارهٔ هدف، برنامه، عقب‌افتادگی، انگیزه و روش درس خواندنت با یک مشاور حرفه‌ای حرف بزن؛ برنامه‌ات را می‌بیند و راهکار دقیق می‌دهد.', 'You are a professional, warm and honest language-learning ADVISOR (مشاور تحصیلی) for an Iranian adult. You can see the learner\'s plan, progress and missed days. Talk ONLY in natural colloquial Persian. Be specific with numbers (minutes per day, words per day, which lessons, which days), realistic about feasibility, and motivating without flattery. If they are behind, say exactly how many days they missed and the concrete catch-up schedule needed to still reach the goal date, or suggest moving the date. Ask one focused question at a time when you need information (available time, preferred hours, obstacles). Max 90 words per reply.'],
   quiz: ['🧩', 'ازم کوییز بگیر', 'سؤال‌های کوتاه از واژه‌ها و گرامر درس‌هایی که خوانده‌ای؛ جواب بده، نمره و توضیح بگیر.', 'You are a lively quiz master. Ask ONE short quiz question at a time about the learner\'s studied words and grammar (mix: meaning, fill the gap, choose the right form, translate a short Persian sentence, say it in English). After each answer: say if it is right, give the correct answer, a one-line Persian tip, a running score like "Score: 3/4", then ask the next question. Keep it fun and fast.'],
   role: ['🎭', 'بهم نقش بده', 'معلم یک موقعیت واقعی می‌سازد (فروشگاه، فرودگاه، مهمانی…) و نقش طرف مقابل را بازی می‌کند.', 'Pick a realistic everyday situation matching the learner\'s level and topics (e.g. a cafe, a hotel check-in, meeting a new neighbor). First tell the learner in Persian (fa field) who they are and what their goal is, then play the other person. Stay in role, keep lines short, and gently recast mistakes. After about 8 exchanges, step out of role and give a short Persian review with 3 better sentences.'],
@@ -1063,6 +1064,7 @@ const COACH = {
   story: ['📚', 'با هم داستان بسازیم', 'یک جمله تو، یک جمله معلم؛ داستانی خنده‌دار با واژه‌های خودت.', 'Build a funny story together, one or two sentences at a time, alternating with the learner. Use their studied words, keep the English at their level, gently fix their sentences, and keep the plot surprising.'],
 };
 routes.coach = mode => {
+  if (mode === 'live') return go('live');
   const m = COACH[mode]; if (!m) return go('chat'); setTop(m[1], true); const v = view(); if (needAI(v)) return;
   convo(v, {
     key: 'coach:' + mode, intro: 'Start now: greet me by name in one short line and begin.',
