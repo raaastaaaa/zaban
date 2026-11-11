@@ -314,7 +314,8 @@ routes.live = (mode = 'lesson') => {
     <div class="row"><button class="btn" id="gpt">🚀 شروع کلاس در ChatGPT</button>${navigator.share ? '<button class="btn line sm" id="gpts">📤 فرستادن مستقیم</button>' : ''}<button class="btn line sm" id="gptc">👁 دیدن و کپی دستی</button></div>
     <span class="tiny muted">${mode === 'group' ? 'برای کلاس گروهی: یک نفر ChatGPT را روی بلندگو باز کند و همه کنار هم باشید؛ هر کس قبل از حرف زدن اسمش را بگوید.' : 'برنامهٔ امروز، اشتباه‌های قبلی و حافظهٔ کلاس‌هایت هم به ChatGPT داده می‌شود.'}</span></div>
   <div class="live-card"><div class="live-av" id="lav"><span>👩‍🏫</span><i></i></div><b id="lst">${esc(G.settings.teacher)} آماده است</b><span class="small" id="lclk">${faNum(Math.round(L.live || 0))} دقیقه کلاس زندهٔ امروز</span>
-    <div class="seg eng-seg" id="leng">${[['gemini', '✨ Gemini'], ['gpt', '🤖 ChatGPT']].map(([k, t]) => `<button data-v="${k}" class="${(G.settings.liveEngine || 'gemini') === k ? 'on' : ''}">${t}</button>`).join('')}</div>
+    <div class="seg eng-seg" id="leng">${[['relay', '🎧 بدون فیلترشکن'], ['gemini', '✨ زنده (VPN)'], ['gpt', '🤖 ChatGPT']].map(([k, t]) => `<button data-v="${k}" class="${(G.settings.liveEngine || 'gemini') === k ? 'on' : ''}">${t}</button>`).join('')}</div>
+    <button class="btn line" id="lrmic" hidden>🎤 حرف بزن</button>
     <div class="row" style="justify-content:center"><button class="btn live-go" id="lgo">📞 شروع کلاس</button></div>
     <span class="tiny" style="opacity:.8">مثل تماس تلفنی حرف بزن؛ وسط حرف معلم هم می‌توانی بپری. هدفون بهتر است.</span></div>
   <div class="row small" style="justify-content:space-between;gap:6px"><span>زبان آموزش معلم:</span><div class="seg" id="ltl">${[['fa', '🇮🇷 فارسی'], ['mix', 'نیمه‌نیمه'], ['en', '🇬🇧 بیشتر انگلیسی']].map(([k, t]) => `<button data-v="${k}" class="${(G.settings.teachLang || 'fa') === k ? 'on' : ''}">${t}</button>`).join('')}</div></div>
@@ -427,13 +428,16 @@ routes.live = (mode = 'lesson') => {
     Live.ws.send(JSON.stringify({ clientContent: { turns: [{ role: 'user', parts: [{ text: `[TYPED MESSAGE from ${n || 'a student'}]: ${msg}\n(Check it carefully. If it has ANY mistake — spelling, grammar, word choice, punctuation, capital letters — call correct_writing with the wrong part, the correct version and a short Persian reason, then reply.)` }] }], turnComplete: true } })); return true; };
   const sendTyped = () => { const i = $('#lti'); const t = i.value.trim(); if (!t) return; let n = mode === 'group' ? (window.VR?.on ? VR.name : '') : callMe(), msg = t; const m2 = !window.VR?.on && t.match(/^([^:：]{1,20})[:：]\s*(.+)$/); if (m2) { n = m2[1].trim(); msg = m2[2]; }
     if (window.VR?.on && !VR.host) { vrSend({ k: 'chat', n, t: msg }); ui.say('me', `✍️ ${msg}`); ui.say('end'); i.value = ''; return; }
+    if (Relay.on) { if (Relay.busy) return toast('یک لحظه صبر کن، معلم دارد جواب می‌دهد.'); Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); try { Relay.mr?.state === 'recording' && (Relay.mr.onstop = null, Relay.mr.stop()); } catch { } clearInterval(Relay.vad); i.value = ''; ui.say('me', `✍️ ${msg}`); ui.say('end'); liveLog('S', msg + ' ');
+      relayTurn({ text: `[TYPED MESSAGE from ${n || 'the student'}]: ${msg}\n(If it has any real mistake, put it in "fix" and explain briefly.)` }); return; }
     if (typedToTeacher(n, msg)) i.value = ''; };
   $('#ltb').onclick = sendTyped; $('#lti').onkeydown = e => { if (e.key === 'Enter') sendTyped(); };
-  const engine = () => G.settings.liveEngine || 'gemini';
-  const drawEng = () => { $$('#leng button').forEach(b => b.classList.toggle('on', b.dataset.v === engine())); $('#lgpt').hidden = engine() !== 'gpt'; if (!Live.on) $('#lgo').textContent = engine() === 'gpt' ? '🤖 شروع کلاس با ChatGPT' : '📞 شروع کلاس'; };
-  $('#leng').onclick = e => { const b = e.target.closest('button'); if (!b || Live.on || Live.starting) return; G.settings.liveEngine = b.dataset.v; saveG('settings'); drawEng(); };
+  const engine = () => G.settings.liveEngine || 'relay';
+  const drawEng = () => { $$('#leng button').forEach(b => b.classList.toggle('on', b.dataset.v === engine())); $('#lgpt').hidden = engine() !== 'gpt'; if (!Live.on && !Relay.on) $('#lgo').textContent = engine() === 'gpt' ? '🤖 شروع کلاس با ChatGPT' : '📞 شروع کلاس'; };
+  $('#leng').onclick = e => { const b = e.target.closest('button'); if (!b || Live.on || Live.starting || Relay.on) return; G.settings.liveEngine = b.dataset.v; saveG('settings'); drawEng(); };
   drawEng(); const idle0 = ui.idle; ui.idle = () => { idle0(); drawEng(); };
-  $('#lgo').onclick = () => Live.starting ? null : Live.on ? liveStop(ui) : engine() === 'gpt' ? $('#gpt').click() : liveStart(mode, ui);
+  $('#lrmic').onclick = relayMicClick;
+  $('#lgo').onclick = () => Live.starting || Relay.starting ? null : Relay.on ? relayStop() : Live.on ? liveStop(ui) : engine() === 'gpt' ? $('#gpt').click() : engine() === 'relay' ? relayStart(mode, ui) : liveStart(mode, ui);
   $$('[data-lm]', v).forEach(b => b.onclick = () => { if (Live.on) liveStop(ui, true); go('live/' + b.dataset.lm); });
   liveLessonText();
   const GPT_ADAPT = GPT_ADAPT_TXT;
@@ -443,7 +447,7 @@ routes.live = (mode = 'lesson') => {
   $('#gpt').onclick = () => sendToGPT(curP());
   $('#gpts') && ($('#gpts').onclick = () => sendToGPT(curP(), 'share'));
   $('#gptc').onclick = () => showPromptSheet(curP());
-  const myHash = location.hash; addEventListener('hashchange', function h() { if (location.hash !== myHash) { if (Live.on && Live.hash === myHash) liveStop(null, true); if (window.VR?.on && !/^#live\/group/.test(location.hash)) vrLeave(); removeEventListener('hashchange', h); } });
+  const myHash = location.hash; addEventListener('hashchange', function h() { if (location.hash !== myHash) { if (Relay.on || Relay.starting) relayStop(); if (Live.on && Live.hash === myHash) liveStop(null, true); if (window.VR?.on && !/^#live\/group/.test(location.hash)) vrLeave(); removeEventListener('hashchange', h); } });
 };
 
 /* «یادم بده» از هر صفحه (بانک واژه، افعال، موضوع‌ها): انتخاب درس برای معلم زنده و شروع با Gemini یا ChatGPT */
@@ -475,3 +479,73 @@ async function sendToGPT(p, how) {
   if (!ok) { showPromptSheet(p); return; }
   const url = p.length < 7000 ? 'https://chatgpt.com/?q=' + encodeURIComponent(p) : 'https://chatgpt.com/';
   if (!window.open(url, '_blank')) location.href = url; toast('✅ دستور کپی شد. در ChatGPT «Paste / چسباندن» را بزن، بفرست و بعد دکمهٔ صدا 🎙 را بزن.', 8000); }
+
+/* ───────── کلاس صوتی «Kore» بدون فیلترشکن ─────────
+   نوبتی (مثل تماس صوتی با مکث کوتاه): صدای تو ضبط می‌شود (خودکار وقتی ساکت شدی تمام می‌شود)،
+   از راه سرور برنامه به Gemini می‌رسد، جواب معلم با صدای طبیعی «Kore» خوانده می‌شود و دوباره گوش می‌دهد.
+   همهٔ ارتباط از سرور خود برنامه است، پس در ایران بدون VPN هم کار می‌کند. */
+const Relay = { on: false, hist: [], busy: false };
+const RELAY_ADAPT = `
+=== THIS CLASS RUNS AS A TURN-BASED VOICE CALL (no tools available) ===
+Each turn you receive the student's voice (audio) or a typed message. Reply ONLY with JSON:
+{"heard":"exact transcript of what the student just said in the audio, keeping their mistakes (empty if the input was text)","say":"what you say now — at most 3 SHORT spoken sentences (max ~40 words, even in the first greeting; never explain the whole plan at once), natural and warm, following the language policy; it is read aloud by a voice, so no emojis, no markdown, no lists, no IPA","board":null or {"title":"","items":[{"en":"","fa":""}]},"fix":null or {"wrong":"","right":"","why":"short Persian reason"}}
+Wherever the instructions mention tools: show_board → put the items in "board"; correct_writing → "fix"; play_conversation → read a short version of the dialogue yourself or role-play it with the student; guest_say/call_on/give_points/set_activity/give_homework → just say it; ask_brain → think and answer yourself; mark_done → skip.
+Keep turns SHORT and always end with something for the student to say or do. If the audio is silent or unclear, kindly ask them to repeat.`;
+function relayB64(blob) { return new Promise(r => { const f = new FileReader(); f.onload = () => r(String(f.result).split(',')[1]); f.readAsDataURL(blob); }); }
+async function relayStart(mode, ui) {
+  if (Relay.on || Relay.starting) return; Relay.starting = true; ui.connecting?.();
+  try {
+    if (!gemKey()) { toast('برای کلاس صوتی باید اینترنت وصل باشد.'); return ui.idle(); }
+    Relay.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+  } catch { Relay.starting = false; ui.idle(); return toast('اجازهٔ میکروفون داده نشده؛ از تنظیمات مرورگر اجازه بده.'); }
+  const C = window.AudioContext || window.webkitAudioContext; Relay.ctx = new C(); try { await Relay.ctx.resume(); } catch { }
+  if (mode === 'lesson' || mode === 'group') { try { LIVE_LESSON = await liveLessonText(); } catch { } }
+  Object.assign(Relay, { on: true, starting: false, mode, hist: [], ui, sys: livePrompt(mode) + RELAY_ADAPT });
+  Live.started = Date.now(); Live.log = []; Live.mode = mode; ui.live(); ui.status('🧠 معلم دارد آماده می‌شود…'); relayMicBtn(true);
+  Relay.timer = setInterval(() => { const s = Math.round((Date.now() - Live.started) / 1000); ui.clock?.(s); const L = todayLog(); L.min = (L.min || 0) + 1 / 60; L.live = (L.live || 0) + 1 / 60; if (s % 30 === 0) saveU(); }, 1000);
+  relayTurn({ text: '(The class starts now. Greet the student warmly and begin.)' });
+}
+function relayStop() {
+  if (!Relay.on && !Relay.starting) return; const was = Relay.on; Relay.on = false; Relay.starting = false; clearInterval(Relay.timer);
+  try { Relay.mr?.state === 'recording' && Relay.mr.stop(); } catch { } clearInterval(Relay.vad); stopSpeak();
+  try { Relay.stream?.getTracks().forEach(t => t.stop()); } catch { } try { Relay.ctx?.close(); } catch { }
+  Relay.ui?.idle(); relayMicBtn(false); if (was && (Live.log || []).length > 2) liveRemember();
+}
+async function relayTurn(input) {
+  if (!Relay.on) return; const ui = Relay.ui; Relay.busy = true; relayMicBtn(true, 'busy'); ui.status('🧠 معلم دارد فکر می‌کند…');
+  try {
+    const parts = input.audio ? [{ text: '(the student is speaking — audio attached)' }, { inlineData: { mimeType: input.audio.type.split(';')[0] || 'audio/webm', data: await relayB64(input.audio) } }] : [{ text: input.text }];
+    const body = { systemInstruction: { parts: [{ text: Relay.sys }] }, contents: [...Relay.hist, { role: 'user', parts }], generationConfig: { responseMimeType: 'application/json', temperature: 0.8, maxOutputTokens: 1200 } };
+    const d = await gemFetch([G.settings.prov.gemini.model, ...GEM_FALLBACK], 'generateContent', body, gemKey());
+    if (!Relay.on) return;
+    const raw = d.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+    let r; try { r = JSON.parse(raw.replace(/^```json|```$/g, '')); } catch { r = { say: raw.replace(/[{}"]/g, '').slice(0, 400) }; }
+    const heard = input.audio ? (r.heard || '').trim() : (input.shown || '');
+    if (heard) { ui.say('me', heard); ui.say('end'); liveLog('S', heard + ' '); }
+    Relay.hist.push({ role: 'user', parts: [{ text: input.audio ? `(student said:) ${heard || '(unclear)'}` : input.text }] }, { role: 'model', parts: [{ text: r.say || '' }] });
+    if (Relay.hist.length > 30) Relay.hist = Relay.hist.slice(-30);
+    if (r.board?.items?.length) ui.board(r.board.title || '', r.board.items);
+    if (r.fix?.wrong && r.fix?.right) { ui.fix?.('', r.fix.wrong, r.fix.right, r.fix.why || ''); logMistakes?.([r.fix], 'live'); }
+    if (r.say) { ui.say('t', r.say); ui.say('end'); liveLog('T', r.say + ' '); ui.status('🔊 معلم حرف می‌زند… (برای حرف زدن، 🎤 را بزن)'); relayMicBtn(true, 'speak'); Relay.busy = false; const myTurn = Relay.turnId = (Relay.turnId || 0) + 1; await say(r.say, 'fa', 'cheerful'); if (Relay.turnId !== myTurn) return; }
+  } catch (e) { console.warn(e); if (Relay.on) { ui.status('اینترنت کند بود؛ دوباره حرف بزن یا بنویس.'); } }
+  finally { Relay.busy = false; }
+  if (Relay.on && !Relay.busy) relayListen();
+}
+async function relayListen() {
+  if (!Relay.on || Relay.busy) return; const ui = Relay.ui; stopSpeak();
+  const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac'].find(m => window.MediaRecorder?.isTypeSupported?.(m)) || '';
+  let mr; try { mr = Relay.mr = new MediaRecorder(Relay.stream, mime ? { mimeType: mime } : undefined); } catch { ui.status('ضبط صدا روی این مرورگر نیست؛ بنویس.'); return; }
+  const chunks = []; mr.ondataavailable = e => e.data.size && chunks.push(e.data);
+  const an = Relay.ctx.createAnalyser(); an.fftSize = 1024; const src = Relay.ctx.createMediaStreamSource(Relay.stream); src.connect(an); const buf = new Float32Array(an.fftSize);
+  let spoke = false, loudAt = 0, floor = 0.01, n = 0; const t0 = Date.now();
+  mr.onstop = () => { clearInterval(Relay.vad); try { src.disconnect(); } catch { } if (!Relay.on) return;
+    if (!spoke) { ui.status('🎤 هر وقت آماده بودی دکمهٔ «حرف بزن» را بزن یا بنویس.'); relayMicBtn(true, 'idle'); return; }
+    relayTurn({ audio: new Blob(chunks, { type: mr.mimeType || 'audio/webm' }) }); };
+  mr.start(250); ui.status('🎤 گوش می‌دهم… حرف بزن (وقتی ساکت شدی، خودش می‌فرستد)'); relayMicBtn(true, 'rec');
+  Relay.vad = setInterval(() => { an.getFloatTimeDomainData(buf); let s = 0; for (const v of buf) s += v * v; const rms = Math.sqrt(s / buf.length); const now = Date.now();
+    if (n < 4) { floor = Math.max(floor, rms); n++; return; } const thr = Math.max(0.025, floor * 2.5);
+    if (rms > thr) { spoke = true; loudAt = now; }
+    if ((spoke && now - loudAt > 1400) || (!spoke && now - t0 > 15000) || now - t0 > 45000) { clearInterval(Relay.vad); try { mr.stop(); } catch { } } }, 100);
+}
+function relayMicBtn(show, st) { const b = $('#lrmic'); if (!b) return; b.hidden = !show; b.dataset.st = st || ''; b.textContent = st === 'rec' ? '⏹ تمام شد، بفرست' : st === 'busy' ? '⏳ صبر کن…' : st === 'speak' ? '✋ قطع کن، می‌خواهم حرف بزنم' : '🎤 حرف بزن'; b.disabled = st === 'busy'; }
+function relayMicClick() { const st = $('#lrmic')?.dataset.st; if (st === 'rec') { try { Relay.mr?.stop(); } catch { } } else if (st === 'speak') { Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); relayListen(); } else if (st !== 'busy') relayListen(); }
