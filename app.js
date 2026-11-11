@@ -1626,7 +1626,7 @@ routes.settings = () => {
   setTimeout(() => { loadVoices(); const en = bestVoice('en'), fa = bestVoice('fa'); $('#vinfo') && ($('#vinfo').textContent = `صدای انگلیسی دستگاه: ${en ? en.name : 'یافت نشد'} · صدای فارسی دستگاه: ${fa ? fa.name : 'ندارد (Gemini را انتخاب کن)'}`); }, 400);
 };
 function toggleDayNight() { G.settings.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; saveG('settings'); applyTheme(); $('#top [title="روز / شب"]') && ($('#top [title="روز / شب"]').textContent = G.settings.theme === 'dark' ? '☀️' : '🌙'); }
-function applyTheme() { if (!lsGet('zd:themeMig', 0)) { lsSet('zd:themeMig', 1); if (G.settings.theme === 'auto') { G.settings.theme = 'light'; saveG('settings'); } } const t = G.settings.theme; if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = t; }
+function applyTheme() { document.body.classList.toggle('nopron', !lsGet('zd:showPron', true)); if (!lsGet('zd:themeMig', 0)) { lsSet('zd:themeMig', 1); if (G.settings.theme === 'auto') { G.settings.theme = 'light'; saveG('settings'); } } const t = G.settings.theme; if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = t; }
 
 /* ───────── شروع ───────── */
 applyTheme();

@@ -246,7 +246,7 @@ routes.verbs = async (cat = 'همه') => {
     ${cat.startsWith('⭐ ') ? `<button class="btn line sm" id="vtdel" style="align-self:flex-start">حذف موضوع «${esc(cat.slice(2))}»</button>` : ''}
     <div class="seg" id="vacc">${[['US', '🇺🇸 آمریکایی'], ['UK', '🇬🇧 بریتانیایی']].map(([k, t]) => `<button data-v="${k}" class="${(G.settings.accent === 'UK' ? 'UK' : 'US') === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <div class="seg" id="vdir">${[['both', 'انگلیسی + فارسی'], ['en', 'انگلیسی ← فارسی'], ['fa', 'فارسی ← انگلیسی']].map(([k, t]) => `<button data-v="${k}" class="${O.dir === k ? 'on' : ''}">${t}</button>`).join('')}</div>
-    <div class="row small" style="gap:14px"><label class="row" style="gap:4px"><input type="checkbox" data-o="forms"${O.forms ? ' checked' : ''}> سه شکل فعل</label><label class="row" style="gap:4px"><input type="checkbox" data-o="ex"${O.ex ? ' checked' : ''}> جمله و ترجمه</label><label class="row" style="gap:4px"><input type="checkbox" data-o="irr"${O.irr ? ' checked' : ''}> فقط بی‌قاعده</label></div>
+    <div class="row small" style="gap:14px"><label class="row" style="gap:4px"><input type="checkbox" data-o="forms"${O.forms ? ' checked' : ''}> سه شکل فعل</label><label class="row" style="gap:4px"><input type="checkbox" data-o="ex"${O.ex ? ' checked' : ''}> جمله و ترجمه</label><label class="row" style="gap:4px"><input type="checkbox" id="vpron"${lsGet('zd:showPron', true) ? ' checked' : ''}> 🗣 تلفظ فارسی</label><label class="row" style="gap:4px"><input type="checkbox" data-o="irr"${O.irr ? ' checked' : ''}> فقط بی‌قاعده</label></div>
     ${O.dir !== 'both' ? '<span class="tiny muted">برای دیدن جواب، روی بخش پنهان بزن.</span>' : ''}
   </div>
   <div class="row"><b class="grow">${esc(cat)} · ${faNum(list.length)} فعل</b><button class="btn sm" id="qz">🎯 آزمون</button><button class="btn ghost sm" id="add">+ همه به لایتنر</button></div>
@@ -255,6 +255,7 @@ routes.verbs = async (cat = 'همه') => {
   $$('[data-c]', v).forEach(b => b.onclick = () => routes.verbs(b.dataset.c));
   $('#vacc').onclick = e => { const b = e.target.closest('button'); if (!b) return; G.settings.accent = b.dataset.v; saveG('settings'); routes.verbs(cat); };
   $('#vdir').onclick = e => { const b = e.target.closest('button'); if (!b) return; O.dir = b.dataset.v; saveO(); routes.verbs(cat); };
+  $('#vpron').onchange = e => { lsSet('zd:showPron', e.target.checked); document.body.classList.toggle('nopron', !e.target.checked); };
   $$('[data-o]', v).forEach(c => c.onchange = () => { O[c.dataset.o] = c.checked; saveO(); routes.verbs(cat); });
   const addLt = xs => { let cu = U.custom.find(x => x.id === 'myverbs'); if (!cu) { cu = { id: 'myverbs', en: 'Useful Verbs', fa: 'افعال کاربردی', icon: '🔁', hue: 150, gram: 'سه شکل فعل: حال، گذشته، اسم مفعول', talk: 'با این افعال دربارهٔ دیروز و تجربه‌هایت حرف بزن.', words: [] }; U.custom.push(cu); }
     xs.forEach(x => { if (!cu.words.some(w => w.w === x.v)) cu.words.push({ w: x.v, ipa: '', fa: `${x.fa} — ${x.past} / ${x.pp}`, img: '🔁', pos: 'v', ex: x.ex, g: x.cat }); const k = 'myverbs:' + x.v; if (!U.srs[k]) U.srs[k] = { box: 0, due: isoDay(), seen: 0, wrong: 0, right: 0 }; }); saveU(); window.LMAP = null; };

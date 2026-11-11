@@ -410,3 +410,6 @@ body:has(#bgp) .mini-play{bottom:calc(var(--nav) + 76px + env(safe-area-inset-bo
 .live-go{min-width:180px;font-size:17px;background:#fff;color:#0c5f5d}.live-go.bad{background:var(--bad);color:#fff}
 .live-log{max-height:46vh;overflow:auto;gap:6px}
 .ll{font-size:14px;line-height:1.8}.ll.me{color:var(--accent)}.ll b{font-weight:800}
+
+body.nopron .pron{display:none!important}
+.book-bar button{font-size:16px}

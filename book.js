@@ -40,6 +40,7 @@ routes.book = async (id, sec) => {
     <button data-b="menu" aria-label="فهرست درس‌ها">☰<small>درس‌ها</small></button>
     <button data-b="words" aria-label="واژه‌ها"><b class="en">W</b><small>واژه‌ها</small></button>
     <button data-b="tr" class="${bookTr() ? 'on' : ''}" aria-label="ترجمه"><b>文A</b><small>ترجمه</small></button>
+    <button data-b="pron" class="${lsGet('zd:showPron', true) ? 'on' : ''}" aria-label="تلفظ فارسی"><b>🗣</b><small>تلفظ</small></button>
     <button data-b="audio" aria-label="صوت"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/></svg><small>صوت</small></button>
     <button data-b="more" aria-label="منو">⋮<small>بیشتر</small></button></div>
   <button class="mini-play" id="mp" aria-label="پخش مکالمه">▶</button>
@@ -53,7 +54,7 @@ routes.book = async (id, sec) => {
     <div class="row" style="justify-content:space-between">${n > 1 ? `<a class="btn ghost sm" href="#unit/${us[n - 2].id}">› درس قبل</a>` : '<span></span>'}${us[n] && isOpen(us[n]) ? `<a class="btn ghost sm" href="#unit/${us[n].id}">درس بعد ‹</a>` : ''}</div>` : ''}
     ${sec === 'conv' ? `<section><div class="bk-chip en">Conversation</div>${conv.title ? `<b class="en">${esc(conv.title)}</b>` : ''}${conv.setting ? `<div class="small muted">${esc(conv.setting)}</div>` : ''}
       <div class="bk-lines">${conv.lines.map((l, i) => `<div class="bk-line" data-i="${i}" data-k="c${i}"><button class="icon-btn" data-play="${esc(l.en)}" aria-label="پخش">${I.spk}</button><div class="grow"><p class="en"><span class="who">${esc(l.who || '')}:</span> ${twWrap(l.en)}</p>${pronHTML(P, l.en)}<p class="fa-tr">${esc(l.fa || '')}</p></div></div>`).join('')}</div></section>` : ''}
-    ${sec === 'read' ? `<section><div class="bk-chip en">Reading</div>${L.reading.title ? `<b class="en">${esc(L.reading.title)}</b>` : ''}<p class="en bk-p">${twWrap(L.reading.en)} <button class="icon-btn" data-play="${esc(L.reading.en)}" aria-label="پخش">${I.spk}</button></p><p class="fa-tr">${esc(L.reading.fa || '')}</p></section>` : ''}
+    ${sec === 'read' ? `<section><div class="bk-chip en">Reading</div>${L.reading.title ? `<b class="en">${esc(L.reading.title)}</b>` : ''}<p class="en bk-p">${twWrap(L.reading.en)} <button class="icon-btn" data-play="${esc(L.reading.en)}" aria-label="پخش">${I.spk}</button></p>${(() => { const ps = (L.reading.en.match(/[^.!?]+[.!?]+/g) || []).map(x => pronOf(P, x.trim())).filter(Boolean); return ps.length ? `<p class="pron">🗣 ${G.settings.accent === 'UK' ? '🇬🇧' : '🇺🇸'} «${esc(ps.join(' '))}»</p>` : ''; })()}<p class="fa-tr">${esc(L.reading.fa || '')}</p></section>` : ''}
     ${sec === 'gram' ? `<section><div class="bk-chip en">Grammar</div><b class="en">${esc(g.title || '')}</b><p class="small">${esc(g.explain || '')}</p>
       ${(g.rules || []).map(r => `<div class="bk-rule"><span>${esc(r.fa || '')}</span><div class="en">${twWrap(r.en || '')}</div></div>`).join('')}
       ${(g.examples || []).map((x, gi) => `<div class="bk-line" data-k="g${gi}"><button class="icon-btn" data-play="${esc(x.en || x)}" aria-label="پخش">${I.spk}</button><div class="grow"><p class="en">${twWrap(x.en || x)}</p>${pronHTML(P, x.en || x)}<p class="fa-tr">${esc(x.fa || '')}</p></div></div>`).join('')}
@@ -79,6 +80,7 @@ routes.book = async (id, sec) => {
     const p = e.target.closest('[data-play]'); if (p) return say(p.dataset.play, 'en', 'calm', p.classList.contains('icon-btn') ? p : null);
     const b = e.target.closest('[data-b]'); if (!b) return;
     const k = b.dataset.b;
+    if (k === 'pron') { const on = !lsGet('zd:showPron', true); lsSet('zd:showPron', on); document.body.classList.toggle('nopron', !on); b.classList.toggle('on', on); toast(on ? 'تلفظ نیتیو به خط فارسی نمایش داده می‌شود' : 'تلفظ فارسی پنهان شد'); return; }
     if (k === 'tr') { const on = !bookTr(); lsSet('zd:bookTr', on); bk.classList.toggle('tr', on); b.classList.toggle('on', on); }
     else if (k === 'words') go('unit/' + u.id + '/words');
     else if (k === 'menu') { const bg = sheet(`<div class="stack"><div class="course-head">${courseCover(u.level, true)}</div><div class="lesson-list">${us.map((x, i) => `<a class="lrow${isOpen(x) ? '' : ' locked'}${x === u ? ' current' : ''}" href="${isOpen(x) ? '#unit/' + x.id : 'javascript:void 0'}"><span class="lr-ic" style="--h:${x.hue}">${esc(x.icon)}</span><div class="grow"><b>درس ${faNum(i + 1)}</b><div class="small">${esc(x.fa)}</div></div><span class="lr-st">${isMastered(x) ? '✓' : isOpen(x) ? '' : '🔒'}</span></a>`).join('')}</div><a class="btn ghost" href="#path">همهٔ دوره‌ها</a></div>`); bg.onclick = ev => { if (ev.target === bg || ev.target.closest('a')) bg.remove(); }; }
