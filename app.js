@@ -55,7 +55,7 @@ const DEFAULT_SETTINGS = {
     anthropic: { key: '', model: 'claude-haiku-5-5' },
     openai: { key: '', model: 'gpt-4.1-mini', base: '' },
     groq: { key: '', model: 'llama-3.3-70b-versatile' },
-    openrouter: { key: '', model: 'google/gemini-3.1-flash-lite' },
+    openrouter: { key: '', model: 'meta-llama/llama-3.3-70b-instruct:free' },
     custom: { key: '', model: '', base: '' }
   },
   voiceEn: 'browser', voiceFa: 'gemini', listen: 'browser',
@@ -193,9 +193,18 @@ const PROVIDERS = {
 const hasAI = () => !!G.settings.prov[G.settings.brain]?.key;
 function firstKeyed() { const p = G.settings.prov; return ['gemini', 'groq', 'anthropic', 'openai', 'openrouter', 'custom'].find(k => p[k]?.key); }
 
-async function ai({ system, messages, json = true, images = [], max = 1400, temp = 0.8, heavy = false }) {
-  let pv = G.settings.brain; if (!G.settings.prov[pv]?.key) pv = firstKeyed();
-  if (!pv) throw new Error('NOKEY'); budgetGuard();
+/* اگر سهمیهٔ یک سرویس تمام شد یا خطا داد، خودکار سراغ سرویس بعدیِ دارای کلید می‌رود */
+async function ai(opts) {
+  const order = [G.settings.brain, 'gemini', 'groq', 'openrouter', 'anthropic', 'openai', 'custom'].filter((k, i, a) => a.indexOf(k) === i && G.settings.prov[k]?.key);
+  if (!order.length) throw new Error('NOKEY'); budgetGuard();
+  let last; for (const pv of order) {
+    if (lsGet('zd:cool:' + pv, 0) > Date.now() && pv !== order[order.length - 1]) continue; // سرویسی که تازه به سقف خورده، چند دقیقه کنار می‌رود
+    try { return await aiOne(pv, opts); }
+    catch (e) { last = e; if (/JSON|قابل خواندن/.test(e.message) || opts.images?.length && pv !== 'gemini') throw e; if (/quota|rate|limit|429|exhaust|insufficient|credit|billing|overloaded|503|500/i.test(e.message)) lsSet('zd:cool:' + pv, Date.now() + 10 * 60000); }
+  }
+  throw last;
+}
+async function aiOne(pv, { system, messages, json = true, images = [], max = 1400, temp = 0.8, heavy = false }) {
   const c = G.settings.prov[pv];
   const sys = system + (json ? '\nReturn ONLY valid JSON, no markdown fences.' : '');
   let text = '';
