@@ -90,24 +90,68 @@ setInterval(() => {
   const el = document.getElementById('rstat'); if (el) el.textContent = radioLabel();
 }, 30000);
 function radioLabel() { const L = U?.log[isoDay()] || {}; return `${radioSt ? '● در حال پخش: ' + radioSt.n + ' · ' : ''}امروز ${faNum(Math.round(L.radio || 0))} دقیقه رادیو`; }
-function playRadio(st) {
-  stopSpeak(); try { radio.pause(); } catch { } radioSt = st; radio = st.cors && Spatial.on && Spatial.attach(radio3d) ? radio3d : radioPlain; radio.src = st.u;
+function playRadio(st, keep) {
+  stopSpeak(); RNoise.set(0); try { radio.pause(); } catch { } radioSt = st; radio = st.cors && Spatial.on && Spatial.attach(radio3d) ? radio3d : radioPlain; radio.src = st.u;
   radio.play().then(() => { if ('mediaSession' in navigator) { navigator.mediaSession.metadata = new MediaMetadata({ title: st.n, artist: 'زبان رستا · شنیدن ناخودآگاه' }); } }).catch(() => { toast('این ایستگاه الان پخش نشد؛ اینترنت را بررسی کن (در ایران ممکن است فیلتر باشد).'); radioSt = null; drawRadio(); });
   radio.onerror = () => { if (radioSt) { toast('پخش قطع شد؛ دوباره امتحان کن.'); radioSt = null; drawRadio(); } };
-  drawRadio();
+  if (keep) { document.querySelector('.radio-set')?.classList.add('on'); const el = document.getElementById('rstat'); if (el) el.textContent = radioLabel(); } else drawRadio();
 }
-function stopRadio() { radio.pause(); radio.removeAttribute('src'); try { radio.load(); } catch { } radioSt = null; radioEnd = 0; radioTm = 0; drawRadio(); }
+function stopRadio() { RNoise.set(0); rPower = false; radio.pause(); radio.removeAttribute('src'); try { radio.load(); } catch { } radioSt = null; radioEnd = 0; radioTm = 0; drawRadio(); }
+/* رادیوی قدیمی با پیچ تنظیم فرکانس؛ ایستگاه‌ها از قبل روی موج ذخیره شده‌اند و بینشان خش‌خش رادیو شنیده می‌شود */
+const FREQ = { npr: 89.3, wnyc: 93.9, bbcws: 97.6, bbcnews: 101.4, kexp: 90.3, indie: 95.5, u80: 103.1, heart: 106.2 };
+const RNoise = { ctx: null, g: null,
+  start() { try { if (!this.ctx) { const C = window.AudioContext || window.webkitAudioContext; this.ctx = new C(); const n = this.ctx.sampleRate * 2, b = this.ctx.createBuffer(1, n, this.ctx.sampleRate), d = b.getChannelData(0); let l = 0; for (let i = 0; i < n; i++) { const w = Math.random() * 2 - 1; l = (l + 0.04 * w) / 1.04; d[i] = w * 0.35 + l * 2.2 + (Math.random() < 0.0008 ? (Math.random() - .5) * 3 : 0); } const src = this.ctx.createBufferSource(); src.buffer = b; src.loop = true; const bp = this.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 0.6; this.g = this.ctx.createGain(); this.g.gain.value = 0; src.connect(bp).connect(this.g).connect(this.ctx.destination); src.start(); } this.ctx.resume(); } catch { } },
+  set(v) { if (this.g) this.g.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05); } };
+let rFreq = null, rTuneTm = 0, rPower = false;
 function drawRadio() {
   const box = document.getElementById('radio') || document.getElementById('mradio'); if (!box) return;
-  const list = (box.dataset.kind === 'music' ? MUSIC_ST : STATIONS)[G.settings.accent === 'UK' ? 'UK' : 'US'];
-  box.innerHTML = `${list.map(s => `<div class="row" style="flex-wrap:nowrap;gap:10px;padding:8px 0;border-top:1px solid var(--line)">${s.cors && Spatial.on ? '<span class="pill acc" title="پخش سه‌بعدی">3D</span>' : ''}<button class="icon-btn${radioSt?.id === s.id ? ' on' : ''}" data-st="${s.id}" aria-label="پخش ${esc(s.n)}">${radioSt?.id === s.id ? '⏸' : '▶'}</button><div class="grow"><b class="en" style="display:block">${esc(s.n)}</b><span class="small muted">${esc(s.d)}</span></div></div>`).join('')}
-  <div class="row small" style="gap:6px;border-top:1px solid var(--line);padding-top:8px"><span class="muted">خاموش شدن خودکار:</span>${[[15, '۱۵ دقیقه'], [30, '۳۰ دقیقه'], [60, '۱ ساعت'], [0, 'بدون تایمر']].map(([m, l]) => `<button class="btn sm${radioTm === m ? '' : ' ghost'}" data-tm="${m}">${l}</button>`).join('')}</div>
+  const kind = box.dataset.kind === 'music' ? 'music' : 'news'; const src = kind === 'music' ? MUSIC_ST : STATIONS;
+  const list = [...src.US.map(x => ({ ...x, acc: 'US' })), ...src.UK.map(x => ({ ...x, acc: 'UK' }))].map(x => ({ ...x, f: FREQ[x.id] || 100 })).sort((a, b) => a.f - b.f);
+  if (rFreq == null || rFreq < 87.5 || rFreq > 108) rFreq = lsGet('zd:rfreq:' + kind, list.find(x => x.acc === (G.settings.accent === 'UK' ? 'UK' : 'US'))?.f || 98);
+  const X = f => ((f - 87.5) / 20.5 * 100).toFixed(2) + '%';
+  box.innerHTML = `<div class="radio-set${radioSt ? ' on' : ''}">
+    <div class="rs-top"><span class="rs-brand">RASTA <i>FM</i></span><span class="rs-lamp" title="روشن"></span></div>
+    <div class="rs-dial"><div class="rs-scale">${[88, 90, 92, 94, 96, 98, 100, 102, 104, 106, 108].map(f => `<span style="left:${X(f)}">${f}</span>`).join('')}${Array.from({ length: 41 }, (_, i) => `<i style="left:${X(88 + i * 0.5)}" class="${i % 4 ? '' : 'big'}"></i>`).join('')}</div>
+      <div class="rs-st">${list.map(x => `<button style="left:${X(x.f)}" data-go="${x.f}" title="${esc(x.n)}">${x.acc === 'UK' ? '🇬🇧' : '🇺🇸'}</button>`).join('')}</div>
+      <div class="rs-track"><div class="rs-needle" style="left:${X(rFreq)}"></div></div></div>
+    <div class="rs-lcd"><b class="en" id="rsf">${rFreq.toFixed(1)} MHz</b><span id="rsn">${esc(nearSt(list, rFreq)?.n || '··· در حال جستجو ···')}</span><small id="rsd">${esc(nearSt(list, rFreq)?.d || 'پیچ را بچرخان تا به یک ایستگاه برسی')}</small></div>
+    <div class="rs-ctl">
+      <div class="rs-grill"></div>
+      <div class="rs-btns"><button class="rs-pw${rPower ? ' on' : ''}" id="rpw" aria-label="روشن / خاموش">⏻</button><div class="row" style="gap:6px;justify-content:center"><button class="rs-sk" data-sk="-1" aria-label="ایستگاه قبل">⏮</button><button class="rs-sk" data-sk="1" aria-label="ایستگاه بعد">⏭</button></div></div>
+      <div class="rs-knob" id="rknob" role="slider" tabindex="0" aria-label="پیچ تنظیم فرکانس" aria-valuemin="87.5" aria-valuemax="108" aria-valuenow="${rFreq.toFixed(1)}" style="--a:${(rFreq * 90) % 360}deg"><span></span></div>
+    </div></div>
+  <div class="row small" style="gap:6px;padding-top:10px"><span class="muted">خاموش شدن خودکار:</span>${[[15, '۱۵ دقیقه'], [30, '۳۰ دقیقه'], [60, '۱ ساعت'], [0, 'بدون تایمر']].map(([m, l]) => `<button class="btn sm${radioTm === m ? '' : ' ghost'}" data-tm="${m}">${l}</button>`).join('')}</div>
   <div class="small muted" id="rstat">${radioLabel()}</div>`;
-  box.onclick = e => {
-    const b = e.target.closest('[data-st]'); if (b) { const s = list.find(x => x.id === b.dataset.st); return radioSt?.id === s.id ? stopRadio() : playRadio(s); }
-    const t = e.target.closest('[data-tm]'); if (t) { const m = +t.dataset.tm; radioTm = m; radioEnd = m ? Date.now() + m * 60000 : 0; toast(m ? `رادیو بعد از ${faNum(m)} دقیقه خاموش می‌شود.` : 'تایمر خاموش شد.'); drawRadio(); }
+  const knob = $('#rknob', box), needle = $('.rs-needle', box);
+  const tune = (f, fromUser) => {
+    rFreq = Math.round(clamp(f, 87.5, 108) * 10) / 10; lsSet('zd:rfreq:' + kind, rFreq);
+    needle.style.left = X(rFreq); knob.style.setProperty('--a', (rFreq * 90) % 360 + 'deg'); knob.setAttribute('aria-valuenow', rFreq.toFixed(1));
+    const st = nearSt(list, rFreq); const dist = st ? Math.abs(st.f - rFreq) : 9;
+    $('#rsf', box).textContent = rFreq.toFixed(1) + ' MHz'; $('#rsn', box).textContent = st ? st.n : '··· در حال جستجو ···'; $('#rsd', box).textContent = st ? st.d : 'پیچ را بچرخان تا به یک ایستگاه برسی';
+    if (!rPower) return;
+    RNoise.start(); RNoise.set(dist < 0.05 ? 0 : Math.min(0.5, 0.12 + dist * 0.4));
+    radio.volume = dist < 0.05 ? 1 : Math.max(0, 1 - dist * 3);
+    clearTimeout(rTuneTm);
+    if (!st || dist > 0.3) { if (radioSt) { radio.pause(); radioSt = null; box.querySelector('.radio-set').classList.remove('on'); } return; }
+    rTuneTm = setTimeout(() => { if (radioSt?.id !== st.id) { playRadio(st, true); } }, fromUser ? 450 : 0);
   };
+  knob.onpointerdown = e => {
+    e.preventDefault(); knob.setPointerCapture(e.pointerId); if (!rPower) { rPower = true; $('#rpw', box).classList.add('on'); }
+    const r = knob.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2; let last = Math.atan2(e.clientY - cy, e.clientX - cx);
+    knob.onpointermove = ev => { const a = Math.atan2(ev.clientY - cy, ev.clientX - cx); let d = a - last; if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI; last = a; tune(rFreq + d / (2 * Math.PI) * 4, true); if (navigator.vibrate && Math.abs((rFreq * 10) % 5) < 0.5) navigator.vibrate(3); };
+    knob.onpointerup = knob.onpointercancel = () => { knob.onpointermove = null; const st = nearSt(list, rFreq); if (st && Math.abs(st.f - rFreq) <= 0.6) tune(st.f, true); };
+  };
+  knob.onwheel = e => { e.preventDefault(); rPower = true; tune(rFreq + (e.deltaY > 0 ? -0.1 : 0.1), true); };
+  knob.onkeydown = e => { const d = { ArrowUp: .1, ArrowRight: -.1, ArrowLeft: .1, ArrowDown: -.1 }[e.key]; if (d) { e.preventDefault(); rPower = true; tune(rFreq + d, true); } };
+  box.onclick = e => {
+    const g = e.target.closest('[data-go]'); if (g) { rPower = true; $('#rpw', box).classList.add('on'); return glide(+g.dataset.go); }
+    const k = e.target.closest('[data-sk]'); if (k) { rPower = true; $('#rpw', box).classList.add('on'); const d = +k.dataset.sk; const nx = d > 0 ? list.find(x => x.f > rFreq + 0.05) || list[0] : [...list].reverse().find(x => x.f < rFreq - 0.05) || list[list.length - 1]; return glide(nx.f); }
+    if (e.target.closest('#rpw')) { rPower = !rPower; e.target.closest('#rpw').classList.toggle('on', rPower); if (!rPower) { RNoise.set(0); stopRadio(); } else tune(rFreq); return; }
+    const t = e.target.closest('[data-tm]'); if (t) { const m = +t.dataset.tm; radioTm = m; radioEnd = m ? Date.now() + m * 60000 : 0; toast(m ? `رادیو بعد از ${faNum(m)} دقیقه خاموش می‌شود.` : 'تایمر خاموش شد.'); $$('[data-tm]', box).forEach(b => b.classList.toggle('ghost', b !== t)); }
+  };
+  const glide = to => { const from = rFreq, t0 = performance.now(), dur = Math.min(1600, 250 + Math.abs(to - from) * 90); const step = now => { const k = Math.min(1, (now - t0) / dur); const e2 = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; tune(from + (to - from) * e2, k < 1); if (k < 1) requestAnimationFrame(step); else tune(to); }; requestAnimationFrame(step); };
 }
+function nearSt(list, f) { let b = null; for (const x of list) if (!b || Math.abs(x.f - f) < Math.abs(b.f - f)) b = x; return b && Math.abs(b.f - f) <= 0.6 ? b : null; }
 
 /* ───── اخبار سادهٔ امروز (خبر واقعی از جستجوی گوگل، بازنویسی در سطح تو) ───── */
 async function fetchNews(lv) {
@@ -296,7 +340,24 @@ routes.myradio = (id) => {
 };
 
 /* ───── موسیقی انگلیسی: ایستگاه‌های موسیقی (سه‌بعدی) + ترانه‌های انگیزشی ساخته‌شده با واژه‌های درس ───── */
-const REAL_SONGS = [['Happy', 'Pharrell Williams'], ['Roar', 'Katy Perry'], ['Fight Song', 'Rachel Platten'], ['Lovely Day', 'Bill Withers'], ["Don't Stop Me Now", 'Queen'], ['Eye of the Tiger', 'Survivor'], ['Unstoppable', 'Sia'], ['Hall of Fame', 'The Script'], ['Walking on Sunshine', 'Katrina and the Waves'], ['Good as Hell', 'Lizzo'], ['Three Little Birds', 'Bob Marley'], ['Count on Me', 'Bruno Mars']];
+const REAL_SONGS = [['Happy', 'Pharrell Williams', 'y6Sxv-sUYtM'], ['Roar', 'Katy Perry', 'CevxZvSJLk8'], ['Fight Song', 'Rachel Platten', 'xo1VInw-SKc'], ['Lovely Day', 'Bill Withers', 'bEeaS6fuUoA'], ["Don't Stop Me Now", 'Queen', 'HgzGwKwLmgM'], ['Eye of the Tiger', 'Survivor', 'btPJPFnesV4'], ['Unstoppable', 'Sia', 'cxjvTXo9WWM'], ['Hall of Fame', 'The Script', 'mk48xRzuNvA'], ['Walking on Sunshine', 'Katrina and the Waves', 'iPUmE-tne5U'], ['Good as Hell', 'Lizzo', 'vuq-VAiW9kw'], ['Three Little Birds', 'Bob Marley', 'HNBCVM4KbUM'], ['Count on Me', 'Bruno Mars', '6k8cpUkKK4c']];
+/* پخش داخل برنامه: ویدیوی رسمی (کامل) یا پیش‌نمایش ۳۰ ثانیه‌ای اپل (بدون فیلترشکن) */
+async function songPreview(t, a) {
+  const k = 'zd:prev:' + t; const c = lsGet(k, null); if (c) return c;
+  const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(t + ' ' + a)}&entity=song&limit=5`).then(r => r.json());
+  const m = (r.results || []).find(x => x.artistName?.toLowerCase().includes(a.split(' ')[0].toLowerCase())) || r.results?.[0];
+  const o = m ? { url: m.previewUrl, art: (m.artworkUrl100 || '').replace('100x100', '300x300') } : null; if (o) lsSet(k, o); return o;
+}
+function bindSongs(box) {
+  box.onclick = async e => {
+    const b = e.target.closest('[data-sg]'); if (!b) return; const [t, a, id] = REAL_SONGS[+b.dataset.sg]; const pl = $('#sgp', box); stopSpeak(); if (radioSt) try { stopRadio(); } catch { }
+    if (b.dataset.m === 'full') { pl.innerHTML = `<div class="stack" style="gap:6px"><b class="en">${esc(t)} · <span class="muted">${esc(a)}</span></b><div style="position:relative;padding-top:56.25%;border-radius:12px;overflow:hidden;background:#000"><iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&cc_load_policy=1&cc_lang_pref=en&hl=fa&rel=0&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0" title="${esc(t)}"></iframe></div><span class="tiny muted">زیرنویس را از دکمهٔ CC داخل پخش‌کننده روشن کن. اگر ویدیو باز نشد (فیلتر)، «پیش‌نمایش» را بزن.</span></div>`; pl.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    pl.innerHTML = loading('در حال آماده کردن آهنگ…');
+    try { const p = await songPreview(t, a); if (!p) throw 0;
+      pl.innerHTML = `<div class="row" style="flex-wrap:nowrap">${p.art ? `<img src="${p.art}" alt="" width="72" height="72" style="border-radius:10px">` : ''}<div class="grow stack" style="gap:4px"><b class="en">${esc(t)} · <span class="muted">${esc(a)}</span></b><audio controls autoplay src="${p.url}" style="width:100%"></audio><span class="tiny muted">پیش‌نمایش ۳۰ ثانیه‌ای؛ برای کل آهنگ «کامل» را بزن.</span></div></div>`;
+    } catch { pl.innerHTML = '<span class="small muted">پیش‌نمایش در دسترس نبود؛ «کامل» را امتحان کن.</span>'; }
+  };
+}
 routes.music = () => {
   setTop('موسیقی انگلیسی', true); const v = view();
   const songs = lsGet('zd:songs:' + G.active, []);
@@ -307,9 +368,10 @@ routes.music = () => {
     ${songs.length ? `<div class="stack" id="sl" style="gap:4px">${songs.map((x, i) => `<button class="btn ghost sm" data-song="${i}" style="justify-content:flex-start">▶ <span class="en">${esc(x.title)}</span> · ${esc(x.unitFa || '')}</button>`).join('')}</div>` : ''}</div>
   <div id="kar"></div>
   <div class="card stack"><b>📻 ایستگاه‌های موسیقی انگلیسی</b><span class="small muted">آهنگ‌های واقعی و مجری‌هایی که بین آهنگ‌ها حرف می‌زنند؛ لهجه از تنظیمات «شنیدن روزانه» انتخاب می‌شود. ${Spatial.on ? 'با هدفون سه‌بعدی پخش می‌شود.' : 'برای پخش سه‌بعدی، صدای سه‌بعدی را در تنظیمات روشن کن.'}</span><div id="mradio" data-kind="music"></div></div>
-  <div class="card stack"><b>⭐ آهنگ‌های مثبت و انگیزشی معروف</b><span class="small muted">این آهنگ‌ها را با زیرنویس انگلیسی و فارسی در یوتیوب پیدا کن (در ایران ممکن است فیلترشکن لازم باشد). متن آهنگ‌ها به خاطر حق نشر داخل برنامه نیست.</span>
-    ${REAL_SONGS.map(([t, a]) => `<a class="row small" style="padding:6px 0;border-top:1px solid var(--line);text-decoration:none;color:inherit" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(t + ' ' + a + ' lyrics زیرنویس فارسی')}"><span>▶</span><b class="en grow">${esc(t)}</b><span class="en muted">${esc(a)}</span></a>`).join('')}</div></div>`;
-  drawRadio();
+  <div class="card stack" id="songs"><b>⭐ آهنگ‌های مثبت و انگیزشی معروف</b><span class="small muted">داخل خود برنامه پخش می‌شوند: «کامل» ویدیوی رسمی آهنگ با زیرنویس انگلیسی است، «پیش‌نمایش» ۳۰ ثانیه از آهنگ است که بدون فیلترشکن هم باز می‌شود.</span>
+    <div id="sgp"></div>
+    ${REAL_SONGS.map(([t, a], i) => `<div class="row small" style="padding:6px 0;border-top:1px solid var(--line);flex-wrap:nowrap"><div class="grow"><b class="en">${esc(t)}</b> <span class="en muted">${esc(a)}</span></div><button class="btn sm" data-sg="${i}" data-m="full">▶ کامل</button><button class="btn ghost sm" data-sg="${i}" data-m="prev">پیش‌نمایش</button></div>`).join('')}</div></div>`;
+  drawRadio(); bindSongs($('#songs'));
   let on = false;
   const play = async S => {
     const k = $('#kar'); on = false; stopSpeak(); await wait(50); on = true; const h0 = location.hash;
