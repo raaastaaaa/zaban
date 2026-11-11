@@ -1,0 +1,804 @@
+{
+"shopping": {
+"goal": "بتوانی در مغازه خرید کنی، قیمت بپرسی، چانه بزنی، جنس را پس بدهی و چیزها را با صفت تفضیلی و عالی مقایسه کنی.",
+"intro": "Hi! Today we're going shopping. از این سطح کلاس عمدتاً انگلیسیه و فقط جاهای سخت رو فارسی توضیح می‌دم. یاد می‌گیری قیمت بپرسی، پرو کنی، پول بدی، جنس رو پس بدی و مقایسه کنی: cheaper, the cheapest, more expensive.",
+"bank": [
+{
+"g": "مغازه و خرید",
+"items": [
+"shop/store, mall, market, department store, online shopping",
+"customer, shop assistant, cashier, checkout",
+"price, price tag, sale, discount, bargain (جنس ارزان/چانه‌زدن), receipt, refund, exchange",
+"size, fit, try on, fitting room/changing room",
+"in stock / out of stock"
+]
+},
+{
+"g": "پول و پرداخت",
+"items": [
+"cash, card, credit card, debit card, change, coins, notes (UK)/bills (US)",
+"pay by card / pay in cash",
+"How much is it? / How much are they?",
+"It costs… / That comes to… (جمع کل)",
+"expensive / cheap / affordable / reasonable / overpriced",
+"afford = توان مالی داشتن",
+"save / spend / waste money"
+]
+},
+{
+"g": "جملات فروشگاه",
+"items": [
+"Can I help you? — I'm just looking, thanks.",
+"Do you have this in a medium / in blue?",
+"Can I try it on?",
+"It doesn't fit. It's too tight / too loose.",
+"Is there a discount? / Can you do a better price?",
+"I'd like to return this. Here's the receipt."
+]
+}
+],
+"patterns": [
+"How much is this jacket? — It's 45 dollars.",
+"Do you have it in a smaller size?",
+"This one is cheaper than that one.",
+"It's the most expensive phone in the shop.",
+"I'll take it. Can I pay by card?"
+],
+"checks": [
+"more cheaper درسته؟ (نه؛ cheaper)",
+"«یه سایز بزرگ‌تر» → a bigger size / one size up",
+"I can't afford it یعنی چی؟"
+],
+"roleplay": [
+"خرید کفش و پرو کردن",
+"پس دادن جنس معیوب",
+"چانه زدن در بازار"
+],
+"personal": [
+"Do you prefer shopping online or in stores?",
+"What was the last thing you bought?",
+"Are you good at bargaining?"
+],
+"grammar": {
+"point": "صفت تفضیلی و عالی",
+"examples": [
+"cheap → cheaper → the cheapest",
+"expensive → more expensive → the most expensive",
+"good → better → the best; bad → worse → the worst",
+"as big as / not as cheap as"
+],
+"rule": "صفت کوتاه + er/est؛ صفت بلند more/the most. بی‌قاعده‌ها: good/better/best، bad/worse/worst، far/further/furthest. مقایسه با than.",
+"drill": [
+"این گوشی از اون یکی گرون‌تره →",
+"ارزون‌ترین هتل شهر →",
+"این به خوبیِ اون نیست →"
+]
+},
+"pron": [
+"receipt ≈ «ریسیت» (p خوانده نمی‌شود)",
+"discount ≈ «دیسکاونت»"
+],
+"quiz": [
+"تفضیلی good → better",
+"«فقط دارم نگاه می‌کنم» → I'm just looking.",
+"«تنگه» → It's too tight.",
+"«پول برگشتی» → refund",
+"«نمی‌تونم از پسش بربیام» → I can't afford it."
+]
+},
+"eatingout": {
+"goal": "بتوانی در رستوران و کافه میز رزرو کنی، مؤدبانه سفارش بدهی، مشکل را بگویی و صورت‌حساب بخواهی.",
+"intro": "Hi! Tonight we're eating out! یاد می‌گیری از رزرو میز تا سفارش مؤدبانه (I'll have… / Could I have…?)، پرسیدن دربارهٔ غذا، گفتن مشکل و پرداخت و انعام. من گارسون می‌شم و تو مشتری.",
+"bank": [
+{
+"g": "رستوران",
+"items": [
+"book/reserve a table, a table for two",
+"menu, starter (UK)/appetizer (US), main course, dessert, side dish, drinks",
+"waiter/waitress/server, chef",
+"bill (UK)/check (US), tip, service charge",
+"takeaway (UK)/takeout (US), delivery"
+]
+},
+{
+"g": "سفارش",
+"items": [
+"Are you ready to order?",
+"I'll have the chicken, please.",
+"Could I have a glass of water?",
+"I'd like the soup to start.",
+"What do you recommend?",
+"Is it spicy? / Does it contain nuts?",
+"How would you like your steak? — Medium / well-done / rare"
+]
+},
+{
+"g": "مشکل و پرداخت",
+"items": [
+"Excuse me, this is cold / not what I ordered.",
+"Could we have the bill, please?",
+"Can we pay separately? / Let's split the bill.",
+"Keep the change.",
+"It was delicious, thank you!"
+]
+}
+],
+"patterns": [
+"A table for two, please.",
+"Could I see the menu, please?",
+"I'll have the grilled fish and a salad.",
+"Could we have the check, please?",
+"Is service included?"
+],
+"checks": [
+"I want… در رستوران مؤدبانه است؟ (کمتر؛ I'd like / I'll have / Could I have)",
+"«صورت‌حساب» آمریکایی → check",
+"«بیرون‌بر» → takeaway / takeout"
+],
+"roleplay": [
+"رزرو تلفنی میز",
+"سفارش کامل غذا و پرسیدن دربارهٔ حساسیت",
+"غذا سرد است؛ مؤدبانه شکایت کن"
+],
+"personal": [
+"How often do you eat out?",
+"What's your favorite restaurant?",
+"Do people tip in your country?"
+],
+"grammar": {
+"point": "سفارش مؤدبانه: would like / I'll have / Could I have",
+"examples": [
+"I'd like a coffee, please.",
+"Could I have some more bread?",
+"I'll have the same."
+],
+"rule": "برای مؤدب بودن: I'd like… / Could I have…? / I'll have… (وقتی همان لحظه تصمیم می‌گیری).",
+"drill": [
+"یه فنجون قهوه می‌خوام لطفاً →",
+"می‌شه صورت‌حساب رو بیارید؟ →",
+"من هم همونو می‌خورم →"
+]
+},
+"pron": [
+"I'll have ≈ «آیل هَو»",
+"recommend ≈ «رِکِمِند»"
+],
+"quiz": [
+"«پیش‌غذا» آمریکایی → appetizer",
+"«انعام» → tip",
+"«دنگی حساب کنیم» → Let's split the bill.",
+"«چی پیشنهاد می‌کنید؟» → What do you recommend?",
+"«همین رو می‌گیرم» → I'll have the same."
+]
+},
+"freetime": {
+"goal": "بتوانی دربارهٔ سرگرمی‌ها و اوقات فراغت حرف بزنی و اتفاقی در گذشته را با گذشتهٔ استمراری تعریف کنی.",
+"intro": "Hi! Let's talk about hobbies and free time. یه زمان جدید هم داریم: گذشتهٔ استمراری، برای تعریف کردن داستان: I was watching TV when the phone rang.",
+"bank": [
+{
+"g": "سرگرمی‌ها",
+"items": [
+"reading, painting, drawing, photography, gardening, cooking, baking",
+"playing video games, board games, chess",
+"knitting, sewing, DIY",
+"hiking, camping, fishing",
+"collecting stamps/coins",
+"listening to podcasts, watching series",
+"volunteering, learning a language"
+]
+},
+{
+"g": "عبارت‌ها",
+"items": [
+"be into something = به چیزی علاقه داشتن",
+"be keen on (UK) = مشتاق",
+"take up a hobby = شروع کردن سرگرمی",
+"in my free time / in my spare time",
+"hang out with friends",
+"chill (out) = استراحت خودمونی"
+]
+},
+{
+"g": "داستان‌گویی",
+"items": [
+"while / when / suddenly / then / in the end"
+]
+}
+],
+"patterns": [
+"In my free time, I'm really into photography.",
+"I took up yoga last year.",
+"I was reading when the lights went out.",
+"What were you doing at 8 last night?",
+"While I was cooking, my friend called."
+],
+"checks": [
+"when و while در داستان؟",
+"I was watching / I watched فرق؟",
+"be into یعنی چی؟"
+],
+"roleplay": [
+"دو دوست برنامهٔ آخر هفته را هماهنگ می‌کنند",
+"تعریف یک اتفاق عجیب وسط یک کار روزمره"
+],
+"personal": [
+"What do you do in your free time?",
+"Is there a hobby you want to take up?",
+"What were you doing yesterday at this time?"
+],
+"grammar": {
+"point": "گذشتهٔ استمراری",
+"examples": [
+"I was watching TV when he arrived.",
+"They were playing chess at 9 p.m.",
+"Were you sleeping when I called?"
+],
+"rule": "was/were + ing برای کاری که در گذشته در جریان بود؛ اتفاق کوتاهی که وسطش رخ داد با گذشتهٔ ساده (when). while + استمراری.",
+"drill": [
+"داشتم آشپزی می‌کردم که زنگ زد →",
+"ساعت ده دیشب داشتی چی کار می‌کردی؟ →"
+]
+},
+"pron": [
+"was ≈ «وِز» (ضعیف)",
+"photography ≈ «فِتاگرِفی»"
+],
+"quiz": [
+"«به عکاسی علاقه دارم» → I'm into photography.",
+"«یه سرگرمی رو شروع کردن» → take up",
+"I ___ (read/was reading) when he called → was reading",
+"«اوقات فراغت» → spare time",
+"«وقت گذراندن با دوستان» → hang out"
+]
+},
+"tech": {
+"goal": "بتوانی دربارهٔ تکنولوژی، گوشی، اینترنت و اپلیکیشن‌ها حرف بزنی و از حال کامل با ever/never/already/yet استفاده کنی.",
+"intro": "Hi! Today: technology. از گوشی و اپ‌ها تا مشکلات فنی. با حال کامل می‌گی چی کار کردی و چی کار نکردی: I've already downloaded it / I haven't updated it yet.",
+"bank": [
+{
+"g": "دستگاه‌ها",
+"items": [
+"smartphone, laptop, tablet, smartwatch, headphones, charger, battery, screen, keyboard, mouse, printer, speaker",
+"Wi-Fi, Bluetooth, data, signal"
+]
+},
+{
+"g": "کارها",
+"items": [
+"download / upload / install / update / delete",
+"log in / log out / sign up",
+"charge (the phone) / my battery is dead / low",
+"turn on/off, restart, reset",
+"search for, browse, stream, post, share, like, follow",
+"password, account, username, app, settings, notification",
+"crash / freeze / not working = از کار افتادن / هنگ کردن"
+]
+},
+{
+"g": "مشکل فنی",
+"items": [
+"My phone keeps freezing.",
+"I forgot my password.",
+"The Wi-Fi isn't working.",
+"Have you tried restarting it?"
+]
+}
+],
+"patterns": [
+"Have you ever used this app? — No, never.",
+"I've already installed the update.",
+"I haven't charged my phone yet.",
+"My laptop has crashed again!",
+"Have you tried turning it off and on again?"
+],
+"checks": [
+"already و yet کجای جمله؟",
+"log in یا login؟ (فعل log in، اسم login)",
+"My battery is dead یعنی چی؟"
+],
+"roleplay": [
+"دوستت مشکل گوشی دارد و راهنمایی‌اش می‌کنی",
+"تماس با پشتیبانی برای فراموشی رمز"
+],
+"personal": [
+"How many hours a day do you use your phone?",
+"What apps do you use most?",
+"Have you ever lost your phone?"
+],
+"grammar": {
+"point": "حال کامل با ever, never, already, yet, just",
+"examples": [
+"I've just sent it.",
+"Have you finished yet?",
+"I've never used TikTok.",
+"She's already left."
+],
+"rule": "already و just وسط جمله (قبل از قسمت سوم)، yet آخر جملهٔ منفی و سؤالی، ever در سؤال، never در مثبت با معنای منفی.",
+"drill": [
+"تازه ایمیل رو فرستادم →",
+"هنوز اپ رو نصب نکردم →",
+"تا حالا گوشیت رو گم کردی؟ →"
+]
+},
+"pron": [
+"download ≈ «داونلود»",
+"Wi-Fi ≈ «وای‌فای»"
+],
+"quiz": [
+"«شارژم تموم شده» → My battery is dead.",
+"«هنگ کرد» → It froze.",
+"yet کجای جمله؟ → آخر",
+"«ثبت‌نام کردن» → sign up",
+"«تازه فرستادم» → I've just sent it."
+]
+},
+"housing": {
+"goal": "بتوانی خانه اجاره کنی، با صاحبخانه حرف بزنی، مشکلات خانه را توضیح بدهی و too/enough را درست به کار ببری.",
+"intro": "Hi! Today we're looking for a flat to rent. یاد می‌گیری آگهی بخونی، با مشاور املاک و صاحبخونه صحبت کنی و مشکل رو بگی: It's too small / It isn't big enough.",
+"bank": [
+{
+"g": "اجاره",
+"items": [
+"rent / landlord / landlady / tenant / flatmate (UK) / roommate (US)",
+"deposit = ودیعه، lease/contract = قرارداد",
+"bills / utilities (water, electricity, gas)",
+"furnished / unfurnished",
+"real estate agent (US) / estate agent (UK)",
+"move in / move out",
+"neighborhood / area"
+]
+},
+{
+"g": "توصیف",
+"items": [
+"spacious / cramped",
+"bright / dark",
+"quiet / noisy",
+"modern / old-fashioned",
+"close to / far from",
+"studio flat, two-bedroom apartment"
+]
+},
+{
+"g": "مشکلات",
+"items": [
+"The heating doesn't work.",
+"There's a leak. = نشتی",
+"The tap is dripping.",
+"damp / mould (UK)/mold (US) = نم / کپک",
+"Could you fix it, please?"
+]
+}
+],
+"patterns": [
+"I'm looking for a two-bedroom flat.",
+"How much is the rent per month?",
+"Are bills included?",
+"The kitchen is too small.",
+"The flat isn't close enough to my work."
+],
+"checks": [
+"too و very فرق؟ (too = بیش از حد و منفی)",
+"big enough یا enough big؟",
+"tenant و landlord؟"
+],
+"roleplay": [
+"بازدید خانه با مشاور املاک",
+"زنگ به صاحبخانه برای خرابی",
+"قرار گذاشتن با هم‌خانه دربارهٔ قوانین خانه"
+],
+"personal": [
+"Do you live in a rented place?",
+"What's important for you in a home?",
+"What's your neighborhood like?"
+],
+"grammar": {
+"point": "too و enough",
+"examples": [
+"It's too expensive.",
+"It isn't big enough.",
+"We don't have enough space.",
+"He's old enough to live alone."
+],
+"rule": "too + صفت (بیش از حد). enough بعد از صفت (big enough) ولی قبل از اسم (enough money).",
+"drill": [
+"اجاره‌ش خیلی گرونه →",
+"آشپزخونه به اندازهٔ کافی بزرگ نیست →",
+"پول کافی نداریم →"
+]
+},
+"pron": [
+"landlord ≈ «لَندلُرد»",
+"mould ≈ «مولد»"
+],
+"quiz": [
+"«ودیعه» → deposit",
+"«هم‌خانه» آمریکایی → roommate",
+"big ___ → enough",
+"«نشتی آب» → a leak",
+"«اسباب‌کشی کردن (رفتن)» → move out"
+]
+},
+"banking": {
+"goal": "بتوانی در بانک و ادارات کارهایت را انجام دهی و درخواست‌های مؤدبانه بکنی (Could you…? / Would you mind…?).",
+"intro": "Hi! Today: banks and services. از باز کردن حساب و انتقال پول تا اداره پست و درخواست‌های خیلی مؤدبانه: Would you mind helping me?",
+"bank": [
+{
+"g": "بانک",
+"items": [
+"open / close an account, current/checking account, savings account",
+"deposit / withdraw / transfer money",
+"balance = موجودی, statement = صورت‌حساب",
+"ATM / cash machine, PIN, card, online banking",
+"loan, interest, exchange rate, currency",
+"fee / charge = کارمزد"
+]
+},
+{
+"g": "ادارات و خدمات",
+"items": [
+"post office, parcel, stamp, envelope",
+"fill in / fill out a form, sign, signature",
+"ID, proof of address",
+"queue (UK)/line (US), appointment, counter"
+]
+},
+{
+"g": "درخواست مؤدبانه",
+"items": [
+"Could you help me, please?",
+"Would you mind explaining that again?",
+"Can you tell me where…?",
+"I was wondering if you could… (خیلی مؤدبانه)",
+"Sure. / Of course. / Not at all. (جواب Would you mind)"
+]
+}
+],
+"patterns": [
+"I'd like to open a savings account.",
+"Could you tell me my balance, please?",
+"Would you mind filling in this form?",
+"I want to transfer money to another account.",
+"What's the exchange rate today?"
+],
+"checks": [
+"Would you mind + فعل ing؛ جواب «نه، اشکالی نداره» چیه؟ (Not at all / No, of course not)",
+"withdraw و deposit؟",
+"fill in و fill out؟ (هر دو)"
+],
+"roleplay": [
+"باز کردن حساب در بانک",
+"ارسال بسته در اداره پست",
+"کارت در دستگاه گیر کرده"
+],
+"personal": [
+"Do you prefer online banking?",
+"Have you ever had a problem at a bank?",
+"How do you save money?"
+],
+"grammar": {
+"point": "درخواست مؤدبانه: Could you…? / Would you mind + ing?",
+"examples": [
+"Could you sign here, please?",
+"Would you mind waiting a moment?",
+"Would you mind if I opened the window?"
+],
+"rule": "Could you + فعل ساده. Would you mind + فعل ing. جواب مثبت به Would you mind «Not at all» است (یعنی اشکالی ندارد).",
+"drill": [
+"می‌شه لطفاً دوباره توضیح بدید؟ →",
+"ممکنه چند لحظه صبر کنید؟ →"
+]
+},
+"pron": [
+"withdraw ≈ «ویذدراو»",
+"statement ≈ «اِستِیتمِنت»"
+],
+"quiz": [
+"«موجودی» → balance",
+"«برداشت پول» → withdraw",
+"جواب مثبت Would you mind…? → Not at all.",
+"«نرخ ارز» → exchange rate",
+"«صف» آمریکایی → line"
+]
+},
+"people": {
+"goal": "بتوانی ظاهر و شخصیت آدم‌ها را دقیق توصیف کنی و فرق صفت و قید (quick/quickly، good/well) را بدانی.",
+"intro": "Hi! Today we describe people: appearance and personality. یاد می‌گیری کسی رو دقیق توصیف کنی و قید رو درست بسازی: She speaks quickly / He plays well.",
+"bank": [
+{
+"g": "ظاهر",
+"items": [
+"tall / short / medium height",
+"slim / thin / overweight / well-built",
+"long / short / curly / straight / wavy hair",
+"blond / dark / red / grey hair, bald",
+"beard, moustache, glasses, freckles",
+"good-looking, attractive, pretty, handsome",
+"in his twenties / thirties"
+]
+},
+{
+"g": "شخصیت",
+"items": [
+"kind, friendly, polite, rude, honest, generous, selfish, shy, outgoing, confident, funny, serious, patient, impatient, lazy, hard-working, easy-going, bossy, reliable, clever, stubborn"
+]
+},
+{
+"g": "عبارت‌ها",
+"items": [
+"What does she look like? (ظاهر)",
+"What is she like? (شخصیت)",
+"He's a bit shy / quite outgoing",
+"She takes after her mother"
+]
+}
+],
+"patterns": [
+"What does your brother look like? — He's tall with short dark hair.",
+"What's she like? — She's really kind and funny.",
+"He drives carefully.",
+"She speaks English well."
+],
+"checks": [
+"What is she like و What does she look like؟",
+"good یا well: She sings ___ → well",
+"handsome برای زن؟ (معمولاً مرد؛ زن: pretty/beautiful)"
+],
+"roleplay": [
+"توصیف یک آدم گمشده به پلیس",
+"معرفی دوستت برای یک قرار کاری"
+],
+"personal": [
+"What do you look like?",
+"How would your friends describe you?",
+"Who is the kindest person you know?"
+],
+"grammar": {
+"point": "صفت و قید",
+"examples": [
+"She's a careful driver. She drives carefully.",
+"He's a good singer. He sings well.",
+"fast → fast, hard → hard"
+],
+"rule": "صفت اسم را توصیف می‌کند، قید فعل را. اغلب قید = صفت + ly. بی‌قاعده: good→well، fast→fast، hard→hard (hardly یعنی به‌سختی/تقریباً هیچ).",
+"drill": [
+"آروم حرف می‌زنه →",
+"خیلی خوب انگلیسی صحبت می‌کنی →",
+"سخت کار می‌کنه →"
+]
+},
+"pron": [
+"moustache ≈ «مِستَش»",
+"generous ≈ «جِنِرِس»"
+],
+"quiz": [
+"«کچل» → bald",
+"قید good → well",
+"«خودخواه» → selfish",
+"«شخصیتش چطوره؟» → What's she like?",
+"«خون‌گرم و اجتماعی» → outgoing"
+]
+},
+"plans": {
+"goal": "بتوانی دربارهٔ آینده حرف بزنی و بدانی کی will، کی be going to و کی حال استمراری به کار می‌رود.",
+"intro": "Hi! Let's talk about the future. خیلی‌ها نمی‌دونن کی will بگن کی going to. امروز این رو برای همیشه روشن می‌کنیم: تصمیم لحظه‌ای، برنامهٔ از قبل، و قرار قطعی.",
+"bank": [
+{
+"g": "برنامه و هدف",
+"items": [
+"plan, goal, dream, ambition",
+"intend to, hope to, would like to, be planning to",
+"in the future, next year, in five years, one day, soon",
+"make a decision, change my mind"
+]
+},
+{
+"g": "پیش‌بینی",
+"items": [
+"probably, definitely, maybe, perhaps",
+"I think it will…, I don't think…",
+"It's going to rain (شواهد الان)"
+]
+},
+{
+"g": "قرارها",
+"items": [
+"I'm meeting Sara tomorrow.",
+"We're flying to Dubai on Friday.",
+"What are you doing this weekend?"
+]
+}
+],
+"patterns": [
+"I'm going to study for an MBA next year.",
+"I think I'll stay home tonight.",
+"I'm meeting my boss at 10 tomorrow.",
+"Look at those clouds! It's going to rain.",
+"I'll help you with that bag."
+],
+"checks": [
+"تصمیم همان لحظه: will یا going to؟ (will)",
+"قرار با ساعت مشخص؟ (حال استمراری)",
+"I will to go درسته؟"
+],
+"roleplay": [
+"دو دوست برنامهٔ تعطیلات را می‌گویند",
+"مصاحبه: «پنج سال دیگر خودت را کجا می‌بینی؟»"
+],
+"personal": [
+"What are your plans for next year?",
+"Where do you see yourself in five years?",
+"What are you doing this weekend?"
+],
+"grammar": {
+"point": "will / be going to / حال استمراری برای آینده",
+"examples": [
+"I'll call you later. (تصمیم لحظه‌ای/قول)",
+"I'm going to learn to drive. (برنامه)",
+"I'm seeing the doctor at 5. (قرار قطعی)"
+],
+"rule": "will برای تصمیم آنی، قول و پیش‌بینی نظری؛ going to برای برنامهٔ از قبل و پیش‌بینی با شواهد؛ حال استمراری برای قرار قطعی با زمان مشخص.",
+"drill": [
+"باشه، بهت زنگ می‌زنم →",
+"قراره سال بعد ارشد بخونم →",
+"فردا ساعت ۵ با دکتر قرار دارم →"
+]
+},
+"pron": [
+"I'll ≈ «آیل»",
+"going to ≈ «گانا»"
+],
+"quiz": [
+"تصمیم لحظه‌ای: I ___ open the door → 'll",
+"«احتمالاً» → probably",
+"«پنج سال دیگه» → in five years",
+"«قراره بارون بیاد (ابرها رو ببین)» → It's going to rain.",
+"«آخر هفته چی کار می‌کنی؟» → What are you doing this weekend?"
+]
+},
+"past": {
+"goal": "بتوانی دربارهٔ تجربه‌های زندگی و عادت‌های گذشته حرف بزنی؛ used to و فرق گذشتهٔ ساده با حال کامل را بدانی.",
+"intro": "Hi! Today: life experiences. یاد می‌گیری از عادت‌های قدیمت بگی (I used to play football) و فرق «تجربه» با «زمان مشخص» رو بفهمی: I've been to Turkey / I went to Turkey in 2019.",
+"bank": [
+{
+"g": "تجربه‌ها",
+"items": [
+"travel abroad, live in another country, learn to drive, meet someone famous, win a prize, break a bone, get lost, try a new food, go skydiving, change jobs"
+]
+},
+{
+"g": "عادت گذشته",
+"items": [
+"I used to… = قبلاً … می‌کردم (دیگر نه)",
+"I didn't use to… / Did you use to…?",
+"when I was a kid / in the past / back then"
+]
+},
+{
+"g": "واکنش",
+"items": [
+"Really? What was it like?",
+"That must have been amazing!",
+"I've never done that."
+]
+}
+],
+"patterns": [
+"I used to live in Shiraz, but now I live in Muscat.",
+"Did you use to play with dolls?",
+"I've been to Istanbul three times.",
+"I went there last summer.",
+"Have you ever eaten sushi? — Yes, I tried it in 2020."
+],
+"checks": [
+"I've been to Turkey last year درسته؟ (نه؛ با زمان مشخص گذشتهٔ ساده)",
+"been to و gone to فرق؟",
+"used to برای الان هم به کار می‌ره؟ (نه)"
+],
+"roleplay": [
+"گفتگو با دوست قدیمی دربارهٔ اینکه چقدر عوض شده‌اید",
+"مصاحبه دربارهٔ عجیب‌ترین تجربه‌ات"
+],
+"personal": [
+"What did you use to do as a child?",
+"Have you ever lived abroad?",
+"What's the most interesting place you've been to?"
+],
+"grammar": {
+"point": "used to + مقایسهٔ گذشتهٔ ساده و حال کامل",
+"examples": [
+"I used to smoke, but I quit.",
+"I've visited Paris twice.",
+"I visited Paris in 2018."
+],
+"rule": "used to + فعل ساده برای عادت یا حالتی که دیگر وجود ندارد. حال کامل برای تجربه بدون زمان مشخص؛ وقتی زمان را بگویی (when, last year) گذشتهٔ ساده.",
+"drill": [
+"قبلاً عینک می‌زدم →",
+"تا حالا ژاپن رفتی؟ →",
+"پارسال رفتم دبی →"
+]
+},
+"pron": [
+"used to ≈ «یوستِ»",
+"been ≈ US «بین» / UK «بین»"
+],
+"quiz": [
+"«قبلاً مو بلند داشتم» → I used to have long hair.",
+"Have you ever ___ (be) to Spain? → been",
+"«پارسال رفتم» → I went last year.",
+"been to یعنی؟ → رفته و برگشته",
+"منفی used to → didn't use to"
+]
+},
+"environment": {
+"goal": "بتوانی دربارهٔ محیط زیست و مشکلات آن حرف بزنی و با شرطی نوع اول نتیجهٔ کارها را بیان کنی.",
+"intro": "Hi! Today we talk about our planet. واژه‌های محیط زیست و یک ساختار مهم: شرطی نوع اول. If we recycle, we will save energy.",
+"bank": [
+{
+"g": "مشکلات",
+"items": [
+"pollution, air pollution, climate change, global warming, drought, flood, deforestation, plastic waste, litter, smog, endangered species"
+]
+},
+{
+"g": "راه‌حل‌ها",
+"items": [
+"recycle, reuse, reduce, save energy, save water, solar power, wind power, renewable energy, public transport, plant trees, protect, ban plastic bags"
+]
+},
+{
+"g": "بیان نظر",
+"items": [
+"In my opinion, …",
+"I strongly believe…",
+"We should / We must…",
+"It's up to everyone to…"
+]
+}
+],
+"patterns": [
+"If we don't reduce plastic, the oceans will be full of it.",
+"If you take the bus, you'll save money.",
+"We should recycle more.",
+"Air pollution is a big problem in Tehran."
+],
+"checks": [
+"If it will rain درسته؟ (نه؛ If it rains)",
+"reduce, reuse, recycle یعنی چی؟",
+"litter؟"
+],
+"roleplay": [
+"جلسهٔ ساختمان: پیشنهاد برای صرفه‌جویی انرژی",
+"بحث دربارهٔ آلودگی هوای شهر"
+],
+"personal": [
+"What are the biggest environmental problems in your country?",
+"What do you do to help the environment?",
+"Will cars be electric in 20 years?"
+],
+"grammar": {
+"point": "شرطی نوع اول",
+"examples": [
+"If it rains, we'll stay home.",
+"If you heat the ice, it melts. (حقیقت: شرطی صفر)",
+"We won't go unless it stops raining."
+],
+"rule": "If + حال ساده، will + فعل ساده. هیچ‌وقت will در بخش If نمی‌آید. unless = اگر … نه.",
+"drill": [
+"اگه درخت بکاریم، هوا تمیزتر می‌شه →",
+"اگه زود نیای، جا می‌مونیم →"
+]
+},
+"pron": [
+"pollution ≈ «پِلوشِن»",
+"environment ≈ «اِنوایرِنمِنت»"
+],
+"quiz": [
+"«خشکسالی» → drought",
+"If it ___ (rain) tomorrow… → rains",
+"«انرژی تجدیدپذیر» → renewable energy",
+"«زباله‌ریختن در خیابان» → litter",
+"«مگر اینکه» → unless"
+]
+}
+}

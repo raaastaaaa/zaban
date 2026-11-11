@@ -127,3 +127,30 @@ begin
 end $$;
 revoke all on function public.set_ai_access(uuid, numeric, boolean) from public, anon;
 grant execute on function public.set_ai_access(uuid, numeric, boolean) to authenticated;
+
+-- باز کردن قفل درس‌ها توسط مدیر (برای خودش یا هر کاربر): null = عادی، 'intro'|'l1'|'l2'|'l3' = همهٔ درس‌ها تا آن سطح، 'all' = همه
+alter table public.profiles add column if not exists unlock text;
+create or replace function public.set_unlock(uid uuid, lvl text) returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then raise exception 'only admin'; end if;
+  update public.profiles set unlock = nullif(lvl, '') where id = uid;
+end $$;
+revoke all on function public.set_unlock(uuid, text) from public, anon;
+grant execute on function public.set_unlock(uuid, text) to authenticated;
+
+-- انتقادات و پیشنهادات کاربران (متن + صدای ضبط‌شده)
+create table if not exists public.feedback (
+  id bigint generated always as identity primary key,
+  user_id uuid references auth.users(id) on delete set null default auth.uid(),
+  username text, display_name text, kind text default 'idea',
+  body text, audio text, created_at timestamptz default now(), seen boolean default false
+);
+alter table public.feedback enable row level security;
+drop policy if exists fb_insert on public.feedback;
+create policy fb_insert on public.feedback for insert to authenticated with check (user_id = auth.uid());
+drop policy if exists fb_select on public.feedback;
+create policy fb_select on public.feedback for select to authenticated using (user_id = auth.uid() or public.is_admin());
+drop policy if exists fb_update on public.feedback;
+create policy fb_update on public.feedback for update to authenticated using (public.is_admin());
+drop policy if exists fb_delete on public.feedback;
+create policy fb_delete on public.feedback for delete to authenticated using (public.is_admin());

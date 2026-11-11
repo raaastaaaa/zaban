@@ -1,0 +1,740 @@
+{
+"transport": {
+"goal": "بتوانی دربارهٔ وسایل حمل‌ونقل، رفت‌وآمد روزانه، بلیت و مسیر حرف بزنی.",
+"intro": "سلام! امروز دربارهٔ رفت‌وآمده: اتوبوس، مترو، تاکسی، قطار و هواپیما. یاد می‌گیری بگی by bus و on foot، بلیت بخری، بپرسی How do you get to work? و فرق get on و get in رو بفهمی. از این سطح کلاس رو بیشتر انگلیسی پیش می‌برم و فقط نکته‌های سخت رو فارسی توضیح می‌دم.",
+"bank": [
+{
+"g": "وسایل نقلیه",
+"items": [
+"car, bus, taxi/cab, train, subway (US)/underground/tube (UK), tram, plane, ship, ferry, bike/bicycle, motorbike, scooter, truck (US)/lorry (UK), van"
+]
+},
+{
+"g": "رفت‌وآمد",
+"items": [
+"by car / by bus / by train (بدون the)",
+"on foot = پیاده",
+"take the bus / the train / a taxi",
+"catch / miss the bus = رسیدن به / جا ماندن از اتوبوس",
+"get on / get off (bus, train, plane)",
+"get in / get out of (car, taxi)",
+"commute = رفت‌وآمد روزانه به محل کار",
+"traffic / traffic jam / rush hour",
+"drive / ride (a bike) / walk"
+]
+},
+{
+"g": "بلیت و ایستگاه",
+"items": [
+"ticket / single (UK) one-way (US) / return (UK) round-trip (US)",
+"platform = سکو",
+"stop / station / terminal",
+"fare = کرایه",
+"timetable (UK) / schedule (US)",
+"delay / delayed / on time",
+"driver's license (US) / driving licence (UK)"
+]
+}
+],
+"patterns": [
+"How do you get to work? — I go by bus. / I walk.",
+"It takes 20 minutes by car.",
+"Where can I buy a ticket?",
+"Does this bus go to the city center?",
+"I missed the train, so I took a taxi.",
+"Get off at the next stop."
+],
+"checks": [
+"by the bus یا by bus؟",
+"get on a taxi درسته؟ (نه؛ get in)",
+"«کرایه چنده؟» → How much is the fare?",
+"«یک‌طرفه» آمریکایی و بریتانیایی"
+],
+"roleplay": [
+"خرید بلیت قطار در ایستگاه",
+"پرسیدن از راننده که اتوبوس به کجا می‌رود",
+"تاکسی گرفتن و توضیح مقصد"
+],
+"personal": [
+"How do you get to work or school?",
+"How long does it take?",
+"Do you like driving?",
+"What's public transport like in your city?"
+],
+"grammar": {
+"point": "How do you get to…? / It takes… / by + وسیله",
+"examples": [
+"I get to work by subway.",
+"It takes about half an hour.",
+"How long does it take to get there?"
+],
+"rule": "برای وسیله: by + اسم بدون the (by car)، ولی on foot. برای مدت: It takes + زمان.",
+"drill": [
+"چطوری می‌ری سر کار؟ →",
+"با ماشین ده دقیقه طول می‌کشه →",
+"پیاده می‌رم →"
+]
+},
+"pron": [
+"subway ≈ «سابوِی»",
+"schedule: US «اِسکِجول» / UK «شِجول»",
+"It takes ≈ «ایتِیکس»"
+],
+"quiz": [
+"«مترو» لندنی → the tube",
+"«جا ماندم از اتوبوس» → I missed the bus.",
+"از تاکسی پیاده شدن → get out of",
+"«ساعت شلوغی» → rush hour",
+"«تأخیر داشت» → It was delayed."
+]
+},
+"weather": {
+"goal": "بتوانی دربارهٔ آب‌وهوا، فصل‌ها و طبیعت حرف بزنی و آب‌وهوای دیروز و امروز را توصیف کنی.",
+"intro": "سلام! انگلیسی‌ها عاشق حرف زدن دربارهٔ هوا هستن؛ بهترین راه شروع یه گپ با غریبه‌هاست! امروز همهٔ کلمه‌های آب‌وهوا و طبیعت رو یاد می‌گیری و یاد می‌گیری بگی It's freezing! یا It was rainy yesterday.",
+"bank": [
+{
+"g": "هوا",
+"items": [
+"sunny, cloudy, rainy, snowy, windy, foggy, stormy",
+"hot, warm, mild, cool, cold, freezing",
+"humid / dry = شرجی / خشک",
+"rain, snow, wind, storm, thunder, lightning, hail",
+"degrees (30 degrees) / Celsius / Fahrenheit",
+"forecast = پیش‌بینی هوا",
+"heatwave = موج گرما"
+]
+},
+{
+"g": "طبیعت",
+"items": [
+"mountain, hill, valley, river, lake, sea, ocean, beach, desert, forest, jungle, island, waterfall, field",
+"sky, cloud, sun, moon, star, rainbow"
+]
+},
+{
+"g": "گپ دربارهٔ هوا",
+"items": [
+"Lovely day, isn't it?",
+"It's boiling today! = امروز خیلی داغه",
+"It's pouring (with rain) = داره سیل می‌باره",
+"What's the weather like? = هوا چطوره؟",
+"What's the forecast for tomorrow?"
+]
+}
+],
+"patterns": [
+"What's the weather like today? — It's sunny and warm.",
+"It was cold and rainy yesterday.",
+"It's going to snow tomorrow.",
+"It's 35 degrees in Muscat!",
+"Lovely weather today, isn't it?"
+],
+"checks": [
+"How is the weather یا What's the weather like؟ (دومی طبیعی‌تر)",
+"It is rain یا It is raining / It's rainy؟",
+"«هوای ملایم» → mild"
+],
+"roleplay": [
+"گپ کوتاه با همسایه دربارهٔ هوا",
+"برنامه‌ریزی سفر بر اساس پیش‌بینی هوا"
+],
+"personal": [
+"What's the weather like where you live?",
+"What's your favorite season?",
+"What was the weather like yesterday?"
+],
+"grammar": {
+"point": "It's + صفت، و گذشتهٔ to be برای هوا",
+"examples": [
+"It's windy.",
+"It was hot yesterday.",
+"Was it cold last night?"
+],
+"rule": "برای هوا از It استفاده می‌کنیم. اسم (rain) با صفت (rainy) فرق دارد؛ برای الان: It's raining.",
+"drill": [
+"امروز ابریه →",
+"دیروز خیلی سرد بود →",
+"فردا برف می‌آد →"
+]
+},
+"pron": [
+"weather ≈ «وِذِر» با th صدادار",
+"Celsius ≈ «سِلسیِس»"
+],
+"quiz": [
+"«یخبندانه» → It's freezing.",
+"صفت storm → stormy",
+"«شرجی» → humid",
+"«رنگین‌کمان» → rainbow",
+"«دیروز هوا چطور بود؟» → What was the weather like yesterday?"
+]
+},
+"feelings": {
+"goal": "بتوانی احساسات خودت و دیگران را دقیق بیان کنی و فرق صفت‌های ed و ing را بدانی.",
+"intro": "سلام! امروز دربارهٔ احساساته. یه نکتهٔ خیلی مهم یاد می‌گیری که فارسی‌زبان‌ها زیاد اشتباه می‌کنن: I'm bored (حوصله‌م سر رفته) با I'm boring (من آدم کسل‌کننده‌ای‌ام!) خیلی فرق داره. بعد یاد می‌گیری چطور با احساس دیگران همدردی کنی.",
+"bank": [
+{
+"g": "احساس‌ها",
+"items": [
+"happy, sad, angry, upset, worried, nervous, scared/afraid, excited, tired, bored, surprised, confused, embarrassed, proud, lonely, relaxed, stressed, jealous, disappointed, grateful, homesick"
+]
+},
+{
+"g": "ed / ing",
+"items": [
+"bored / boring",
+"interested / interesting",
+"tired / tiring",
+"excited / exciting",
+"surprised / surprising",
+"confused / confusing",
+"embarrassed / embarrassing",
+"disappointed / disappointing"
+]
+},
+{
+"g": "همدردی و واکنش",
+"items": [
+"What's wrong? / Are you OK?",
+"I'm sorry to hear that.",
+"Don't worry. / Cheer up!",
+"That's great news! / I'm so happy for you!",
+"Calm down. / Take it easy.",
+"I know how you feel."
+]
+}
+],
+"patterns": [
+"How do you feel today? — I feel a bit tired.",
+"I'm bored. This film is boring.",
+"She's nervous about her exam.",
+"I'm worried about my brother.",
+"I'm sorry to hear that."
+],
+"checks": [
+"«حوصله‌ام سر رفته» → I'm bored (نه boring)",
+"«این کتاب جالبه» → interesting",
+"nervous در انگلیسی یعنی عصبانی؟ (نه؛ مضطرب)"
+],
+"roleplay": [
+"دوستت ناراحت است و دلداری‌اش می‌دهی",
+"خبر خوب: قبولی دوستت در آزمون"
+],
+"personal": [
+"How do you feel today?",
+"What makes you happy?",
+"When do you feel nervous?",
+"What's the most exciting thing you did this year?"
+],
+"grammar": {
+"point": "صفت‌های ed و ing",
+"examples": [
+"I'm interested in music. Music is interesting.",
+"The lesson was tiring. I was tired."
+],
+"rule": "ed احساس آدم است (من خسته‌ام)، ing ویژگی چیزی است که آن احساس را ایجاد می‌کند (کار خسته‌کننده).",
+"drill": [
+"از این فیلم خوشم نیومد، حوصله‌م سر رفت →",
+"خبر شگفت‌انگیزی بود →"
+]
+},
+"pron": [
+"worried ≈ «وَرید»",
+"embarrassed ≈ «اِمبَرِست»"
+],
+"quiz": [
+"«دلم برای خانه تنگ شده» → I'm homesick.",
+"The film was ___ (bored/boring) → boring",
+"«مضطرب» → nervous",
+"«متأسفم که اینو می‌شنوم» → I'm sorry to hear that.",
+"«بهت افتخار می‌کنم» → I'm proud of you."
+]
+},
+"school": {
+"goal": "بتوانی دربارهٔ تحصیل، رشته، درس‌ها و تجربه‌های مدرسه و دانشگاه با گذشتهٔ ساده حرف بزنی.",
+"intro": "سلام! امروز برمی‌گردیم به دوران مدرسه و دانشگاه. اسم درس‌ها، مدرک‌ها و کارهای درسی رو یاد می‌گیری و تعریف می‌کنی کجا درس خوندی، چه رشته‌ای خوندی و درس‌خون بودی یا نه!",
+"bank": [
+{
+"g": "درس‌ها",
+"items": [
+"math (US)/maths (UK), science, physics, chemistry, biology, history, geography, literature, art, music, PE (physical education), computer science, economics, languages"
+]
+},
+{
+"g": "تحصیل",
+"items": [
+"primary/elementary school, secondary/high school, university/college",
+"student, teacher, professor, classmate",
+"subject = درس، major (US) = رشته",
+"degree: bachelor's, master's, PhD",
+"exam/test, homework, grade (US)/mark (UK), term/semester",
+"pass / fail an exam = قبول / رد شدن",
+"study / learn / revise (UK) / review (US)",
+"take an exam (نه give an exam!)",
+"graduate, scholarship, library, lecture"
+]
+},
+{
+"g": "توصیف",
+"items": [
+"hard-working / lazy",
+"good at / bad at",
+"strict teacher = معلم سخت‌گیر",
+"I studied hard / I forgot / I cheated"
+]
+}
+],
+"patterns": [
+"I studied engineering at Shiraz University.",
+"My favorite subject was math.",
+"Did you pass the exam? — Yes, I did!",
+"I failed my driving test the first time.",
+"What did you study at university?"
+],
+"checks": [
+"give an exam درسته؟ (نه؛ take an exam)",
+"learn و study فرق؟",
+"«نمره» آمریکایی و بریتانیایی"
+],
+"roleplay": [
+"دو دانشجو دربارهٔ امتحان فردا حرف می‌زنند",
+"مصاحبهٔ پذیرش: دربارهٔ سابقهٔ تحصیلی‌ات"
+],
+"personal": [
+"What did you study?",
+"What was your favorite subject at school?",
+"Were you a good student?",
+"Do you want to study again?"
+],
+"grammar": {
+"point": "گذشتهٔ ساده: باقاعده و بی‌قاعده در موضوع تحصیل",
+"examples": [
+"I studied hard.",
+"She went to a private school.",
+"We wrote an essay.",
+"I forgot my homework."
+],
+"rule": "باقاعده با ed، بی‌قاعده را حفظ کن: go→went, write→wrote, forget→forgot, teach→taught, learn→learned/learnt.",
+"drill": [
+"تو دانشگاه اقتصاد خوندم →",
+"امتحانم رو قبول شدم →",
+"تکلیفمو فراموش کردم →"
+]
+},
+"pron": [
+"studied ≈ «اِستادید»",
+"chemistry ≈ «کِمیستری»"
+],
+"quiz": [
+"«امتحان دادن» → take an exam",
+"«رشته» آمریکایی → major",
+"گذشتهٔ teach → taught",
+"«ریاضی» بریتانیایی → maths",
+"«بورسیه» → scholarship"
+]
+},
+"sports": {
+"goal": "بتوانی دربارهٔ ورزش، تمرین و علاقه‌هایت حرف بزنی و like/love/hate + ing را درست به کار ببری.",
+"intro": "سلام! امروز دربارهٔ ورزش و تمرینه. می‌گی چه ورزشی رو دوست داری، چقدر ورزش می‌کنی، و یاد می‌گیری بعد از love و hate از ing استفاده کنی: I love swimming.",
+"bank": [
+{
+"g": "ورزش‌ها",
+"items": [
+"football/soccer, basketball, volleyball, tennis, badminton, golf, boxing, wrestling, swimming, running, cycling, skiing, climbing, horse riding, yoga, pilates, bodybuilding"
+]
+},
+{
+"g": "تمرین",
+"items": [
+"work out = تمرین ورزشی کردن",
+"exercise / get exercise",
+"go to the gym",
+"warm up / stretch",
+"lose weight / keep fit / stay in shape",
+"coach / trainer / team / player / fan",
+"match / game / race / tournament / win / lose / draw / score a goal"
+]
+},
+{
+"g": "مکان",
+"items": [
+"stadium, gym, pool, court (tennis), pitch (UK)/field (US), track"
+]
+}
+],
+"patterns": [
+"I love swimming, but I hate running.",
+"I work out three times a week.",
+"Do you like playing football? — Not really.",
+"Which team do you support?",
+"We won the match 2-1."
+],
+"checks": [
+"I love swim یا I love swimming؟",
+"court برای کدوم ورزش؟ (تنیس، بسکتبال)",
+"win و beat فرق؟ (win a game / beat a team)"
+],
+"roleplay": [
+"ثبت‌نام در باشگاه و صحبت با مربی",
+"دو دوست دربارهٔ مسابقهٔ فوتبال دیشب"
+],
+"personal": [
+"Do you like sports?",
+"How often do you exercise?",
+"What's your favorite team?",
+"Did you play any sports as a child?"
+],
+"grammar": {
+"point": "like / love / hate / enjoy + ing",
+"examples": [
+"I enjoy cycling.",
+"She hates losing.",
+"Do you like watching football?"
+],
+"rule": "بعد از like/love/hate/enjoy فعل با ing می‌آید (enjoy فقط ing). would like + to فرق دارد: I'd like to play.",
+"drill": [
+"عاشق کوه‌نوردی‌ام →",
+"از دویدن متنفره →",
+"از تماشای تنیس لذت می‌بری؟ →"
+]
+},
+"pron": [
+"gym ≈ «جیم»",
+"tournament ≈ «تِرنِمِنت»"
+],
+"quiz": [
+"«تمرین ورزشی کردن» → work out",
+"I enjoy ___ (swim/swimming) → swimming",
+"«شکست دادن تیم» → beat",
+"«گل زدن» → score a goal",
+"«مساوی» → draw"
+]
+},
+"health": {
+"goal": "بتوانی دربارهٔ سلامت، بیماری و سبک زندگی سالم حرف بزنی و با should/shouldn't توصیه بدهی.",
+"intro": "سلام! امروز دربارهٔ سلامتیه: علائم بیماری، پیش دکتر رفتن و عادت‌های سالم. مهم‌ترین ساختارش should هست، برای نصیحت و توصیه: You should rest. بعد نقش دکتر و بیمار رو بازی می‌کنیم.",
+"bank": [
+{
+"g": "علائم",
+"items": [
+"symptoms, pain, ache, fever/temperature, cough, sore throat, runny nose, rash, dizzy, nausea (حالت تهوع), allergy, infection, injury, sprain, broken leg"
+]
+},
+{
+"g": "پیش دکتر",
+"items": [
+"make an appointment",
+"check-up = معاینهٔ عمومی",
+"prescription / medicine / tablets / antibiotics",
+"blood test / X-ray",
+"insurance = بیمه",
+"emergency room (US) / A&E (UK)",
+"I've got a pain in my…"
+]
+},
+{
+"g": "سبک زندگی",
+"items": [
+"healthy / unhealthy",
+"diet = رژیم غذایی",
+"get enough sleep",
+"give up smoking / quit smoking",
+"cut down on sugar = کم کردن قند",
+"stress, relax, meditate"
+]
+}
+],
+"patterns": [
+"You should see a doctor.",
+"You shouldn't eat so much sugar.",
+"What should I do?",
+"I think you should rest.",
+"I need to make an appointment."
+],
+"checks": [
+"You should to rest درسته؟ (نه)",
+"diet فقط یعنی رژیم لاغری؟ (نه؛ کلاً نوع غذا خوردن)",
+"«اورژانس» آمریکایی"
+],
+"roleplay": [
+"مطب دکتر: توضیح علائم و گرفتن توصیه",
+"دوستت همیشه خسته است؛ نصیحتش کن"
+],
+"personal": [
+"What do you do to stay healthy?",
+"How many hours do you sleep?",
+"What should people do to reduce stress?"
+],
+"grammar": {
+"point": "should / shouldn't برای توصیه",
+"examples": [
+"You should drink more water.",
+"He shouldn't work so late.",
+"Should I take this medicine?"
+],
+"rule": "should + فعل ساده (بدون to)، برای همهٔ اشخاص یکسان. منفی: shouldn't. سؤال: Should I…?",
+"drill": [
+"باید بیشتر بخوابی →",
+"نباید سیگار بکشه →",
+"باید برم دکتر؟ →"
+]
+},
+"pron": [
+"should ≈ «شُد» (l خوانده نمی‌شود)",
+"nausea ≈ «ناژیا/ناسیا»"
+],
+"quiz": [
+"«نوبت گرفتن» → make an appointment",
+"«ترک کردن سیگار» → quit smoking",
+"You ___ go to bed late → shouldn't",
+"«معاینه» → check-up",
+"«آنتی‌بیوتیک» → antibiotics"
+]
+},
+"travel": {
+"goal": "بتوانی سفرت را برنامه‌ریزی کنی، در فرودگاه و هتل کارهایت را انجام دهی و برنامه‌های آینده را با be going to بگویی.",
+"intro": "سلام! امروز آماده‌ی سفریم! از رزرو بلیت و هتل تا فرودگاه، چک‌این و پرسیدن سؤال تو هتل. بعد برنامهٔ سفر بعدیت رو با be going to تعریف می‌کنی. من مسئول پذیرش هتل می‌شم و تو مسافر.",
+"bank": [
+{
+"g": "برنامه‌ریزی",
+"items": [
+"book a flight / a hotel",
+"pack (a suitcase)",
+"passport, visa, ID",
+"trip / journey / travel / tour",
+"sightseeing, tourist, guide, souvenir",
+"abroad = خارج از کشور"
+]
+},
+{
+"g": "فرودگاه",
+"items": [
+"check in, boarding pass, gate, departure, arrival, delayed, cancelled",
+"luggage / baggage (ناشمارش), carry-on, suitcase",
+"security, customs, passport control",
+"take off / land",
+"aisle seat / window seat"
+]
+},
+{
+"g": "هتل",
+"items": [
+"reservation, single room / double room, reception, key card",
+"check in / check out",
+"room service, breakfast included",
+"Wi-Fi password",
+"Could I have a late check-out?"
+]
+}
+],
+"patterns": [
+"I'm going to visit Istanbul next month.",
+"I booked a hotel near the old city.",
+"Can I see your passport, please?",
+"Window or aisle seat? — Window, please.",
+"I'd like to check in. I have a reservation."
+],
+"checks": [
+"luggage شمارش‌پذیره؟ (نه: a piece of luggage)",
+"travel و trip فرق؟ (trip اسم شمارش‌پذیر سفر مشخص)",
+"«رزرو دارم» → I have a reservation"
+],
+"roleplay": [
+"چک‌این در فرودگاه",
+"پذیرش هتل: اتاق، صبحانه، رمز وای‌فای",
+"دوستت دربارهٔ برنامهٔ سفرت می‌پرسد"
+],
+"personal": [
+"Where are you going to travel next?",
+"What do you always pack?",
+"Do you prefer the window or the aisle seat?",
+"What's the best trip you've taken?"
+],
+"grammar": {
+"point": "be going to برای برنامهٔ آینده",
+"examples": [
+"We're going to stay for a week.",
+"Are you going to rent a car?",
+"I'm not going to take much luggage."
+],
+"rule": "برای برنامه و تصمیم از قبل: am/is/are going to + فعل. در گفتار خودمونی gonna.",
+"drill": [
+"ماه بعد می‌خوام برم استانبول →",
+"می‌خوای ماشین اجاره کنی؟ →"
+]
+},
+"pron": [
+"luggage ≈ «لاگِج»",
+"suitcase ≈ «سوت‌کِیس»"
+],
+"quiz": [
+"«کارت پرواز» → boarding pass",
+"«صندلی کنار راهرو» → aisle seat",
+"«سوغاتی» → souvenir",
+"«پرواز لغو شد» → The flight was cancelled.",
+"«می‌خوام چک‌اوت کنم» → I'd like to check out."
+]
+},
+"work": {
+"goal": "بتوانی دربارهٔ کار، اداره و تجربهٔ کاری حرف بزنی و از حال کامل (I have worked…) استفاده کنی.",
+"intro": "سلام! امروز دربارهٔ محیط کاره: جلسه، ایمیل، ددلاین، همکار. و یه زمان جدید و خیلی کاربردی: حال کامل. با اون می‌گی چند وقته اینجا کار می‌کنی (I've worked here for two years) و چه تجربه‌هایی داری (Have you ever…?).",
+"bank": [
+{
+"g": "اداره",
+"items": [
+"office, desk, meeting room, printer, photocopier",
+"manager, boss, colleague, staff, employee, employer, team, department, HR",
+"meeting, deadline, report, project, presentation, client, customer",
+"email, call, schedule, agenda"
+]
+},
+{
+"g": "کار",
+"items": [
+"apply for a job, CV (UK)/résumé (US), interview",
+"hire / fire / quit / resign / get promoted",
+"salary, raise (US)/pay rise (UK), bonus",
+"work overtime, shift, day off, sick leave, vacation (US)/holiday (UK)",
+"be in charge of = مسئول … بودن",
+"deal with = رسیدگی کردن"
+]
+},
+{
+"g": "تجربه",
+"items": [
+"I've worked here for two years / since 2023.",
+"I've never worked abroad.",
+"Have you ever given a presentation?"
+]
+}
+],
+"patterns": [
+"I've worked for this company since 2021.",
+"Have you finished the report? — Not yet.",
+"I'm in charge of marketing.",
+"We have a meeting at ten.",
+"Could you send me the file by Friday?"
+],
+"checks": [
+"for و since فرق؟ (for + مدت، since + نقطهٔ شروع)",
+"«اخراج شد» → He was fired.",
+"Have you ever… یعنی چی؟"
+],
+"roleplay": [
+"اولین روز کار و معرفی به همکاران",
+"مدیر می‌پرسد گزارش آماده است یا نه",
+"مصاحبهٔ کاری کوتاه"
+],
+"personal": [
+"What do you do at work?",
+"How long have you worked there?",
+"Have you ever worked in a team?",
+"What do you like about your job?"
+],
+"grammar": {
+"point": "حال کامل ساده",
+"examples": [
+"I have worked here for 3 years.",
+"She has visited London twice.",
+"Have you ever been to a job interview?",
+"I haven't finished yet."
+],
+"rule": "have/has + قسمت سوم فعل؛ برای تجربه (ever/never) و کاری که از گذشته تا الان ادامه دارد (for/since). زمان دقیق گذشته (yesterday) با حال کامل نمی‌آید.",
+"drill": [
+"سه ساله اینجا کار می‌کنم →",
+"تا حالا ارائه دادی؟ →",
+"هنوز ایمیل رو نفرستادم →"
+]
+},
+"pron": [
+"I've ≈ «آیو»",
+"colleague ≈ «کالیگ»"
+],
+"quiz": [
+"«مهلت» → deadline",
+"for یا since: ___ 2020 → since",
+"«ترفیع گرفت» → She got promoted.",
+"«مرخصی استعلاجی» → sick leave",
+"«تا حالا … کردی؟» → Have you ever…?"
+]
+},
+"animals": {
+"goal": "بتوانی حیوانات خانگی، اهلی و وحشی را نام ببری و توانایی‌ها و ویژگی‌هایشان را توصیف کنی.",
+"intro": "سلام! امروز دربارهٔ حیواناته؛ از حیوون خونگی خودت تا شیر و نهنگ! اسم‌ها رو گروه‌گروه یاد می‌گیری، صداها و کارهاشون رو، و با can می‌گی هر حیوون چی کار می‌تونه بکنه. اگه حیوون خونگی داری، باید معرفیش کنی!",
+"bank": [
+{
+"g": "حیوانات خانگی",
+"items": [
+"pet, cat, kitten, dog, puppy, rabbit, hamster, parrot, goldfish, turtle"
+]
+},
+{
+"g": "مزرعه",
+"items": [
+"cow, horse, sheep, goat, pig, chicken, hen, rooster, duck, donkey, camel"
+]
+},
+{
+"g": "حیات وحش",
+"items": [
+"lion, tiger, elephant, giraffe, monkey, bear, wolf, fox, zebra, kangaroo, deer, snake, crocodile, eagle, owl, whale, dolphin, shark, butterfly, bee, spider, ant"
+]
+},
+{
+"g": "بدن و کارها",
+"items": [
+"tail, wing, fur, feathers, paw, claws, beak",
+"fly, swim, run, climb, jump, hunt, bark, bite",
+"wild / tame / dangerous / cute / endangered (در خطر انقراض)"
+]
+}
+],
+"patterns": [
+"Birds can fly, but penguins can't.",
+"Cheetahs can run very fast.",
+"I have a cat. Her name is Miyazaki.",
+"Do you have any pets?",
+"Elephants are huge and very clever."
+],
+"checks": [
+"جمع sheep؟ (sheep)",
+"puppy و kitten یعنی چی؟",
+"«حیوان در خطر انقراض» → endangered"
+],
+"roleplay": [
+"معرفی حیوان خانگی‌ات به دوست",
+"بازی حدس حیوان با سؤال بله/خیر"
+],
+"personal": [
+"Do you have a pet?",
+"What's your favorite animal? Why?",
+"Which animals are dangerous?",
+"Have you ever been to a zoo?"
+],
+"grammar": {
+"point": "can / can't برای توانایی حیوانات + حال ساده برای حقایق",
+"examples": [
+"Dolphins can swim fast.",
+"Penguins can't fly.",
+"Cats sleep a lot."
+],
+"rule": "can + فعل ساده. برای حقیقت‌های کلی دربارهٔ حیوانات از حال ساده و اسم جمع استفاده می‌کنیم (Lions eat meat).",
+"drill": [
+"زرافه‌ها گردن بلند دارن →",
+"مارها نمی‌تونن راه برن →",
+"سگت می‌تونه شنا کنه؟ →"
+]
+},
+"pron": [
+"giraffe ≈ «جِرَف»",
+"owl ≈ «اَول»"
+],
+"quiz": [
+"«توله‌سگ» → puppy",
+"جمع mouse → mice",
+"«پر (پرنده)» → feathers",
+"«پنگوئن‌ها نمی‌تونن پرواز کنن» → Penguins can't fly.",
+"«حیوان خانگی» → pet"
+]
+}
+}

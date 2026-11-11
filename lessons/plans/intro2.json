@@ -1,0 +1,749 @@
+{
+"food": {
+"goal": "بتوانی دربارهٔ غذا و نوشیدنی حرف بزنی، بگویی چه دوست داری و نداری، و some/any و How much/How many را درست به کار ببری.",
+"intro": "سلام! امروز درس خوشمزه داریم: غذا و نوشیدنی. اسم غذاها و خوراکی‌ها رو گروه‌گروه یاد می‌گیری، یاد می‌گیری بگی چی دوست داری، و فرق چیزهای شمارش‌پذیر (an apple) با ناشمارش (some water) رو می‌فهمی؛ همون نکته‌ای که فارسی‌زبان‌ها زیاد اشتباه می‌کنن. آخرش یه منوی خیالی داریم.",
+"bank": [
+{
+"g": "میوه و سبزی",
+"items": [
+"apple, banana, orange, grapes, strawberry, watermelon, melon, peach, cherry, lemon",
+"tomato, potato, onion, garlic, carrot, cucumber, lettuce, pepper, eggplant (US)/aubergine (UK), mushroom"
+]
+},
+{
+"g": "گوشت، لبنیات و نان",
+"items": [
+"meat, chicken, beef, lamb, fish, eggs",
+"bread, rice, pasta, noodles",
+"milk, cheese, butter, yogurt, cream"
+]
+},
+{
+"g": "غذا و خوراکی",
+"items": [
+"soup, salad, sandwich, burger, pizza, kebab, stew",
+"breakfast cereal, honey, jam",
+"snack = تنقلات",
+"dessert / cake / ice cream / chocolate / cookies (US) / biscuits (UK)",
+"salt, pepper, sugar, oil"
+]
+},
+{
+"g": "نوشیدنی",
+"items": [
+"water, tea, coffee, juice, milk, soda (US) / fizzy drink (UK)",
+"a cup of tea / a glass of water / a bottle of juice / a can of soda"
+]
+},
+{
+"g": "طعم و نظر",
+"items": [
+"delicious / tasty = خوشمزه",
+"sweet / salty / sour / spicy / bitter",
+"I like… / I love… / I don't like… / I hate…",
+"I'm hungry / thirsty = گرسنه / تشنه‌ام",
+"vegetarian = گیاه‌خوار",
+"I'm allergic to… = به … حساسیت دارم"
+]
+}
+],
+"patterns": [
+"I like chicken, but I don't like fish.",
+"Do you like coffee? — Yes, I love it.",
+"There's some milk in the fridge.",
+"Are there any eggs? — No, there aren't any.",
+"How many apples do you want? — Three, please.",
+"How much water do you drink a day?"
+],
+"checks": [
+"water شمارش‌پذیره یا نه؟ (ناشمارش: some water، نه a water)",
+"How much bread یا How many bread؟",
+"«سه تا تخم‌مرغ» → three eggs",
+"«یک فنجان چای» → a cup of tea"
+],
+"roleplay": [
+"خرید از سوپرمارکت با لیست خرید",
+"دوستت را برای شام دعوت می‌کنی و می‌پرسی چه دوست دارد"
+],
+"personal": [
+"What's your favorite food?",
+"What do you usually have for breakfast?",
+"Is there any food you don't like?",
+"How much coffee do you drink?"
+],
+"grammar": {
+"point": "شمارش‌پذیر/ناشمارش، some/any، How much/How many، like",
+"examples": [
+"an egg / some eggs",
+"some rice (نه a rice)",
+"How many bananas? How much milk?",
+"I like apples. (اسم جمع بعد از like برای کلی)"
+],
+"rule": "اسم شمارش‌پذیر a/an و جمع می‌گیرد؛ ناشمارش (water, rice, bread, milk) نه a می‌گیرد نه جمع. some در جملهٔ مثبت، any در منفی و سؤال. How many برای شمارش‌پذیر، How much برای ناشمارش.",
+"drill": [
+"یه کم پنیر داریم →",
+"نون داریم؟ →",
+"چندتا پرتقال می‌خوای؟ →",
+"من ماهی دوست ندارم →"
+]
+},
+"pron": [
+"vegetable ≈ «وِجتِبِل» (سه بخش)",
+"chocolate ≈ «چاکلِت»",
+"yogurt ≈ US «یوگِرت» / UK «یاگِت»"
+],
+"quiz": [
+"___ rice → some",
+"How ___ apples? → many",
+"«تشنه‌ام» → I'm thirsty.",
+"«بیسکویت» آمریکایی → cookies",
+"«به بادام‌زمینی حساسیت دارم» → I'm allergic to peanuts."
+]
+},
+"abilities": {
+"goal": "بتوانی دربارهٔ ورزش‌ها، سرگرمی‌ها و توانایی‌هایت با can/can't حرف بزنی و از دیگران بپرسی چه کاری بلدند.",
+"intro": "سلام! امروز دربارهٔ استعدادهاته: ورزش‌ها، هنرها و کارهایی که بلدی یا بلد نیستی. با can و can't حرف می‌زنیم، و یه نکتهٔ تلفظ مهم یاد می‌گیری: نیتیوها can رو تو جمله خیلی کوتاه می‌گن «کِن»، ولی can't رو کشیده. آخرش یه مصاحبهٔ «استعدادیابی» داریم!",
+"bank": [
+{
+"g": "ورزش‌ها (play / go / do)",
+"items": [
+"play football (UK)/soccer (US), basketball, volleyball, tennis, ping-pong, chess",
+"go swimming, go running, go cycling, go skiing, go hiking",
+"do yoga, do karate, do exercise, do gymnastics"
+]
+},
+{
+"g": "توانایی‌ها",
+"items": [
+"swim, run fast, ride a bike, drive a car",
+"cook, bake a cake",
+"sing, dance, draw, paint",
+"play the piano / the guitar / the violin",
+"speak English / Arabic",
+"use a computer, code / program",
+"fix things, sew",
+"juggle, whistle"
+]
+},
+{
+"g": "درجهٔ مهارت",
+"items": [
+"very well / well / quite well / a little / not at all",
+"I'm good at… = در … خوبم",
+"I'm bad at… / not very good at…",
+"talent / talented = استعداد / بااستعداد",
+"hobby = سرگرمی"
+]
+}
+],
+"patterns": [
+"I can swim, but I can't dive.",
+"Can you cook? — Yes, I can. / No, I can't.",
+"She can speak three languages.",
+"I can play the guitar a little.",
+"I'm good at drawing.",
+"I play tennis on Mondays. I go swimming in summer."
+],
+"checks": [
+"play, go, do: «یوگا می‌کنم» → I do yoga",
+"I can to swim یا I can swim؟",
+"«گیتار می‌زنم» با the یا بدون the؟ (play the guitar)",
+"در جمله can را چطور تلفظ می‌کنیم؟ (کِن)"
+],
+"roleplay": [
+"مصاحبه برای یک تیم ورزشی",
+"دوستت می‌خواهد کلاسی انتخاب کند و از توانایی‌هایت می‌پرسد"
+],
+"personal": [
+"Can you swim?",
+"What sports do you play?",
+"Can you play a musical instrument?",
+"What are you good at?"
+],
+"grammar": {
+"point": "can / can't برای توانایی",
+"examples": [
+"I can drive.",
+"He can't sing.",
+"Can they dance? — Yes, they can."
+],
+"rule": "بعد از can فعل ساده می‌آید (بدون to و بدون s): She can swim (نه cans، نه can to). سؤال: Can you…? جواب کوتاه: Yes, I can / No, I can't.",
+"drill": [
+"من می‌تونم کیک بپزم →",
+"اون نمی‌تونه رانندگی کنه →",
+"می‌تونی پیانو بزنی؟ →"
+]
+},
+"pron": [
+"can در جمله ≈ «کِن»، در جواب کوتاه ≈ «کَن»",
+"can't: US «کَنت» / UK «کانت»"
+],
+"quiz": [
+"«شنا می‌کنم» → I go swimming",
+"She can ___ (sing / sings / to sing) → sing",
+"«در نقاشی خوبم» → I'm good at painting.",
+"«فوتبال» آمریکایی → soccer",
+"جواب کوتاه منفی Can you ski? → No, I can't."
+]
+},
+"dates": {
+"goal": "بتوانی تاریخ، ماه، روز و اعداد ترتیبی را درست بگویی، دربارهٔ تولد و جشن‌ها حرف بزنی و برنامهٔ آینده را با be going to بگویی.",
+"intro": "سلام! امروز دربارهٔ تاریخ‌ها و تولدهاست. یاد می‌گیری اعداد ترتیبی (first, second, third…)، ماه‌ها و روزها رو بگی، تاریخ رو به دو شکل آمریکایی و بریتانیایی بخونی، و دربارهٔ جشن تولدت بگی چه برنامه‌ای داری: I'm going to…",
+"bank": [
+{
+"g": "روزهای هفته",
+"items": [
+"Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday",
+"weekday / weekend",
+"today / tomorrow / yesterday",
+"next week / last week / this weekend"
+]
+},
+{
+"g": "ماه‌ها و فصل‌ها",
+"items": [
+"January, February, March, April, May, June, July, August, September, October, November, December",
+"in January (ماه با in)",
+"on Monday / on 5th May (روز و تاریخ با on)"
+]
+},
+{
+"g": "اعداد ترتیبی",
+"items": [
+"1st first, 2nd second, 3rd third, 4th fourth, 5th fifth, 8th eighth, 9th ninth, 12th twelfth, 20th twentieth, 21st twenty-first, 30th thirtieth"
+]
+},
+{
+"g": "تولد و جشن",
+"items": [
+"birthday / birthday party / cake / candles / present (gift)",
+"Happy birthday! / Many happy returns!",
+"celebrate = جشن گرفتن",
+"anniversary = سالگرد",
+"New Year / Nowruz / Christmas / Eid",
+"invite / guests / have a party",
+"be born = به دنیا آمدن (When were you born?)"
+]
+}
+],
+"patterns": [
+"When's your birthday? — It's on the twelfth of May. / It's May 12th.",
+"What's the date today? — It's November 11th.",
+"I was born in 1990.",
+"I'm going to have a party this weekend.",
+"We're going to celebrate Nowruz with my family."
+],
+"checks": [
+"تاریخ رو بریتانیایی و آمریکایی چطور می‌گیم؟ (the 5th of May / May 5th)",
+"in May یا on May؟",
+"«۲۲ام» → twenty-second",
+"02/03 در آمریکا یعنی چه روزی؟ (February 3rd)"
+],
+"roleplay": [
+"برنامه‌ریزی جشن تولد با دوستت",
+"دعوت کردن همکار به جشن نوروز"
+],
+"personal": [
+"When's your birthday?",
+"How do you usually celebrate your birthday?",
+"What are you going to do this weekend?",
+"What's your favorite holiday?"
+],
+"grammar": {
+"point": "be going to برای برنامه + اعداد ترتیبی و حروف اضافهٔ زمان",
+"examples": [
+"I'm going to buy a cake.",
+"Are you going to invite Ali? — Yes, I am.",
+"She isn't going to work tomorrow.",
+"in 2025, in March, on Friday, at 8 p.m."
+],
+"rule": "برای برنامه‌ای که از قبل تصمیمش را گرفته‌ای: am/is/are + going to + فعل ساده. in برای ماه/سال/فصل، on برای روز و تاریخ، at برای ساعت.",
+"drill": [
+"این آخر هفته می‌خوام مهمونی بگیرم →",
+"کی به دنیا اومدی؟ →",
+"تولدم ۲۱ آذره →"
+]
+},
+"pron": [
+"going to ≈ «گانا» در گفتار خودمونی",
+"th در fifth, twelfth: سخت است؛ آرام تمرین کن",
+"Wednesday ≈ «وِنزدِی» (d خوانده نمی‌شود)"
+],
+"quiz": [
+"ترتیبی ۳ → third",
+"___ Monday → on",
+"«می‌خوام کیک بپزم» → I'm going to bake a cake.",
+"February ≈ «فِبرواِری»",
+"«تولدت مبارک» → Happy birthday!"
+]
+},
+"body": {
+"goal": "بتوانی اعضای بدن را نام ببری، بگویی کجایت درد می‌کند و بیماری‌های رایج را توضیح بدهی، و به دیگران توصیه بدهی.",
+"intro": "سلام! امروز دربارهٔ بدن و سلامتی‌ه؛ چیزی که تو سفر یا پیش دکتر خیلی لازمت می‌شه. اعضای بدن رو از سر تا پا یاد می‌گیری، یاد می‌گیری بگی I have a headache، و چطور به کسی که مریضه توصیه کنی (Take some medicine, Don't go out). بعد یه نقش‌بازی تو مطب داریم.",
+"bank": [
+{
+"g": "سر و صورت",
+"items": [
+"head, hair, face, forehead",
+"eye(s), eyebrow, eyelash, ear(s), nose, mouth, lips, teeth (tooth), tongue",
+"cheek, chin, neck, throat"
+]
+},
+{
+"g": "بدن",
+"items": [
+"shoulder, arm, elbow, wrist, hand, finger(s), thumb, nail",
+"chest, back, stomach / tummy, waist, hip",
+"leg, knee, ankle, foot (feet), toe(s), heel",
+"skin, bone, heart, lungs, blood"
+]
+},
+{
+"g": "بیماری و درد",
+"items": [
+"headache / stomachache / toothache / backache / earache",
+"a sore throat = گلودرد",
+"a cold / the flu = سرماخوردگی / آنفولانزا",
+"a fever (US) / a temperature (UK) = تب",
+"a cough / sneeze / runny nose = سرفه / عطسه / آب‌ریزش بینی",
+"I feel sick (UK: حالت تهوع؛ US: مریض) / dizzy / tired",
+"hurt: My back hurts. = کمرم درد می‌کند",
+"pain / painful",
+"What's the matter? / What's wrong? = چی شده؟"
+]
+},
+{
+"g": "درمان و توصیه",
+"items": [
+"take medicine / a pill / painkillers",
+"see a doctor / go to the doctor's",
+"stay in bed / rest",
+"drink lots of water",
+"Get well soon! = زود خوب شو",
+"pharmacy (US) / chemist's (UK) = داروخانه",
+"prescription = نسخه"
+]
+}
+],
+"patterns": [
+"What's the matter? — I have a headache.",
+"My knee hurts.",
+"I have a sore throat and a fever.",
+"Take a painkiller and rest.",
+"Don't go to work today.",
+"You look tired. Are you OK?"
+],
+"checks": [
+"جمع foot و tooth؟ (feet, teeth)",
+"«سرم درد می‌کنه» به دو روش (I have a headache / My head hurts)",
+"I have pain in my head رایجه یا I have a headache؟",
+"در بریتانیا I feel sick یعنی چی؟ (حالت تهوع)"
+],
+"roleplay": [
+"پیش دکتر: علائمت را توضیح می‌دهی",
+"در داروخانه دارو می‌خواهی",
+"همکارت مریض است و توصیه می‌کنی"
+],
+"personal": [
+"How do you feel today?",
+"What do you do when you have a cold?",
+"When was the last time you saw a doctor?"
+],
+"grammar": {
+"point": "What's the matter? / have + بیماری + جملهٔ امری",
+"examples": [
+"I have a cold. She has a stomachache.",
+"Take this medicine twice a day.",
+"Don't eat spicy food."
+],
+"rule": "برای بیماری از have استفاده می‌کنیم (I have a cold، نه I am cold که یعنی سردمه!). جملهٔ امری با فعل ساده شروع می‌شود و منفی‌اش Don't + فعل.",
+"drill": [
+"دندونم درد می‌کنه →",
+"تب داره →",
+"زیاد آب بخور →",
+"امروز بیرون نرو →"
+]
+},
+"pron": [
+"stomach ≈ «اِستامِک»",
+"ache ≈ «اِیک» (headache ≈ «هِدِیک»)",
+"throat (th بی‌صدا)"
+],
+"quiz": [
+"«گلودرد» → a sore throat",
+"جمع tooth → teeth",
+"«چی شده؟» → What's the matter?",
+"«قرص مسکن» → painkiller",
+"«سرد نیست، سرما خورده» → He has a cold."
+]
+},
+"city": {
+"goal": "بتوانی مکان‌های شهر را نام ببری، آدرس بپرسی و بدهی و مسیر را دنبال کنی.",
+"intro": "سلام! تصور کن تازه رسیدی یه شهر خارجی و دنبال داروخانه می‌گردی. امروز یاد می‌گیری مؤدبانه آدرس بپرسی (Excuse me, how do I get to…?)، مسیر رو بفهمی و خودت به یه توریست آدرس بدی. با یه نقشهٔ خیالی بازی می‌کنیم.",
+"bank": [
+{
+"g": "مکان‌های شهر",
+"items": [
+"bank, post office, pharmacy, hospital, police station",
+"supermarket, shopping mall, market, bakery, bookstore",
+"restaurant, café, hotel, cinema (UK)/movie theater (US), museum, park, library, gym, mosque, church",
+"bus stop, train station, subway (US)/underground (UK), airport, parking lot (US)/car park (UK), gas station (US)/petrol station (UK)",
+"square, bridge, traffic lights, corner, crossroads / intersection, roundabout"
+]
+},
+{
+"g": "مسیر دادن",
+"items": [
+"go straight (ahead) / go along this street",
+"turn left / turn right",
+"take the first / second left",
+"go past the bank = از کنار بانک رد شو",
+"cross the street",
+"at the end of the street",
+"on the left / on your right",
+"next to / opposite (UK) / across from (US) / between / behind / near",
+"It's a five-minute walk = پنج دقیقه پیاده"
+]
+},
+{
+"g": "پرسیدن مسیر",
+"items": [
+"Excuse me, where's the nearest pharmacy?",
+"How do I get to the station?",
+"Is it far from here? / Is it near here?",
+"Can you show me on the map?",
+"Sorry, I'm not from around here."
+]
+}
+],
+"patterns": [
+"Excuse me, is there a bank near here? — Yes, there's one on Park Street.",
+"Go straight and turn left at the traffic lights.",
+"It's opposite the post office.",
+"It's next to the bakery, on your right.",
+"How far is it? — It's about ten minutes on foot."
+],
+"checks": [
+"opposite آمریکایی چی می‌شه؟ (across from)",
+"«دومین خیابان سمت راست» → the second right",
+"مترو در لندن و نیویورک چی می‌گن؟"
+],
+"roleplay": [
+"توریستی در خیابان از تو آدرس موزه را می‌پرسد",
+"در شهر غریب دنبال داروخانه می‌گردی"
+],
+"personal": [
+"What's near your home?",
+"How do you get from your home to work?",
+"What's your favorite place in your city?"
+],
+"grammar": {
+"point": "پرسیدن و دادن آدرس با جملهٔ امری و حروف اضافهٔ مکان",
+"examples": [
+"Where is the museum?",
+"Turn right at the corner.",
+"It's between the bank and the café."
+],
+"rule": "برای آدرس دادن از جملهٔ امری (Go, Turn, Take, Cross) استفاده می‌کنیم. برای سؤال مؤدبانه با Excuse me شروع کن.",
+"drill": [
+"ببخشید، نزدیک‌ترین بانک کجاست؟ →",
+"مستقیم برو و سر چهارراه بپیچ راست →",
+"روبه‌روی پارکه →"
+]
+},
+"pron": [
+"Excuse me ≈ «اِکسکیوزمی»",
+"straight ≈ «اِستِرِیت»",
+"turn left ≈ «تِرنلِفت»"
+],
+"quiz": [
+"«چراغ راهنمایی» → traffic lights",
+"«پمپ بنزین» آمریکایی → gas station",
+"«دور است؟» → Is it far?",
+"«روبه‌روی» → opposite",
+"«پنج دقیقه پیاده» → a five-minute walk"
+]
+},
+"weekend": {
+"goal": "بتوانی دربارهٔ آخر هفته و کارهای گذشته‌ات با گذشتهٔ ساده (باقاعده و بی‌قاعده) حرف بزنی و از دیگران بپرسی.",
+"intro": "سلام! آخر هفته چی کار کردی؟ امروز یاد می‌گیری درباره گذشته حرف بزنی: فعل‌های باقاعده با ed و مهم‌ترین فعل‌های بی‌قاعده مثل went, saw, ate. سه جور تلفظ ed رو هم یاد می‌گیری (worked / played / wanted). از این درس سعی می‌کنم بیشترِ سؤال‌ها رو انگلیسی بپرسم.",
+"bank": [
+{
+"g": "کارهای آخر هفته",
+"items": [
+"stay at home / relax / sleep late",
+"visit my family / friends",
+"go out / go shopping / go to the cinema / go to a café",
+"eat out = بیرون غذا خوردن",
+"have a picnic / go to the park",
+"watch a movie / a series",
+"clean the house / do the laundry",
+"play games / play football",
+"meet friends / hang out = وقت گذراندن",
+"go on a trip / go to the mountains / the beach"
+]
+},
+{
+"g": "فعل‌های بی‌قاعدهٔ پرکاربرد",
+"items": [
+"go → went, have → had, do → did, see → saw, eat → ate, drink → drank, buy → bought, meet → met, make → made, take → took, get → got, come → came, sleep → slept, read → read, write → wrote, swim → swam, spend → spent, leave → left"
+]
+},
+{
+"g": "نشانه‌های زمان گذشته",
+"items": [
+"yesterday, last night, last weekend, last Friday",
+"two days ago, a week ago",
+"on Saturday, at the weekend (UK) / on the weekend (US)"
+]
+},
+{
+"g": "واکنش",
+"items": [
+"That sounds fun! / Sounds great!",
+"Really? / Oh no!",
+"Lucky you! = خوش به حالت",
+"How was your weekend? — It was great / relaxing / boring."
+]
+}
+],
+"patterns": [
+"How was your weekend? — It was great, thanks.",
+"What did you do on Saturday? — I visited my parents.",
+"I went to the cinema and watched a comedy.",
+"Did you go out? — Yes, I did. / No, I didn't.",
+"I didn't do much. I stayed at home."
+],
+"checks": [
+"ed در worked چطور تلفظ می‌شه؟ (ت)، در played؟ (د)، در wanted؟ (اِد)",
+"Did you went یا Did you go؟",
+"«دیروز» با ago می‌گیم یا last؟ (yesterday؛ ago بعد از مدت)"
+],
+"roleplay": [
+"صبح دوشنبه همکارت دربارهٔ آخر هفته‌ات می‌پرسد",
+"تعریف کردن یک سفر کوتاه برای دوستت"
+],
+"personal": [
+"How was your weekend?",
+"What did you do last Friday?",
+"Where did you go?",
+"Did you meet anyone?"
+],
+"grammar": {
+"point": "گذشتهٔ ساده: باقاعده، بی‌قاعده، سؤال و منفی",
+"examples": [
+"I watched a film. (باقاعده)",
+"We went to the park. (بی‌قاعده)",
+"Did you cook? — No, I didn't.",
+"She didn't come."
+],
+"rule": "فعل گذشته برای همهٔ اشخاص یکی است. سؤال با Did و منفی با didn't، و بعدشان فعل ساده (Did you go، نه Did you went).",
+"drill": [
+"دیروز خرید رفتم →",
+"شنبه چی کار کردی؟ →",
+"فیلم ندیدم →",
+"با دوستام بیرون غذا خوردیم →"
+]
+},
+"pron": [
+"worked ≈ «وُرکت»، played ≈ «پلِید»، visited ≈ «ویزیتِد»",
+"bought ≈ «بات/بُت»"
+],
+"quiz": [
+"گذشتهٔ buy → bought",
+"«دو روز پیش» → two days ago",
+"Did she ___ (come/came)? → come",
+"«آخر هفته‌ات چطور بود؟» → How was your weekend?",
+"«خوش به حالت» → Lucky you!"
+]
+},
+"lifestory": {
+"goal": "بتوانی داستان زندگی‌ات را تعریف کنی: کجا و کی به دنیا آمدی، کجا درس خواندی، اتفاق‌های مهم زندگی؛ با was/were و گذشتهٔ ساده.",
+"intro": "سلام! امروز می‌خوام داستان زندگیت رو به انگلیسی بشنوم! یاد می‌گیری بگی Where were you born?، دوران مدرسه و دانشگاه رو تعریف کنی و اتفاق‌های مهم زندگی رو به ترتیب بگی. من اول داستان زندگی خودم رو تعریف می‌کنم، بعد نوبت تو.",
+"bank": [
+{
+"g": "مراحل زندگی",
+"items": [
+"be born = به دنیا آمدن",
+"grow up = بزرگ شدن",
+"childhood / teenager / adult = کودکی / نوجوان / بزرگسال",
+"go to school / primary school / high school / university",
+"graduate (from) = فارغ‌التحصیل شدن",
+"get a degree = مدرک گرفتن",
+"get a job / start work",
+"move to (a city/country) = نقل مکان کردن",
+"fall in love / get engaged / get married",
+"have a baby / have children",
+"retire = بازنشسته شدن"
+]
+},
+{
+"g": "توصیف گذشته",
+"items": [
+"I was born in Shiraz in 1992.",
+"When I was a child, …",
+"At the age of 18, …",
+"After that / Then / Later / Finally",
+"I was shy / happy / naughty as a child."
+]
+},
+{
+"g": "سؤال درباره گذشته",
+"items": [
+"Where were you born?",
+"When did you start school?",
+"What was your first job?",
+"Where did you grow up?",
+"Were you a good student?"
+]
+}
+],
+"patterns": [
+"I was born in Tehran in 1995.",
+"I grew up in a small town.",
+"I went to university in Isfahan and graduated in 2018.",
+"Then I moved to Muscat and got a job.",
+"Were you a good student? — Yes, I was. / No, I wasn't."
+],
+"checks": [
+"I born in… درسته؟ (نه؛ I was born in…)",
+"was یا were برای you؟",
+"in 1990 یا on 1990؟"
+],
+"roleplay": [
+"مصاحبهٔ کاری: دربارهٔ تحصیل و سابقه‌ات می‌پرسند",
+"آشنایی با دوست جدید و تعریف دوران کودکی"
+],
+"personal": [
+"Where were you born?",
+"Where did you grow up?",
+"What was your favorite subject at school?",
+"When did you start your first job?"
+],
+"grammar": {
+"point": "was/were و گذشتهٔ ساده با When/Where",
+"examples": [
+"I was born in 1990.",
+"We were very happy.",
+"Where were you last night?",
+"She wasn't at home."
+],
+"rule": "was برای I/he/she/it، were برای you/we/they. «به دنیا آمدم» همیشه I was born است. سؤال: Where were you…? منفی: wasn't / weren't.",
+"drill": [
+"من سال ۱۳۷۰ تو شیراز به دنیا اومدم →",
+"بچگی خجالتی بودم →",
+"کجا بزرگ شدی؟ →"
+]
+},
+"pron": [
+"born ≈ US «بُرن» / UK «بُن»",
+"were ≈ «وِر» (ضعیف «وِ»)",
+"graduated ≈ «گرَجوئِیتِد»"
+],
+"quiz": [
+"«به دنیا آمدم» → I was born",
+"گذشتهٔ grow up → grew up",
+"You ___ (was/were) → were",
+"«فارغ‌التحصیل شدم» → I graduated",
+"«کجا بزرگ شدی؟» → Where did you grow up?"
+]
+},
+"phone": {
+"goal": "بتوانی تلفنی صحبت کنی، پیام بگذاری، کسی را دعوت کنی و دعوت را مؤدبانه قبول یا رد کنی.",
+"intro": "سلام! تلفن زدن به انگلیسی برای خیلی‌ها استرس داره؛ امروز این استرس رو با هم برطرف می‌کنیم. جمله‌های آماده برای شروع تماس، خواستن کسی، پیغام گذاشتن، دعوت کردن (Would you like to…?) و قبول یا رد مؤدبانه رو یاد می‌گیری. بعد یه تماس واقعی رو تمرین می‌کنیم: من زنگ می‌زنم، تو جواب بده!",
+"bank": [
+{
+"g": "شروع و پایان تماس",
+"items": [
+"Hello, this is Rasta. (نه I am Rasta) = سلام، رستا هستم",
+"Hi, it's me! (خودمونی)",
+"Can I speak to Sara, please? / Is Sara there?",
+"Who's calling? / Who's this? = شما؟",
+"Hold on, please / Just a moment = گوشی",
+"I'll call you back = بعداً زنگ می‌زنم",
+"Talk to you later / Speak soon (UK) = بعداً حرف می‌زنیم"
+]
+},
+{
+"g": "پیام و مشکل",
+"items": [
+"She isn't here right now. Can I take a message?",
+"Can I leave a message?",
+"Could you ask him to call me back?",
+"Sorry, you're breaking up / The line is bad = صدات قطع و وصل میشه",
+"Could you speak more slowly / louder, please?",
+"wrong number = اشتباه گرفتید",
+"text / message / voice message = پیامک / پیام / پیام صوتی",
+"missed call = تماس بی‌پاسخ"
+]
+},
+{
+"g": "دعوت",
+"items": [
+"Would you like to come to dinner on Friday?",
+"Do you want to go to the cinema?",
+"How about… / What about…? = نظرت درباره … چیه؟",
+"Let's… = بیا …"
+]
+},
+{
+"g": "قبول و رد مؤدبانه",
+"items": [
+"I'd love to! / Sounds great! / Sure, why not?",
+"I'm sorry, I can't. I have to work.",
+"I'd love to, but I'm busy on Friday.",
+"Maybe another time? = شاید یه وقت دیگه"
+]
+}
+],
+"patterns": [
+"Hello, this is Rasta. Can I speak to Mr Karimi, please?",
+"He's in a meeting. Can I take a message?",
+"Would you like to come to my party? — I'd love to!",
+"Do you want to have coffee with me? — Sorry, I can't. Maybe next week?",
+"Can you call me back later?"
+],
+"checks": [
+"پشت تلفن «من رستا هستم» → This is Rasta (نه I am Rasta)",
+"would like to و want to چه فرقی دارن؟ (اولی مؤدبانه‌تر)",
+"«دعوتش کن» → invite him (ضمیر مفعولی)"
+],
+"roleplay": [
+"زنگ می‌زنی دفتر یک شرکت و مدیر نیست؛ پیغام می‌گذاری",
+"دوستت را برای شام دعوت می‌کنی؛ او اول رد می‌کند بعد قبول",
+"قرار گذاشتن روز و ساعت مناسب"
+],
+"personal": [
+"Do you prefer calling or texting?",
+"Would you like to go out this weekend?",
+"Who do you call most often?"
+],
+"grammar": {
+"point": "would like / want to + ضمیرهای مفعولی",
+"examples": [
+"Would you like to come?",
+"I'd like a coffee, please.",
+"Call me tomorrow.",
+"I'll invite them."
+],
+"rule": "would like ('d like) مؤدبانهٔ want است و بعدش to + فعل یا اسم. ضمیرهای مفعولی (me, you, him, her, it, us, them) بعد از فعل می‌آیند: Call him (نه call he).",
+"drill": [
+"می‌خوای فردا شب بیای سینما؟ →",
+"بهش بگو بهم زنگ بزنه →",
+"دوست دارم بیام، ولی سرم شلوغه →"
+]
+},
+"pron": [
+"Would you ≈ «وُجو»",
+"I'd love to ≈ «آیدلاوتو»",
+"Can I take a message ≈ «کِنای تِیکِ مِسِج»"
+],
+"quiz": [
+"«گوشی خدمتتون» → Hold on, please.",
+"«اشتباه گرفتید» → Wrong number.",
+"رد مؤدبانه → I'd love to, but I can't.",
+"«بهش (زن) زنگ بزن» → Call her.",
+"«می‌تونم پیغام بذارم؟» → Can I leave a message?"
+]
+}
+}

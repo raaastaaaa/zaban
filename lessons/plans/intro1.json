@@ -1,0 +1,867 @@
+{
+"hello": {
+"goal": "بتوانی با هر کسی (دوست، همکار، رئیس، غریبه) درست و طبیعی سلام و احوالپرسی کنی، خودت را معرفی کنی، اسمت را هجی کنی و خداحافظی کنی؛ و بدانی کدام جمله رسمی است و کدام خودمونی.",
+"intro": "سلام! خوش اومدی به اولین جلسه. امروز یه مهارت خیلی مهم یاد می‌گیری: اینکه وقتی یه خارجی رو می‌بینی، دقیقاً مثل خودشون سلام کنی، حالشو بپرسی، خودتو معرفی کنی و خداحافظی کنی. اول برات توضیح می‌دم هر جمله کجا و با کی گفته می‌شه، بعد با هم تمرینش می‌کنیم، یه مکالمهٔ واقعی گوش می‌دیم و نقش‌بازی می‌کنیم، آخرش هم یه کوییز کوچیک. چون جلسهٔ اوله، بیشتر فارسی توضیح می‌دم و جمله‌های انگلیسی رو آروم و واضح می‌گم.",
+"bank": [
+{
+"g": "سلام کردن",
+"items": [
+"Hello = سلام (خنثی/کمی رسمی؛ با همه)",
+"Hi = سلام (خودمونی؛ دوست، همکار، فروشنده)",
+"Hey = سلام (خیلی خودمونی؛ فقط دوست صمیمی)",
+"Good morning = صبح بخیر (تا ظهر؛ محل کار)",
+"Good afternoon = بعدازظهر بخیر (رسمی؛ ظهر تا عصر)",
+"Good evening = عصر/شب بخیر موقع دیدار (رسمی)",
+"Hiya / Hey there = سلام (خیلی خودمونی؛ بریتانیا)"
+]
+},
+{
+"g": "پرسیدن حال",
+"items": [
+"How are you? = حالت چطوره؟ (خنثی)",
+"How are you doing? = چطوری؟ (خودمونی)",
+"How's it going? = اوضاع چطوره؟ (خودمونی)",
+"What's up? = چه خبر؟ (خیلی خودمونی؛ جوابش: Not much)",
+"How have you been? = این مدت چطور بودی؟ (برای کسی که مدتی ندیدی)",
+"How do you do? = از آشنایی‌تون خوشوقتم (خیلی رسمی و قدیمی؛ جواب: How do you do?)"
+]
+},
+{
+"g": "جواب دادن",
+"items": [
+"I'm fine, thanks. And you? = خوبم ممنون، تو چطور؟",
+"I'm good / Pretty good = خوبم (خودمونی و رایج‌تر از fine)",
+"Not bad = بد نیستم",
+"Great! = عالی!",
+"Not much = خبری نیست (جواب What's up)",
+"So-so / Not great = ای بد نیستم / زیاد خوب نیستم"
+]
+},
+{
+"g": "معرفی خود و دیگران",
+"items": [
+"My name is … / I'm … = اسمم … است",
+"Nice to meet you = از آشنایی‌ات خوشحالم (اولین دیدار)",
+"Nice to meet you too = منم همین‌طور",
+"Pleased to meet you = از آشنایی‌تون خوشوقتم (رسمی‌تر)",
+"This is my friend … = ایشون دوستم … هستن (معرفی دیگری)",
+"What's your name? = اسمت چیه؟",
+"first name / last name (surname) = اسم کوچک / نام خانوادگی",
+"How do you spell that? = چطور هجی می‌شه؟",
+"I'm from … = اهل … هستم",
+"I'm a teacher / an engineer = معلم / مهندس هستم"
+]
+},
+{
+"g": "خداحافظی",
+"items": [
+"Goodbye = خداحافظ (کمی رسمی)",
+"Bye / Bye-bye = خداحافظ (رایج)",
+"See you (later)! = بعداً می‌بینمت",
+"See you tomorrow = فردا می‌بینمت",
+"Take care = مراقب خودت باش",
+"Have a nice day = روز خوبی داشته باشی",
+"Good night = شب بخیر (فقط موقع رفتن/خواب، نه موقع دیدار!)",
+"Nice meeting you / Nice talking to you = از دیدنت خوشحال شدم (پایان اولین دیدار)"
+]
+},
+{
+"g": "کلمه‌های مؤدبانه",
+"items": [
+"Excuse me = ببخشید (برای جلب توجه)",
+"Sorry = ببخشید/متأسفم (عذرخواهی یا نفهمیدن)",
+"Thank you / Thanks = ممنون",
+"You're welcome = خواهش می‌کنم",
+"Mr / Mrs / Ms / Miss + نام خانوادگی = آقای / خانم (رسمی)"
+]
+}
+],
+"patterns": [
+"Hi, I'm Rasta. — Nice to meet you, Rasta.",
+"How are you? — I'm good, thanks. And you?",
+"What's your name? — My name is …",
+"Where are you from? — I'm from Iran.",
+"What do you do? — I'm a/an …",
+"How do you spell your name? — R-A-S-T-A.",
+"Good night ≠ Good evening"
+],
+"checks": [
+"صبح وارد شرکت شدی و مدیرت رو دیدی؛ چی می‌گی؟ (Good morning)",
+"دوست صمیمیت رو توی خیابون دیدی؛ چی می‌گی؟ (Hey! / Hi!)",
+"کسی بهت گفت What's up? چی جواب می‌دی؟ (Not much)",
+"ساعت ۸ شب وارد مهمونی شدی؛ Good night می‌گی یا Good evening؟",
+"اولین بار کسی رو دیدی و داری خداحافظی می‌کنی؛ چی می‌گی؟ (Nice meeting you)",
+"کسی اسمتو پرسید و نفهمید؛ چطور هجی می‌کنی؟"
+],
+"roleplay": [
+"روز اول کار: تو کارمند جدیدی و معلم مدیرت است (رسمی)",
+"کلاس زبان: با هم‌کلاسی تازه آشنا می‌شوی (خودمونی)",
+"هتل: پذیرش اسمت را می‌پرسد و باید هجی کنی"
+],
+"personal": [
+"What's your name?",
+"Where are you from?",
+"What do you do?",
+"How are you today?",
+"How do you spell your last name?"
+],
+"grammar": {
+"point": "فعل to be با I و you",
+"examples": [
+"I am Rasta. → I'm Rasta.",
+"You are a teacher. → You're a teacher.",
+"Are you from Iran? — Yes, I am. / No, I'm not.",
+"What's your name? (= What is)"
+],
+"rule": "بعد از I همیشه am، بعد از you همیشه are. توی حرف زدن معمولاً کوتاهش می‌کنیم: I'm, you're. در جواب کوتاه «Yes, I am» کوتاه نمی‌شه (Yes, I'm غلطه).",
+"drill": [
+"من مهندسم →",
+"تو اهل کانادایی؟ →",
+"من دانشجو نیستم →",
+"اسمت چیه؟ →"
+]
+},
+"pron": [
+"Nice to meet you ≈ «نایس تِ میچا» (وصل شدن t + y)",
+"What's your name ≈ «واتسیِر نِیم»",
+"I'm ≈ «آیم» (I am را جدا نگو)",
+"th در thanks و thank you: نوک زبان بین دندان‌ها، نه «ت» و نه «س»"
+],
+"quiz": [
+"«از آشنایی‌تون خوشوقتم» رسمی → Pleased to meet you",
+"جواب What's up? → Not much",
+"موقع رفتن از مهمونی شب → Good night",
+"Are you a doctor? جواب منفی کوتاه → No, I'm not.",
+"حروف اسم Sara را هجی کن → S-A-R-A",
+"«بعداً می‌بینمت» → See you later"
+]
+},
+"things": {
+"goal": "بتوانی اسم وسایل شخصی و کلاس را بگویی، بپرسی «این چیه؟»، و بگویی چیزی کجاست (روی، زیر، کنار، داخل).",
+"intro": "سلام! امروز می‌ریم سراغ چیزهایی که هر روز دستته: کیف، گوشی، کلید، خودکار… یاد می‌گیری اسمشون رو بگی، بپرسی What's this?، جمعشون ببندی و بگی کجان. اول کلمه‌ها رو گروه‌گروه یادت می‌دم، بعد بازی «کجاست؟» داریم.",
+"bank": [
+{
+"g": "وسایل شخصی",
+"items": [
+"bag / handbag / backpack = کیف / کیف دستی / کوله",
+"wallet / purse = کیف پول (مردانه / زنانه، در آمریکا purse = کیف دستی)",
+"phone / mobile (UK) / cell phone (US) = گوشی",
+"keys = کلیدها",
+"glasses / sunglasses = عینک / عینک آفتابی",
+"watch = ساعت مچی",
+"umbrella = چتر",
+"ID card = کارت شناسایی",
+"charger = شارژر",
+"headphones / earphones = هدفون",
+"tissues = دستمال کاغذی",
+"water bottle = بطری آب",
+"sunglasses = عینک آفتابی",
+"lipstick = رژ لب",
+"comb / hairbrush = شانه / برس"
+]
+},
+{
+"g": "وسایل کلاس و میز کار",
+"items": [
+"book / notebook = کتاب / دفتر",
+"pen / pencil / eraser (US) / rubber (UK) = خودکار / مداد / پاک‌کن",
+"ruler = خط‌کش",
+"dictionary = فرهنگ لغت",
+"laptop / tablet = لپ‌تاپ / تبلت",
+"desk / chair / table = میز تحریر / صندلی / میز",
+"board / whiteboard = تخته",
+"paper / a piece of paper = کاغذ / یک برگ کاغذ",
+"folder / file = پوشه",
+"scissors = قیچی",
+"calendar = تقویم",
+"clock = ساعت دیواری"
+]
+},
+{
+"g": "جای چیزها",
+"items": [
+"in = داخل",
+"on = روی",
+"under = زیر",
+"next to = کنار",
+"behind = پشت",
+"in front of = جلوی",
+"between = بین"
+]
+}
+],
+"patterns": [
+"What's this? — It's a pen.",
+"What are these? — They're keys.",
+"Is this your bag? — Yes, it is. / No, it isn't.",
+"Where's my phone? — It's on the table.",
+"Where are my keys? — They're in your bag.",
+"a book / an umbrella"
+],
+"checks": [
+"قبل از umbrella، a می‌گی یا an؟ چرا؟",
+"اگه یک چیز نزدیکت باشه this می‌گی یا these؟",
+"«کلیدهام کجان؟» → ?",
+"glasses مفرده یا جمع؟ (همیشه جمع: my glasses are…)"
+],
+"roleplay": [
+"دنبال گوشی‌ات می‌گردی و دوستت کمکت می‌کند",
+"در فرودگاه، مأمور می‌پرسد این‌ها چیست"
+],
+"personal": [
+"What's in your bag right now?",
+"Where is your phone now?",
+"Do you have a laptop or a tablet?"
+],
+"grammar": {
+"point": "a/an، this/these، جمع اسم‌ها و حروف اضافهٔ مکان",
+"examples": [
+"a pen, an apple, an umbrella",
+"this pen / these pens",
+"one key, two keys; one watch, two watches; glasses, scissors (همیشه جمع)",
+"It's on the desk. They're under the chair."
+],
+"rule": "a قبل از صدای بی‌صدا، an قبل از صدای صدادار (a, e, i, o, u). جمع معمولاً با s، و بعد از s/sh/ch/x با es. this برای یکی، these برای چندتا.",
+"drill": [
+"یک چتر →",
+"این‌ها خودکارند →",
+"کیفم زیر میزه →",
+"عینکم کجاست؟ →"
+]
+},
+"pron": [
+"these ≈ «ذیز» (th صدادار) نه «زیز»",
+"watches ≈ «واچیز» (es بعد از ch یک بخش اضافه)",
+"What's this ≈ «واتس ذیس»"
+],
+"quiz": [
+"an یا a: ___ eraser → an",
+"جمع box → boxes",
+"«گوشیم روی میزه» → My phone is on the table.",
+"«این‌ها چی‌ان؟» → What are these?",
+"کلمهٔ آمریکایی برای rubber → eraser"
+]
+},
+"countries": {
+"goal": "بتوانی دربارهٔ کشور، ملیت و زبان آدم‌ها بپرسی و جواب بدهی، و جملهٔ منفی و سؤالی با to be بسازی.",
+"intro": "سلام! امروز دور دنیا می‌چرخیم! یاد می‌گیری بپرسی Where are you from? و بگی اهل کجایی، ملیتت چیه و چه زبونی حرف می‌زنی. یه نکتهٔ مهم: در انگلیسی اسم کشور و ملیت همیشه با حرف بزرگ نوشته می‌شه. از این جلسه کمی بیشتر انگلیسی حرف می‌زنم؛ هر جا نفهمیدی بگو.",
+"bank": [
+{
+"g": "کشور → ملیت/زبان",
+"items": [
+"Iran → Iranian (Persian/Farsi language)",
+"Afghanistan → Afghan",
+"Iraq → Iraqi",
+"Turkey → Turkish",
+"the UAE → Emirati",
+"Oman → Omani",
+"Saudi Arabia → Saudi",
+"Pakistan → Pakistani",
+"India → Indian",
+"China → Chinese",
+"Japan → Japanese",
+"South Korea → Korean",
+"Russia → Russian",
+"Germany → German",
+"France → French",
+"Italy → Italian",
+"Spain → Spanish",
+"the UK / Britain → British (English)",
+"the USA / America → American",
+"Canada → Canadian",
+"Australia → Australian",
+"Brazil → Brazilian",
+"Mexico → Mexican",
+"Egypt → Egyptian"
+]
+},
+{
+"g": "زبان‌ها",
+"items": [
+"English, Persian (Farsi), Arabic, Turkish, French, German, Spanish, Chinese, Russian, Hindi, Urdu",
+"speak a language = به زبانی صحبت کردن",
+"native language / mother tongue = زبان مادری",
+"bilingual = دوزبانه"
+]
+},
+{
+"g": "صفت‌های توصیف شهر و کشور",
+"items": [
+"big / small",
+"beautiful / ugly",
+"old / new / modern",
+"hot / cold",
+"busy / quiet",
+"famous = مشهور",
+"friendly = خون‌گرم",
+"expensive / cheap"
+]
+}
+],
+"patterns": [
+"Where are you from? — I'm from Iran. I'm Iranian.",
+"Where is she from? — She's from Brazil.",
+"Are you Turkish? — No, I'm not. I'm Iranian.",
+"Is he American? — Yes, he is.",
+"What languages do you speak? — I speak Persian and a little English.",
+"Tehran is a big, busy city."
+],
+"checks": [
+"Iran ملیتش چی می‌شه؟ Iranian یا Persian؟ (Iranian؛ Persian = زبان/فرهنگ)",
+"«اون ژاپنی نیست» → ?",
+"English با حرف بزرگ نوشته می‌شه یا کوچیک؟"
+],
+"roleplay": [
+"در هاستل با یک مسافر خارجی آشنا می‌شوی",
+"در صف فرودگاه کسی می‌پرسد اهل کجایی"
+],
+"personal": [
+"Where are you from?",
+"Which countries do you want to visit?",
+"What languages do you speak?",
+"Describe your city in three words."
+],
+"grammar": {
+"point": "to be کامل (is/are) در منفی و سؤالی + صفت قبل از اسم",
+"examples": [
+"He is from Spain. Is he from Spain? He isn't from Spain.",
+"They're Chinese. Are they Chinese? They aren't Chinese.",
+"a big city (نه a city big)"
+],
+"rule": "برای سؤال، am/is/are را می‌آوریم اول جمله. برای منفی بعدش not: isn't, aren't, I'm not. صفت همیشه قبل از اسم و هیچ‌وقت جمع بسته نمی‌شه (big cities، نه bigs).",
+"drill": [
+"اون آلمانیه؟ →",
+"ما آمریکایی نیستیم →",
+"شیراز یه شهر قدیمی و زیباست →"
+]
+},
+"pron": [
+"Japanese: تکیه روی آخر «جَپِنیز»",
+"Chinese ≈ «چاینیز»",
+"Iran ≈ «ایران» یا «آیرَن»؛ Iranian ≈ «ایرِینیِن»"
+],
+"quiz": [
+"ملیت France → French",
+"«اهل کجایی؟» → Where are you from?",
+"منفی: She is Italian → She isn't Italian.",
+"a city big یا a big city؟ → a big city",
+"زبان مردم Brazil → Portuguese"
+]
+},
+"clothes": {
+"goal": "بتوانی لباس‌ها و رنگ‌ها را نام ببری، بگویی امروز چه پوشیده‌ای، و دربارهٔ آب‌وهوا و لباس مناسبش حرف بزنی.",
+"intro": "سلام! امروز دربارهٔ لباس، رنگ و آب‌وهوا حرف می‌زنیم. یاد می‌گیری بگی الان چی پوشیدی (I'm wearing…)، رنگ‌ها رو درست جای خودشون بذاری و بگی تو هوای سرد یا گرم چی می‌پوشی. آخر کلاس من چیزی می‌پوشم و تو باید توصیفش کنی!",
+"bank": [
+{
+"g": "لباس‌های روزمره",
+"items": [
+"shirt / T-shirt / blouse = پیراهن / تی‌شرت / بلوز زنانه",
+"trousers (UK) / pants (US) / jeans = شلوار / جین",
+"skirt / dress = دامن / پیراهن زنانه (لباس یکسره)",
+"jacket / coat = کاپشن/کت / پالتو",
+"sweater / jumper (UK) / hoodie = پلیور / سویشرت کلاه‌دار",
+"suit / tie = کت‌وشلوار / کراوات",
+"shorts = شلوارک",
+"pajamas = لباس خواب",
+"scarf / headscarf = شال‌گردن / روسری",
+"hat / cap = کلاه / کلاه نقاب‌دار",
+"socks / shoes / boots / sandals / trainers (UK) / sneakers (US) = جوراب / کفش / چکمه / صندل / کفش ورزشی",
+"gloves = دستکش",
+"belt = کمربند"
+]
+},
+{
+"g": "رنگ‌ها",
+"items": [
+"red, blue, green, yellow, black, white, brown, gray (US)/grey (UK), orange, pink, purple, beige",
+"light blue / dark blue = آبی روشن / آبی تیره",
+"navy = سرمه‌ای",
+"gold / silver = طلایی / نقره‌ای"
+]
+},
+{
+"g": "آب‌وهوا",
+"items": [
+"It's sunny / cloudy / rainy / windy / snowy / foggy",
+"It's hot / warm / cool / cold / freezing",
+"the weather / the temperature = هوا / دما",
+"season: spring, summer, autumn (UK) / fall (US), winter"
+]
+},
+{
+"g": "فعل‌های لباس",
+"items": [
+"wear = پوشیدن/به تن داشتن",
+"put on / take off = پوشیدن / درآوردن",
+"try on = پرو کردن",
+"get dressed = لباس پوشیدن (کامل)"
+]
+}
+],
+"patterns": [
+"What are you wearing today? — I'm wearing a blue shirt and black jeans.",
+"She's wearing a red dress.",
+"What's the weather like? — It's cold and windy.",
+"In winter I wear a coat and boots.",
+"What color is your bag? — It's brown."
+],
+"checks": [
+"«یک پیراهن قرمز» → a red dress یا a dress red؟",
+"pants در آمریکا یعنی چی؟ در بریتانیا چی؟ (US شلوار؛ UK لباس زیر!)",
+"wear و put on چه فرقی دارن؟"
+],
+"roleplay": [
+"دوستت تلفنی می‌پرسد برای مهمانی امشب چه بپوشد",
+"در فروشگاه لباس، رنگ و سایز می‌خواهی"
+],
+"personal": [
+"What are you wearing right now?",
+"What's your favorite color?",
+"What's the weather like today where you are?",
+"What do you wear in summer?"
+],
+"grammar": {
+"point": "حال استمراری برای «الان پوشیده‌ام» و جای صفت",
+"examples": [
+"I'm wearing a jacket.",
+"Are you wearing glasses? — Yes, I am.",
+"He isn't wearing a tie.",
+"a long black coat"
+],
+"rule": "برای چیزی که همین الان تنت است از am/is/are + wearing استفاده کن. صفت (رنگ، اندازه) قبل از اسم می‌آید و جمع بسته نمی‌شود.",
+"drill": [
+"الان یه تی‌شرت سفید پوشیدم →",
+"کراوات زده؟ →",
+"هوا آفتابی و گرمه →"
+]
+},
+"pron": [
+"clothes ≈ «کلوُذز» (تقریباً «کلوز»)",
+"wearing ≈ «وِرینگ»؛ weather ≈ «وِذِر» (th صدادار)",
+"T-shirt ≈ «تی‌شِرت»"
+],
+"quiz": [
+"«شلوار» آمریکایی → pants",
+"«دارم کت می‌پوشم» → I'm putting on my coat.",
+"رنگ سرمه‌ای → navy",
+"«هوا ابری است» → It's cloudy.",
+"فصل پاییز آمریکایی → fall"
+]
+},
+"time": {
+"goal": "بتوانی ساعت را بپرسی و بگویی، کارهای روزانه‌ات را نام ببری و بگویی الان مشغول چه کاری هستی.",
+"intro": "سلام! امروز یاد می‌گیری ساعت رو مثل یه انگلیسی‌زبان بگی (half past seven، quarter to nine…)، کارهای روزانه‌ت رو بگی و اگه کسی پرسید What are you doing? جواب بدی. با یه ساعت خیالی بازی می‌کنیم؛ من ساعت رو می‌گم، تو بگو چه کاری داری می‌کنی!",
+"bank": [
+{
+"g": "گفتن ساعت",
+"items": [
+"What time is it? / What's the time? = ساعت چنده؟",
+"It's seven o'clock = ساعت هفته",
+"It's half past six (UK) / six thirty = شش و نیم",
+"It's quarter past three / three fifteen = سه و ربع",
+"It's quarter to five / four forty-five = یه ربع به پنج",
+"It's ten past eight / twenty to nine",
+"a.m. / p.m. = قبل‌ازظهر / بعدازظهر",
+"noon / midday / midnight = ظهر / نیمه‌شب",
+"at 7 o'clock = سر ساعت ۷",
+"in the morning / in the afternoon / in the evening / at night"
+]
+},
+{
+"g": "کارهای روزانه",
+"items": [
+"wake up / get up = بیدار شدن / از تخت بلند شدن",
+"have a shower / take a shower (US) = دوش گرفتن",
+"brush my teeth = مسواک زدن",
+"get dressed = لباس پوشیدن",
+"have breakfast / lunch / dinner = صبحانه / ناهار / شام خوردن",
+"go to work / go to school = سر کار / مدرسه رفتن",
+"start work / finish work",
+"take a break = استراحت کردن",
+"go home / get home = رفتن / رسیدن به خانه",
+"cook dinner = شام درست کردن",
+"do the dishes = ظرف شستن",
+"watch TV / check my phone",
+"go to bed / go to sleep = رفتن به رختخواب / خوابیدن"
+]
+}
+],
+"patterns": [
+"What time is it? — It's half past nine.",
+"What time do you get up? — At seven.",
+"What are you doing? — I'm cooking.",
+"I'm watching TV right now.",
+"Are you working now? — No, I'm not. I'm having lunch."
+],
+"checks": [
+"۸:۴۵ رو به دو روش بگو",
+"«الان دارم ناهار می‌خورم» → ?",
+"at night یا in the night؟ (at night)",
+"get up و wake up چه فرقی دارن؟"
+],
+"roleplay": [
+"تلفنی دوستت می‌پرسد الان چه می‌کنی",
+"همکارت ساعت جلسه را می‌پرسد"
+],
+"personal": [
+"What time do you usually get up?",
+"What are you doing right now?",
+"What time do you have dinner?",
+"Describe your morning routine."
+],
+"grammar": {
+"point": "ساعت + حال استمراری برای کاری که «الان» انجام می‌شود",
+"examples": [
+"I'm reading a book now.",
+"She's cooking dinner.",
+"What are they doing? — They're playing football."
+],
+"rule": "برای کاری که همین لحظه در جریان است: am/is/are + فعل ing. معمولاً با now / right now / at the moment می‌آید.",
+"drill": [
+"الان دارم انگلیسی یاد می‌گیرم →",
+"بچه‌ها دارن تلویزیون می‌بینن →",
+"داری چی کار می‌کنی؟ →"
+]
+},
+"pron": [
+"half past ≈ «هَف پَست» (UK: «هاف پاست»)",
+"quarter: US «کوُارِر» (t مثل د) / UK «کوُاتا»",
+"What are you doing ≈ «وادِریو دوئینگ»"
+],
+"quiz": [
+"۶:۳۰ → It's half past six",
+"۹:۴۵ → It's quarter to ten",
+"«مسواک زدن» → brush my teeth",
+"«الان داره دوش می‌گیره» → She's having a shower.",
+"قبل از ساعت از چه حرف اضافه‌ای استفاده می‌کنیم؟ → at"
+]
+},
+"family": {
+"goal": "بر همهٔ اعضای خانواده (نزدیک، دور، سببی و ناتنی) مسلط شوی، خانواده‌ات را معرفی کنی و دربارهٔ کار و زندگی آن‌ها با حال ساده حرف بزنی.",
+"intro": "سلام! امروز دربارهٔ خانواده‌ست و می‌خوام به کل «بانک اعضای خانواده» مسلط بشی: از پدر و مادر تا عمه و خاله، پسرعمو، مادرشوهر و برادر ناتنی. چون انگلیسی برای عمه و خاله فقط یک کلمه داره، یاد می‌دم خارجی‌ها چطور دقیقش رو می‌گن. بعد شجره‌نامهٔ خانواده‌ت رو با هم می‌سازیم و تو دربارهٔ خانواده‌ت حرف می‌زنی. از این جلسه سؤال‌های ساده رو انگلیسی می‌پرسم.",
+"bank": [
+{
+"g": "خانوادهٔ نزدیک",
+"items": [
+"family = خانواده",
+"parents = پدر و مادر (والدین)",
+"mother / mom (US) / mum (UK) = مادر / مامان",
+"father / dad = پدر / بابا",
+"children / kids = بچه‌ها",
+"son / daughter = پسر / دختر (فرزند)",
+"brother / sister = برادر / خواهر",
+"siblings = خواهر و برادرها",
+"husband / wife = شوهر / همسر (زن)",
+"spouse / partner = همسر / شریک زندگی",
+"twins = دوقلو",
+"only child = تک‌فرزند",
+"older / younger brother = برادر بزرگ‌تر / کوچک‌تر"
+]
+},
+{
+"g": "پدربزرگ‌ها و نوه‌ها",
+"items": [
+"grandparents = پدربزرگ و مادربزرگ",
+"grandmother / grandma / granny = مادربزرگ",
+"grandfather / grandpa = پدربزرگ",
+"grandchildren = نوه‌ها",
+"grandson / granddaughter = نوهٔ پسر / نوهٔ دختر",
+"great-grandmother = مادرِ مادربزرگ"
+]
+},
+{
+"g": "خانوادهٔ دور (فامیل)",
+"items": [
+"relatives = فامیل، اقوام",
+"aunt = عمه / خاله / زن‌عمو / زن‌دایی (یک کلمه برای همه!)",
+"uncle = عمو / دایی / شوهرعمه / شوهرخاله",
+"my aunt on my mother's side = خاله‌ام (دقیق‌تر: my mom's sister)",
+"my dad's brother = عمویم",
+"cousin = پسرعمو، دخترخاله و… (همهٔ بچه‌های عمو/خاله/دایی/عمه)",
+"nephew = پسرِ برادر/خواهر (برادرزاده/خواهرزادهٔ پسر)",
+"niece = دخترِ برادر/خواهر"
+]
+},
+{
+"g": "خانوادهٔ سببی (in-laws)",
+"items": [
+"in-laws = خانوادهٔ همسر",
+"mother-in-law = مادرشوهر / مادرزن",
+"father-in-law = پدرشوهر / پدرزن",
+"sister-in-law = خواهرشوهر / خواهرزن / زن‌برادر",
+"brother-in-law = برادرشوهر / برادرزن / شوهرخواهر",
+"son-in-law / daughter-in-law = داماد / عروس"
+]
+},
+{
+"g": "خانوادهٔ ناتنی و وضعیت",
+"items": [
+"stepmother / stepfather = نامادری / ناپدری",
+"stepbrother / stepsister = برادر/خواهر ناتنی (از ازدواج والدین)",
+"half-brother / half-sister = برادر/خواهر ناتنی (یک والد مشترک)",
+"single / married / divorced / widowed = مجرد / متأهل / طلاق‌گرفته / بیوه",
+"engaged = نامزد",
+"fiancé / fiancée = نامزد (مرد / زن)",
+"get married = ازدواج کردن",
+"raise / bring up children = بزرگ کردن بچه‌ها",
+"look like / take after = شبیه بودن (ظاهر / اخلاق)",
+"get along with = با کسی کنار آمدن"
+]
+}
+],
+"patterns": [
+"This is my mother. Her name is Mina.",
+"I have two sisters and one brother.",
+"I'm an only child.",
+"My sister works in a bank.",
+"My brother lives in Canada.",
+"Do you have any brothers or sisters? — Yes, I have one brother.",
+"Does your father work? — Yes, he does. He's an engineer.",
+"I look like my mom, but I take after my dad."
+],
+"checks": [
+"«خاله‌ام» رو چطور دقیق می‌گی؟ (my mom's sister / my aunt)",
+"«پسرعموم» → ?",
+"«خواهرزاده‌ام (دختر)» → niece",
+"«زن‌برادرم» → my sister-in-law",
+"his mother یا her mother؟ اگه دربارهٔ برادرت حرف بزنی؟"
+],
+"roleplay": [
+"عکس خانوادگی را به دوست خارجی نشان می‌دهی و هر نفر را معرفی می‌کنی",
+"همکار تازه دربارهٔ خانواده‌ات سؤال می‌کند"
+],
+"personal": [
+"How many people are there in your family?",
+"Do you have any brothers or sisters?",
+"What does your mother do?",
+"Who do you look like?",
+"Do you have any cousins abroad?"
+],
+"grammar": {
+"point": "حال ساده (سوم‌شخص s) + صفات ملکی",
+"examples": [
+"My sister works downtown.",
+"He lives with my parents.",
+"Does she have children? — Yes, she does.",
+"He doesn't work on Fridays.",
+"my, your, his, her, our, their"
+],
+"rule": "در حال ساده برای he/she/it به فعل s اضافه می‌شود (works, lives, has). سؤال با Does و منفی با doesn't، و بعدشان فعل بدون s. his برای مرد، her برای زن.",
+"drill": [
+"پدرم توی بیمارستان کار می‌کنه →",
+"خواهرت بچه داره؟ →",
+"برادرم با ما زندگی نمی‌کنه →",
+"اسم مادرش (مادرِ علی) مریمه →"
+]
+},
+"pron": [
+"mother / brother ≈ «مادِر/برادِر» با th صدادار (ذ)",
+"cousin ≈ «کازِن»",
+"niece ≈ «نیس»؛ nephew ≈ «نِفیو»",
+"daughter ≈ «دادِر» (US) / «دُتا» (UK)"
+],
+"quiz": [
+"«مادرشوهر» → mother-in-law",
+"«نوهٔ دختر» → granddaughter",
+"«برادر ناتنی (یک والد مشترک)» → half-brother",
+"He work یا He works؟ → He works",
+"«تو خواهر یا برادر داری؟» → Do you have any brothers or sisters?",
+"«شبیه مادرم هستم» → I look like my mother."
+]
+},
+"home": {
+"goal": "بتوانی اتاق‌ها، وسایل و امکانات خانه را نام ببری، خانه‌ات را توصیف کنی و بگویی چه چیزی کجاست.",
+"intro": "سلام! امروز می‌ریم خونه! اسم اتاق‌ها و وسایل هر اتاق رو یاد می‌گیری و با There is / There are خونه‌ت رو توصیف می‌کنی. آخرش تو باید خونه‌ت رو برام طوری توصیف کنی که بتونم تو ذهنم بکشمش.",
+"bank": [
+{
+"g": "نوع خانه و بخش‌ها",
+"items": [
+"house / flat (UK) / apartment (US) = خانه / آپارتمان",
+"floor (first floor, ground floor UK) = طبقه",
+"stairs / elevator (US) / lift (UK) = پله / آسانسور",
+"balcony / yard (US) / garden (UK) / garage / roof = بالکن / حیاط / پارکینگ / پشت‌بام",
+"neighbor = همسایه",
+"rent / own = اجاره‌ای / ملکی"
+]
+},
+{
+"g": "اتاق‌ها",
+"items": [
+"living room / sitting room = اتاق نشیمن",
+"bedroom = اتاق خواب",
+"kitchen = آشپزخانه",
+"bathroom / toilet = حمام / دستشویی",
+"dining room = اتاق ناهارخوری",
+"hall / hallway = راهرو",
+"study / home office = اتاق کار"
+]
+},
+{
+"g": "وسایل و مبلمان",
+"items": [
+"sofa / couch / armchair = کاناپه / مبل یک‌نفره",
+"bed / pillow / blanket = تخت / بالش / پتو",
+"wardrobe (UK) / closet (US) = کمد لباس",
+"shelf / bookcase = قفسه / کتابخانه",
+"carpet / rug / curtains = فرش / قالیچه / پرده",
+"lamp / light = چراغ",
+"mirror = آینه",
+"fridge / oven / stove / microwave / dishwasher / washing machine = یخچال / فر / اجاق / مایکروویو / ماشین ظرفشویی / لباسشویی",
+"sink / tap (UK) / faucet (US) = سینک / شیر آب",
+"shower / bathtub = دوش / وان",
+"heater / air conditioner = بخاری / کولر"
+]
+}
+],
+"patterns": [
+"There's a big sofa in the living room.",
+"There are two bedrooms.",
+"Is there a balcony? — Yes, there is. / No, there isn't.",
+"Are there any shelves in your room?",
+"The lamp is next to the bed.",
+"I live in a small flat on the third floor."
+],
+"checks": [
+"There is یا There are: ___ three chairs",
+"«آسانسور» بریتانیایی → lift",
+"«کمد لباس» آمریکایی → closet",
+"وقتی سؤال جمعه، some می‌گیم یا any؟"
+],
+"roleplay": [
+"دنبال خانهٔ اجاره‌ای هستی و از صاحبخانه سؤال می‌پرسی",
+"به دوستت تلفنی آدرس وسایل آشپزخانه را می‌دهی"
+],
+"personal": [
+"Do you live in a house or a flat?",
+"How many rooms are there in your home?",
+"What's your favorite room? Why?",
+"What's next to your bed?"
+],
+"grammar": {
+"point": "There is / There are + some/any + حروف اضافهٔ مکان",
+"examples": [
+"There's a mirror in the hall.",
+"There are some books on the shelf.",
+"There aren't any chairs.",
+"Is there a dishwasher?"
+],
+"rule": "برای یکی There is، برای جمع There are. در جملهٔ مثبت جمع some، در منفی و سؤالی any.",
+"drill": [
+"توی آشپزخونه یه یخچال بزرگ هست →",
+"تو اتاقم هیچ صندلی‌ای نیست →",
+"خونه‌تون بالکن داره؟ →"
+]
+},
+"pron": [
+"There's a ≈ «ذِرزِ»",
+"There are ≈ US «ذِرآر» / UK «ذِئرا»",
+"wardrobe ≈ «وُردروب»؛ cupboard ≈ «کابِرد» (p خوانده نمی‌شود)"
+],
+"quiz": [
+"«دو تا اتاق خواب هست» → There are two bedrooms.",
+"«شیر آب» آمریکایی → faucet",
+"«کنار تخت» → next to the bed",
+"Is there ___ microwave? → a",
+"«پرده» → curtains"
+]
+},
+"jobs": {
+"goal": "بتوانی شغل‌ها و محل کار را نام ببری، شغل خودت و دیگران را توضیح بدهی و بپرسی What do you do?",
+"intro": "سلام! امروز دربارهٔ شغل‌هاست. یاد می‌گیری چطور مؤدبانه بپرسی کسی چه‌کاره‌ست (What do you do? نه What is your job?)، شغلت رو معرفی کنی و بگی کجا کار می‌کنی و چه کاری انجام می‌دی. یه بازی حدس شغل هم داریم!",
+"bank": [
+{
+"g": "شغل‌ها",
+"items": [
+"teacher, doctor, nurse, dentist, engineer, architect",
+"lawyer = وکیل",
+"accountant = حسابدار",
+"manager = مدیر",
+"businessman / businesswoman / business owner",
+"receptionist = منشی پذیرش",
+"secretary / assistant = منشی / دستیار",
+"salesperson / shop assistant = فروشنده",
+"cashier = صندوق‌دار",
+"waiter / waitress / chef / cook = گارسون / سرآشپز / آشپز",
+"driver / taxi driver / pilot",
+"police officer / firefighter / soldier",
+"mechanic / electrician / plumber = مکانیک / برق‌کار / لوله‌کش",
+"farmer / builder / cleaner",
+"programmer / developer / designer = برنامه‌نویس / طراح",
+"journalist / photographer / artist / musician / actor",
+"student / retired / unemployed / housewife (homemaker) = دانشجو / بازنشسته / بیکار / خانه‌دار",
+"freelancer / self-employed = آزادکار / خویش‌فرما"
+]
+},
+{
+"g": "محل کار",
+"items": [
+"office, hospital, school, bank, shop/store, restaurant, factory, hotel, airport, police station, garage",
+"work from home = دورکاری",
+"company = شرکت"
+]
+},
+{
+"g": "دربارهٔ کار",
+"items": [
+"work for (a company) = برای شرکتی کار کردن",
+"work in (a place/field) = در جایی/حوزه‌ای کار کردن",
+"work as (a job) = به عنوان … کار کردن",
+"full-time / part-time = تمام‌وقت / پاره‌وقت",
+"colleague = همکار",
+"boss = رئیس",
+"salary = حقوق",
+"job / work / career = شغل (شمارش‌پذیر) / کار (ناشمارش) / حرفه"
+]
+}
+],
+"patterns": [
+"What do you do? — I'm an accountant.",
+"Where do you work? — I work for a big company.",
+"She works as a nurse in a hospital.",
+"Does he work full-time? — No, he works part-time.",
+"I work from home.",
+"What does your husband do? — He's a pilot."
+],
+"checks": [
+"چرا What's your job? کمتر می‌گیم؟ (کمی خشک؛ What do you do? طبیعی‌تره)",
+"work for / work in / work as: «من برای یه شرکت نفتی کار می‌کنم» → ?",
+"«یک کار» → a work یا a job؟"
+],
+"roleplay": [
+"مصاحبهٔ کوتاه در مهمانی: شغل همدیگر را می‌پرسید",
+"بازی حدس شغل: سؤال بله/خیر بپرس"
+],
+"personal": [
+"What do you do?",
+"Where do you work?",
+"Do you like your job? Why?",
+"What's your dream job?"
+],
+"grammar": {
+"point": "حال ساده برای شغل و کارهای همیشگی",
+"examples": [
+"She works in a hospital.",
+"What does he do? — He fixes cars.",
+"I don't work on Fridays."
+],
+"rule": "حال ساده برای کار و عادت ثابت. سؤال: What do you do? / What does she do? و جواب با a/an + شغل (I'm an engineer — بدون a غلط است).",
+"drill": [
+"اون توی بانک کار می‌کنه →",
+"شوهرت چی‌کاره‌ست؟ →",
+"من معلمم →"
+]
+},
+"pron": [
+"engineer: تکیه روی آخر «اِنجینیر»",
+"accountant ≈ «اَکاونتِنت»",
+"What do you do ≈ «وادِیو دو»"
+],
+"quiz": [
+"«حسابدار» → accountant",
+"«به عنوان راننده کار می‌کنه» → He works as a driver.",
+"I'm engineer یا I'm an engineer؟ → I'm an engineer",
+"«پاره‌وقت» → part-time",
+"«همکار» → colleague"
+]
+}
+}

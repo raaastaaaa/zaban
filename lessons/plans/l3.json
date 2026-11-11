@@ -1,0 +1,616 @@
+{
+"news": {
+"goal": "بتوانی خبرها را بفهمی، دربارهٔ آن‌ها حرف بزنی و جملهٔ مجهول را بسازی و بفهمی.",
+"intro": "Welcome! From this level, our class is almost fully in English; I'll switch to Persian only for tricky points. Today: news and media, and the passive voice, which you see in every headline: The bridge was built in 1990.",
+"bank": [
+{
+"g": "رسانه",
+"items": [
+"news, headline, article, report, journalist, reporter, editor, newspaper, magazine, website, podcast, broadcast, channel, social media, fake news, source",
+"breaking news, live coverage, interview, press conference"
+]
+},
+{
+"g": "موضوع خبرها",
+"items": [
+"election, government, economy, inflation, crisis, protest, accident, earthquake, flood, investigation, arrest, trial, agreement, deal, launch, record"
+]
+},
+{
+"g": "فعل‌های خبری",
+"items": [
+"announce, report, claim, deny, confirm, reveal, warn, injure, damage, rescue, elect, approve, ban"
+]
+}
+],
+"patterns": [
+"The new metro line was opened yesterday.",
+"Three people were injured in the accident.",
+"The results will be announced next week.",
+"According to the BBC, …",
+"Have you heard the news about…?"
+],
+"checks": [
+"فاعل در جملهٔ مجهول کجا می‌ره؟ (با by)",
+"Mistakes were made یعنی چی؟",
+"reporter و editor؟"
+],
+"roleplay": [
+"خلاصهٔ یک خبر برای همکار",
+"گفتگو دربارهٔ اعتبار منابع خبری"
+],
+"personal": [
+"How do you get your news?",
+"Do you trust social media news?",
+"What's an important news story this week?"
+],
+"grammar": {
+"point": "مجهول (حال و گذشته و آینده)",
+"examples": [
+"English is spoken worldwide.",
+"The road was built in 2010.",
+"The winners will be announced tomorrow.",
+"The suspect has been arrested."
+],
+"rule": "be (در زمان مناسب) + قسمت سوم فعل. وقتی انجام‌دهنده مهم نیست یا معلوم نیست. انجام‌دهنده با by.",
+"drill": [
+"این پل سال ۱۳۷۰ ساخته شد →",
+"نتایج فردا اعلام می‌شه →"
+]
+},
+"pron": [
+"announced ≈ «اِناونست»",
+"headline ≈ «هِدلاین»"
+],
+"quiz": [
+"مجهول: They built it → It was built.",
+"«خبر فوری» → breaking news",
+"«تکذیب کردن» → deny",
+"«طبق گزارش» → according to",
+"«مجروح شدند» → were injured"
+]
+},
+"culture": {
+"goal": "بتوانی دربارهٔ فرهنگ‌ها و آداب و رسوم مقایسه و توضیح بدهی و از should, be supposed to, be allowed to درست استفاده کنی.",
+"intro": "Welcome! Today we explore cultures and customs — what's polite, what's rude, and how things differ between Iran, Oman and English-speaking countries. We'll learn to talk about rules and expectations: You're supposed to…, You aren't allowed to…",
+"bank": [
+{
+"g": "فرهنگ",
+"items": [
+"culture, custom, tradition, festival, ceremony, etiquette, manners, taboo, values, belief, religion",
+"polite / rude, formal / informal, generous, hospitable (مهمان‌نواز)"
+]
+},
+{
+"g": "آداب",
+"items": [
+"shake hands, bow, kiss on the cheek, take off your shoes, bring a gift, arrive on time, tip, queue",
+"taarof = تعارف (explain to foreigners)"
+]
+},
+{
+"g": "مقایسه",
+"items": [
+"In my country, … whereas in …",
+"It's considered rude to…",
+"People tend to…",
+"It depends on…"
+]
+}
+],
+"patterns": [
+"In Iran, you're supposed to take off your shoes at home.",
+"You aren't allowed to smoke here.",
+"You should bring a small gift.",
+"It's considered rude to be late.",
+"In the UK, people tend to queue politely."
+],
+"checks": [
+"should و be supposed to فرق؟ (supposed: قانون/انتظار جامعه)",
+"taarof رو چطور برای یه خارجی توضیح می‌دی؟",
+"be allowed to یعنی؟"
+],
+"roleplay": [
+"توضیح نوروز و تعارف به یک خارجی",
+"مهمان خارجی در خانه‌ات: راهنمایی آداب"
+],
+"personal": [
+"What's a custom in your country that surprises foreigners?",
+"What's considered rude where you live?",
+"Which culture would you like to learn about?"
+],
+"grammar": {
+"point": "should / be supposed to / be allowed to / have to",
+"examples": [
+"You should try the local food. (توصیه)",
+"You're supposed to arrive on time. (انتظار)",
+"You aren't allowed to take photos. (ممنوع)",
+"You have to show your passport. (اجبار)"
+],
+"rule": "should توصیه؛ be supposed to انتظار یا قاعدهٔ اجتماعی (که گاهی رعایت نمی‌شود)؛ be allowed to اجازه؛ have to اجبار واقعی.",
+"drill": [
+"قراره کفش‌هات رو در بیاری →",
+"اینجا عکس گرفتن مجاز نیست →"
+]
+},
+"pron": [
+"supposed to ≈ «سِپوزتِ»",
+"etiquette ≈ «اِتیکِت»"
+],
+"quiz": [
+"«مهمان‌نواز» → hospitable",
+"ممنوع بودن → not allowed to",
+"«آداب معاشرت» → etiquette",
+"«رسم» → custom / tradition",
+"«بی‌ادبی محسوب می‌شود» → It's considered rude."
+]
+},
+"relations": {
+"goal": "بتوانی دربارهٔ روابط دوستی، خانوادگی و عاطفی حرف بزنی و حال کامل استمراری را برای کارهای ادامه‌دار به کار ببری.",
+"intro": "Welcome! Today: relationships — friendships, dating, family and work relationships. We'll use many phrasal verbs (get on with, fall out, break up) and the present perfect continuous: I've been living here for five years.",
+"bank": [
+{
+"g": "روابط",
+"items": [
+"friend, close friend, best friend, acquaintance (آشنا), colleague, partner, boyfriend, girlfriend, fiancé(e), ex",
+"relationship, friendship, marriage, trust, respect, support, argument, jealousy"
+]
+},
+{
+"g": "فعل‌های چندکلمه‌ای",
+"items": [
+"get on (well) with = رابطهٔ خوب داشتن",
+"get along with (US)",
+"fall out with = قهر کردن",
+"make up = آشتی کردن",
+"break up (with) = جدا شدن/کات کردن",
+"ask someone out = پیشنهاد قرار دادن",
+"go out with = دوست بودن/قرار گذاشتن",
+"fall for = عاشق شدن",
+"look up to = الگو دانستن",
+"count on = روی کسی حساب کردن",
+"put up with = تحمل کردن"
+]
+},
+{
+"g": "توصیف",
+"items": [
+"supportive, loyal, trustworthy, caring, controlling, jealous, we have a lot in common"
+]
+}
+],
+"patterns": [
+"I've been living in Muscat for three years.",
+"How long have you been learning English?",
+"I get on really well with my sister.",
+"They broke up last month, but now they've made up.",
+"You can always count on me."
+],
+"checks": [
+"حال کامل و حال کامل استمراری فرق؟",
+"fall out و break up؟",
+"acquaintance یعنی دوست صمیمی؟ (نه؛ آشنا)"
+],
+"roleplay": [
+"دلداری دادن به دوستی که رابطه‌اش تمام شده",
+"دو دوست بعد از دعوا آشتی می‌کنند"
+],
+"personal": [
+"Who do you get on with best in your family?",
+"How long have you known your best friend?",
+"What makes a good friend?"
+],
+"grammar": {
+"point": "حال کامل استمراری",
+"examples": [
+"I've been waiting for an hour.",
+"How long have you been working here?",
+"She's been studying all day, so she's tired."
+],
+"rule": "have/has been + ing برای کاری که از گذشته شروع شده و هنوز ادامه دارد یا تازه تمام شده و نتیجه‌اش پیداست؛ با for و since. فعل‌های حالتی (know, love) استمراری نمی‌شوند: I've known him for years.",
+"drill": [
+"دو ساعته منتظرتم →",
+"چند وقته انگلیسی می‌خونی؟ →"
+]
+},
+"pron": [
+"I've been ≈ «آیوبین»",
+"acquaintance ≈ «اِکوِینتِنس»"
+],
+"quiz": [
+"«آشتی کردن» → make up",
+"«تحمل کردن» → put up with",
+"I've ___ (know/been knowing) him for years → known",
+"«روی من حساب کن» → Count on me.",
+"«ما وجه مشترک زیادی داریم» → We have a lot in common."
+]
+},
+"business": {
+"goal": "بتوانی در جلسه و مذاکرهٔ تجاری شرکت کنی، پیشنهاد بدهی و با شرطی نوع دوم موقعیت فرضی را بیان کنی.",
+"intro": "Welcome! Today: business and negotiation — especially useful for your work. We'll learn meeting and negotiation phrases and the second conditional: If you lowered the price, we would order more.",
+"bank": [
+{
+"g": "تجارت",
+"items": [
+"company, firm, business, startup, client, supplier, partner, competitor, market, product, service, profit, loss, revenue, budget, investment, contract, deal, invoice, quote (پیش‌فاکتور)",
+"import / export, customs, logistics, trade, free zone"
+]
+},
+{
+"g": "جلسه",
+"items": [
+"Let's get started. / Shall we begin?",
+"The purpose of this meeting is…",
+"Could you clarify that?",
+"I'd like to add something.",
+"Let's move on to the next point.",
+"To sum up, …"
+]
+},
+{
+"g": "مذاکره",
+"items": [
+"We're looking for a long-term partnership.",
+"Could you offer a discount for bulk orders?",
+"That's a bit higher than we expected.",
+"What if we…?",
+"I'm afraid we can't accept that.",
+"Let's meet halfway. = بیایید وسط راه توافق کنیم",
+"We have a deal."
+]
+}
+],
+"patterns": [
+"If you gave us a 10% discount, we would sign today.",
+"What would you do if you were the manager?",
+"Could you send us a quote?",
+"I'm afraid that's not possible.",
+"Let's meet halfway."
+],
+"checks": [
+"If I would have…؟ (نه؛ If I had)",
+"If I were you یعنی؟",
+"quote در تجارت؟"
+],
+"roleplay": [
+"مذاکرهٔ قیمت با تأمین‌کننده",
+"ارائهٔ کوتاه منطقهٔ آزاد به یک سرمایه‌گذار خارجی",
+"جلسهٔ تیم: تقسیم وظایف"
+],
+"personal": [
+"What would you do if you had your own company?",
+"Have you ever negotiated a deal?",
+"What makes a good business partner?"
+],
+"grammar": {
+"point": "شرطی نوع دوم",
+"examples": [
+"If I had more money, I would start a business.",
+"If I were you, I'd accept the offer.",
+"What would you do if you lost your job?"
+],
+"rule": "If + گذشتهٔ ساده، would + فعل ساده. برای موقعیت فرضی یا غیرواقعی در حال/آینده. برای همه اشخاص were رایج است (If I were you).",
+"drill": [
+"اگه جای تو بودم قبول می‌کردم →",
+"اگه قیمت پایین‌تر بود، بیشتر سفارش می‌دادیم →"
+]
+},
+"pron": [
+"negotiate ≈ «نِگوشی‌اِیت»",
+"invoice ≈ «اینویس»"
+],
+"quiz": [
+"«پیش‌فاکتور» → quote",
+"If I ___ (be) you → were",
+"«سود» → profit",
+"«بیایید وسط راه توافق کنیم» → Let's meet halfway.",
+"«قرارداد» → contract"
+]
+},
+"complaints": {
+"goal": "بتوانی مؤدبانه و مؤثر شکایت کنی، مشکل را حل کنی و حرف دیگران را با نقل قول غیرمستقیم بازگو کنی.",
+"intro": "Welcome! Today: problems and complaints — in a hotel, a shop, with a company. We'll learn to complain politely but firmly, and reported speech: He said that… / She asked me if…",
+"bank": [
+{
+"g": "مشکل",
+"items": [
+"broken, damaged, faulty, missing, wrong, late, delayed, dirty, noisy, overcharged",
+"refund, replacement, compensation, apology, manager, customer service, warranty"
+]
+},
+{
+"g": "شکایت مؤدبانه",
+"items": [
+"I'm afraid there's a problem with…",
+"I'd like to make a complaint.",
+"I'm not happy with…",
+"This isn't what I ordered.",
+"Could you look into it, please?",
+"I'd like a refund / a replacement.",
+"I'd like to speak to the manager."
+]
+},
+{
+"g": "پاسخ کارمند",
+"items": [
+"I'm so sorry about that.",
+"Let me see what I can do.",
+"We'll sort it out right away.",
+"I'll get back to you."
+]
+}
+],
+"patterns": [
+"I'm afraid the room is too noisy.",
+"The receptionist said that they would change our room.",
+"She asked me if I had the receipt.",
+"He told me to wait.",
+"I was overcharged by twenty dollars."
+],
+"checks": [
+"said و told فرق؟ (told + مفعول: told me)",
+"در نقل قول غیرمستقیم زمان چطور عوض می‌شه؟",
+"I'm afraid اینجا یعنی می‌ترسم؟ (نه؛ متأسفانه/مؤدبانه)"
+],
+"roleplay": [
+"شکایت در هتل از اتاق پرسروصدا",
+"تماس با پشتیبانی برای سفارش اشتباه",
+"تعریف شکایت برای دوستت با نقل قول غیرمستقیم"
+],
+"personal": [
+"Have you ever complained about a product?",
+"How do you usually solve problems with companies?",
+"What annoys you most as a customer?"
+],
+"grammar": {
+"point": "نقل قول غیرمستقیم",
+"examples": [
+"\"I'm tired.\" → She said (that) she was tired.",
+"\"Do you have the receipt?\" → He asked if I had the receipt.",
+"\"Wait here.\" → He told me to wait."
+],
+"rule": "معمولاً زمان یک قدم به عقب می‌رود (am→was, will→would, can→could). سؤال بله/خیر با if، سؤال wh بدون جابه‌جایی فاعل. دستور: told + مفعول + to.",
+"drill": [
+"گفت فردا زنگ می‌زنه →",
+"پرسید رسید دارم یا نه →"
+]
+},
+"pron": [
+"complaint ≈ «کِمپلِینت»",
+"overcharged ≈ «اووِرچارجد»"
+],
+"quiz": [
+"«بازپرداخت پول» → refund",
+"\"I can help\" → He said he could help.",
+"«ازم پرسید کجا زندگی می‌کنم» → She asked me where I lived.",
+"«متأسفانه مشکلی هست» → I'm afraid there's a problem.",
+"«گارانتی» → warranty"
+]
+},
+"careers": {
+"goal": "بتوانی دربارهٔ تحصیلات و مسیر شغلی، رزومه و مصاحبه حرف بزنی و جملات موصولی بسازی.",
+"intro": "Welcome! Today: education and careers — CVs, interviews and career paths. We'll use relative clauses to give details smoothly: She's the manager who hired me.",
+"bank": [
+{
+"g": "مسیر شغلی",
+"items": [
+"career, profession, field, industry, position, role, promotion, experience, skills, qualifications, degree, internship, training, mentor",
+"apply for, be responsible for, specialize in, switch careers, climb the career ladder"
+]
+},
+{
+"g": "مصاحبه",
+"items": [
+"Tell me about yourself.",
+"What are your strengths and weaknesses?",
+"Why do you want this job?",
+"Where do you see yourself in five years?",
+"I'm a team player / detail-oriented / a fast learner."
+]
+},
+{
+"g": "رزومه",
+"items": [
+"CV/résumé, cover letter, reference, work experience, education, achievements, soft skills, hard skills"
+]
+}
+],
+"patterns": [
+"She's the person who interviewed me.",
+"This is the company that I worked for.",
+"That's the university where I studied.",
+"I'm responsible for managing a team of five."
+],
+"checks": [
+"who و which فرق؟",
+"that کی جای who می‌شینه؟",
+"where در جملهٔ موصولی؟"
+],
+"roleplay": [
+"مصاحبهٔ شغلی کامل",
+"مشورت با یک مشاور شغلی"
+],
+"personal": [
+"What's your dream career?",
+"What skills are you proud of?",
+"What advice would you give to a new graduate?"
+],
+"grammar": {
+"point": "جملهٔ موصولی",
+"examples": [
+"The man who called you is my boss.",
+"The report which/that I wrote was approved.",
+"The city where I grew up is small.",
+"My sister, who lives in Canada, is a nurse."
+],
+"rule": "who برای آدم، which برای چیز، that برای هر دو (در جملهٔ تعریفی)، where برای مکان، whose برای مالکیت. جملهٔ اضافی بین ویرگول that نمی‌گیرد.",
+"drill": [
+"این شرکتیه که توش کار می‌کنم →",
+"مردی که بهت زنگ زد مدیرمه →"
+]
+},
+"pron": [
+"résumé ≈ «رِزومِی»",
+"qualifications ≈ «کوالیفیکِیشِنز»"
+],
+"quiz": [
+"«کارآموزی» → internship",
+"آدم: ___ → who",
+"«نقاط قوت» → strengths",
+"«مسئول … هستم» → I'm responsible for…",
+"«نامهٔ همراه رزومه» → cover letter"
+]
+},
+"lifestyle": {
+"goal": "بتوانی دربارهٔ سبک زندگی سالم، عادت‌ها و تغییرات حرف بزنی و فرق gerund و infinitive را بدانی.",
+"intro": "Welcome! Today: health and lifestyle — habits, balance, stress and change. And a classic tricky point: verb + -ing vs verb + to: I enjoy cooking / I decided to quit.",
+"bank": [
+{
+"g": "سبک زندگی",
+"items": [
+"work-life balance, routine, habit, wellbeing, mental health, burnout, stress, sleep, diet, exercise, screen time, mindfulness",
+"healthy / balanced / active / sedentary (کم‌تحرک)"
+]
+},
+{
+"g": "تغییر عادت",
+"items": [
+"give up, cut down on, take up, stick to, get into the habit of, break a habit, set a goal",
+"motivation, willpower"
+]
+},
+{
+"g": "فعل + ing / to",
+"items": [
+"enjoy, avoid, mind, finish, keep, suggest, give up + -ing",
+"want, decide, plan, hope, need, promise, learn + to",
+"start, begin, like, love, hate + هر دو",
+"stop smoking (ترک) / stop to smoke (ایستادن برای سیگار)",
+"remember to do / remember doing"
+]
+}
+],
+"patterns": [
+"I enjoy cooking healthy food.",
+"I've decided to cut down on sugar.",
+"Try to avoid using your phone before bed.",
+"I gave up smoking two years ago.",
+"Remember to drink water!"
+],
+"checks": [
+"stop doing و stop to do فرق؟",
+"enjoy to swim درسته؟",
+"sedentary یعنی؟"
+],
+"roleplay": [
+"مربی سلامت: برنامهٔ تغییر عادت",
+"دوستت دچار فرسودگی شغلی است و راهکار می‌دهی"
+],
+"personal": [
+"What habits would you like to change?",
+"How do you deal with stress?",
+"Do you have a good work-life balance?"
+],
+"grammar": {
+"point": "gerund و infinitive",
+"examples": [
+"I enjoy reading.",
+"She decided to move abroad.",
+"Stop worrying!",
+"I'll never forget meeting you."
+],
+"rule": "بعضی فعل‌ها فقط ing (enjoy, avoid, finish, mind)، بعضی فقط to (want, decide, hope, plan). بعضی با تغییر معنی (stop, remember, forget, try).",
+"drill": [
+"از آشپزی لذت می‌برم →",
+"تصمیم گرفتم ورزش رو شروع کنم →",
+"یادت باشه قرصت رو بخوری →"
+]
+},
+"pron": [
+"habit ≈ «هَبیت»",
+"sedentary ≈ «سِدِنتِری»"
+],
+"quiz": [
+"«کم کردن قند» → cut down on sugar",
+"enjoy ___ (swim) → swimming",
+"«فرسودگی شغلی» → burnout",
+"decide ___ (go) → to go",
+"«به عادتی پایبند ماندن» → stick to"
+]
+},
+"science": {
+"goal": "بتوانی دربارهٔ علم، فناوری و آینده حرف بزنی و با must be / might be / can't be استنباط کنی.",
+"intro": "Welcome to our final lesson of this level! Today: science and the future — AI, space, medicine — and how to make deductions: That must be true / It might be / It can't be.",
+"bank": [
+{
+"g": "علم",
+"items": [
+"science, scientist, research, experiment, discovery, invention, theory, evidence, data, laboratory",
+"artificial intelligence (AI), robot, space exploration, planet, gene, vaccine, renewable energy, virtual reality"
+]
+},
+{
+"g": "آینده",
+"items": [
+"in the near future, by 2050, likely / unlikely, possibility, prediction, breakthrough, replace, develop, invent"
+]
+},
+{
+"g": "استنباط",
+"items": [
+"must be = حتماً (مطمئن)",
+"might / may / could be = شاید",
+"can't be = امکان ندارد",
+"must have been / can't have been (گذشته)"
+]
+}
+],
+"patterns": [
+"Robots might replace many jobs.",
+"That can't be true — it's impossible!",
+"She must be a scientist; she's always in the lab.",
+"By 2050, we will probably live longer.",
+"There's no evidence for that."
+],
+"checks": [
+"must be برای اجبار است یا استنباط؟ (هر دو؛ اینجا استنباط)",
+"must not be مخالف must be است؟ (نه؛ can't be)",
+"evidence شمارش‌پذیره؟ (نه)"
+],
+"roleplay": [
+"بحث: آیا هوش مصنوعی جای معلم‌ها را می‌گیرد؟",
+"حدس زدن دربارهٔ یک عکس مرموز"
+],
+"personal": [
+"How will AI change our lives?",
+"Would you like to travel to space?",
+"What's the most important invention ever?"
+],
+"grammar": {
+"point": "افعال وجهی استنباطی",
+"examples": [
+"He must be tired; he worked all night.",
+"She might be at home.",
+"That can't be Ali; he's in Canada.",
+"They must have left already."
+],
+"rule": "must be: تقریباً مطمئنیم درست است. might/may/could be: احتمال. can't be: مطمئنیم غلط است. برای گذشته: must/might/can't + have + قسمت سوم.",
+"drill": [
+"حتماً خسته‌ست →",
+"شاید خونه باشه →",
+"امکان نداره راست باشه →"
+]
+},
+"pron": [
+"artificial ≈ «آرتیفیشِل»",
+"evidence ≈ «اِویدِنس»"
+],
+"quiz": [
+"«امکان ندارد درست باشد» → It can't be true.",
+"«شاید باران بیاید» → It might rain.",
+"«شواهد» → evidence",
+"«پیشرفت بزرگ علمی» → breakthrough",
+"«حتماً رفته‌اند» → They must have left."
+]
+}
+}

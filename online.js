@@ -18,7 +18,7 @@ const BAD_WORDS = { test: t => { const toks = String(t).toLowerCase().split(/[\s
 let _sb = null, _sbFor = null, OP = null; // OP = پروفایل آنلاین کاربر فعال
 function sb() { if (!window.supabase) return null; if (_sb && _sbFor === G.active) return _sb; _sbFor = G.active; _sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, storageKey: 'zd-sb-' + G.active, autoRefreshToken: true } }); OP = null; return _sb; }
 async function session() { const c = sb(); if (!c) return null; try { const { data } = await c.auth.getSession(); return data.session; } catch { return null; } }
-async function myProfile(force) { if (OP && !force) return OP; const s = await session(); if (!s) return null; const { data } = await sb().from('profiles').select('*').eq('id', s.user.id).maybeSingle(); OP = data || null; if (OP && G.active) lsSet('zd:admin:' + G.active, !!OP.is_admin); return OP; }
+async function myProfile(force) { if (OP && !force) return OP; const s = await session(); if (!s) return null; const { data } = await sb().from('profiles').select('*').eq('id', s.user.id).maybeSingle(); OP = data || null; if (OP && G.active) { lsSet('zd:admin:' + G.active, !!OP.is_admin); lsSet('zd:unlock:' + G.active, OP.unlock || ''); } return OP; }
 
 /* ───── ورود و ثبت‌نام با کد تأیید ایمیل ───── */
 function loginSheet(after) {
@@ -184,17 +184,19 @@ routes.admin = async () => {
   const allUsd = Object.values(U30).reduce((a, b) => a + b, 0);
   const totalMin = users.reduce((s, u) => s + (g(u).minutes_total || 0), 0); const totalAI = users.reduce((s, u) => s + (g(u).ai_chat || 0), 0);
   v.innerHTML = `<div class="stack"><div class="card stack"><b>📚 درس‌های آماده برای همه</b><span class="small muted">هر درس یک بار با هوش مصنوعیِ خودت ساخته و روی سرور منتشر می‌شود؛ بعد همهٔ کاربران بدون هوش مصنوعی و آفلاین می‌خوانند.</span><button class="btn" id="bal">ساخت و انتشار همهٔ درس‌ها</button><div id="balo"></div></div><div class="grid2">${[['👥', 'کل کاربران', users.length], ['🟢', 'الان آنلاین', ONLINE.size], ['☀️', 'فعال امروز', activeToday], ['📅', 'فعال این هفته', week], ['⏱️', 'کل دقیقهٔ مطالعه', totalMin], ['🤖', 'درخواست‌های هوش مصنوعی', totalAI], ['⚠️', 'کاربران با اخطار', users.filter(u => u.warnings).length]].map(([ic, l, n]) => `<div class="card" style="text-align:center"><div style="font-size:22px">${ic}</div><b class="num" style="font-size:24px">${faNum(n)}</b><div class="small muted">${l}</div></div>`).join('')}</div>
+  <div class="card stack" id="afb"></div>
   <div class="card stack"><b>📣 پیام به کاربران</b><select id="to" class="in"><option value="">همهٔ کاربران</option>${users.map(u => `<option value="${u.id}">${esc(u.display_name)} @${esc(u.username)}</option>`).join('')}</select><input id="tt" class="in" placeholder="عنوان"><textarea id="bd" class="in" placeholder="متن پیام"></textarea><button class="btn" id="sn">فرستادن</button></div>
   <div class="card stack"><b>🤖 کنترل هوش مصنوعی کاربران</b><span class="small muted">هزینهٔ ۳۰ روز اخیر همه: <b>${allUsd.toFixed(2)} دلار</b>. سقف پیش‌فرض هر نفر روزی ۱٫۵ دلار است (باقی‌ماندهٔ هر روز تا ۳۰ روز ذخیره می‌شود). برای هر نفر می‌توانی سقف جدا بگذاری یا هوش مصنوعی‌اش را ببندی.</span>
-  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:560px"><thead><tr style="text-align:right;color:var(--muted)"><th>کاربر</th><th>امروز</th><th>۳۰ روز</th><th>سقف روزانه (دلار)</th><th>هوش مصنوعی</th><th></th></tr></thead><tbody>
-  ${users.map(u => `<tr style="border-top:1px solid var(--line)" data-ai="${u.id}"><td>${esc(u.display_name)} <span class="en tiny muted">@${esc(u.username)}</span>${u.is_admin ? ' <span class="pill ok">مدیر</span>' : ''}</td><td class="num">${UT[u.id] ? '$' + UT[u.id].usd.toFixed(3) + ' · ' + faNum(UT[u.id].calls) + ' بار' : '—'}</td><td class="num">$${(U30[u.id] || 0).toFixed(2)}</td><td><input class="in" style="width:90px;padding:6px" dir="ltr" type="number" min="0" step="0.1" placeholder="1.5" value="${u.ai_daily ?? ''}" data-lim></td><td><label class="row small" style="gap:4px;flex-wrap:nowrap"><input type="checkbox" data-on ${u.ai_off ? '' : 'checked'}> روشن</label></td><td><button class="btn sm" data-save>ذخیره</button></td></tr>`).join('')}</tbody></table></div></div>
+  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:560px"><thead><tr style="text-align:right;color:var(--muted)"><th>کاربر</th><th>امروز</th><th>۳۰ روز</th><th>سقف روزانه (دلار)</th><th>هوش مصنوعی</th><th>قفل درس‌ها</th><th></th></tr></thead><tbody>
+  ${users.map(u => `<tr style="border-top:1px solid var(--line)" data-ai="${u.id}"><td>${esc(u.display_name)} <span class="en tiny muted">@${esc(u.username)}</span>${u.is_admin ? ' <span class="pill ok">مدیر</span>' : ''}</td><td class="num">${UT[u.id] ? '$' + UT[u.id].usd.toFixed(3) + ' · ' + faNum(UT[u.id].calls) + ' بار' : '—'}</td><td class="num">$${(U30[u.id] || 0).toFixed(2)}</td><td><input class="in" style="width:90px;padding:6px" dir="ltr" type="number" min="0" step="0.1" placeholder="1.5" value="${u.ai_daily ?? ''}" data-lim></td><td><label class="row small" style="gap:4px;flex-wrap:nowrap"><input type="checkbox" data-on ${u.ai_off ? '' : 'checked'}> روشن</label></td><td><select class="in" style="padding:6px;width:120px" data-unl>${[['', 'عادی (به ترتیب)'], ['intro', 'باز تا مقدماتی'], ['l1', 'باز تا سطح ۱'], ['l2', 'باز تا سطح ۲'], ['l3', 'باز تا سطح ۳'], ['all', 'همه باز']].map(([k, t]) => `<option value="${k}"${(u.unlock || '') === k ? ' selected' : ''}>${t}</option>`).join('')}</select></td><td><button class="btn sm" data-save>ذخیره</button></td></tr>`).join('')}</tbody></table></div></div>
   <div class="sec">کاربران <small>${faNum(users.length)} نفر</small></div>
   <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:640px"><thead><tr style="text-align:right;color:var(--muted)"><th>کاربر</th><th>درس فعلی</th><th>امروز</th><th>هفته</th><th>کل</th><th>قبول</th><th>🔥</th><th>AI</th><th>آخرین حضور</th><th></th></tr></thead><tbody>
   ${users.map(u => { const x = g(u); return `<tr style="border-top:1px solid var(--line)"><td><a href="#u/${esc(u.username)}">${esc(u.display_name)}</a><br><span class="en tiny muted">@${esc(u.username)}</span>${u.warnings ? ` <span class="pill bad">${faNum(u.warnings)} اخطار</span>` : ''}</td><td>${esc(x.current_unit || '—')}</td><td class="num">${faNum(x.minutes_today || 0)}′</td><td class="num">${faNum(x.minutes_week || 0)}′</td><td class="num">${faNum(x.minutes_total || 0)}′</td><td class="num">${faNum(x.mastered || 0)}</td><td class="num">${faNum(x.streak || 0)}</td><td class="num">${faNum(x.ai_chat || 0)}</td><td>${dot(u.username)} ${ONLINE.has(u.username) ? 'آنلاین' : lastSeenFa(u.last_seen)}<br><a class="tiny" href="#dm/${esc(u.username)}">پیام</a></td><td>${u.is_admin ? '<span class="pill acc">مدیر</span>' : `<button class="btn line sm" data-ban="${u.id}" data-b="${u.banned ? 0 : 1}">${u.banned ? 'رفع محرومیت' : 'محروم از انجمن'}</button>`}</td></tr>`; }).join('')}</tbody></table></div></div>`;
   $('#sn').onclick = async () => { const title = $('#tt').value.trim(), body = $('#bd').value.trim(); if (!title || !body) return toast('عنوان و متن را بنویس.'); const { error } = await sb().from('notices').insert({ to_user: $('#to').value || null, title, body }); toast(error ? 'خطا: ' + error.message : 'پیام فرستاده شد ✓'); if (!error) { $('#tt').value = ''; $('#bd').value = ''; } };
-  $$('[data-save]').forEach(b => b.onclick = async () => { const tr = b.closest('[data-ai]'); const lim = tr.querySelector('[data-lim]').value.trim(); const { error } = await sb().rpc('set_ai_access', { uid: tr.dataset.ai, daily: lim === '' ? null : Number(lim), off: !tr.querySelector('[data-on]').checked }); toast(error ? 'خطا: ' + error.message : 'تنظیم هوش مصنوعی این کاربر ذخیره شد ✓'); });
+  $$('[data-save]').forEach(b => b.onclick = async () => { const tr = b.closest('[data-ai]'); const lim = tr.querySelector('[data-lim]').value.trim(); const { error } = await sb().rpc('set_ai_access', { uid: tr.dataset.ai, daily: lim === '' ? null : Number(lim), off: !tr.querySelector('[data-on]').checked }); const { error: e2 } = await sb().rpc('set_unlock', { uid: tr.dataset.ai, lvl: tr.querySelector('[data-unl]').value }); toast(error || e2 ? 'خطا: ' + (error || e2).message : 'تنظیمات این کاربر ذخیره شد ✓'); if (!e2 && (await myProfile())?.id === tr.dataset.ai) { await myProfile(true); toast('قفل درس‌های خودت به‌روز شد ✓'); } });
   $$('[data-ban]').forEach(b => b.onclick = async () => { await sb().from('profiles').update({ banned: b.dataset.b === '1' }).eq('id', b.dataset.ban); routes.admin(); });
   $('#bal') && ($('#bal').onclick = () => { if (needAI($('#balo'))) return; buildAllLessons($('#balo')); });
+  adminFeedback($('#afb'));
 };
 
 /* ───── کارت حساب در صفحهٔ «من» ───── */
@@ -336,4 +338,43 @@ async function joinCompetition() {
       else toast(authErrFa(e.message || ''), 6000);
     }
   };
+}
+
+/* ───── انتقادات و پیشنهادات (متن یا صدا) ───── */
+routes.feedback = () => {
+  setTop('انتقادات و پیشنهادات', true); const v = view();
+  v.innerHTML = `<div class="stack"><div class="card stack"><b>💡 ایده، درخواست یا انتقادت را بگو</b><span class="small muted">با صدا ضبط کن یا بنویس؛ مستقیم به دست مدیر برنامه می‌رسد.</span>
+    <div class="seg" id="fk">${[['idea', '💡 پیشنهاد'], ['bug', '🐞 ایراد'], ['request', '🙋 درخواست'], ['other', '💬 سایر']].map(([k, t], i) => `<button data-v="${k}" class="${i ? '' : 'on'}">${t}</button>`).join('')}</div>
+    <div class="row" style="flex-wrap:nowrap;align-items:stretch"><textarea id="fb" class="in grow" rows="5" placeholder="بنویس یا دکمهٔ 🎙 را بزن و بگو…"></textarea></div>
+    <div class="row"><button class="btn ghost" id="frec">🎙 ضبط صدا</button><span id="fst" class="small muted"></span></div><div id="fau"></div>
+    <button class="btn" id="fsend">فرستادن</button></div><div id="fmine"></div></div>`;
+  let kind = 'idea', audio = null, rec = null, chunks = [], sr = null;
+  $('#fk').onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('#fk button').forEach(x => x.classList.toggle('on', x === b)); kind = b.dataset.v; };
+  $('#frec').onclick = async () => {
+    if (rec) { rec.stop(); try { sr?.stop(); } catch { } return; }
+    let st; try { st = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { return toast('اجازهٔ میکروفون داده نشده.'); }
+    const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find(m => window.MediaRecorder?.isTypeSupported?.(m)) || '';
+    rec = new MediaRecorder(st, mime ? { mimeType: mime, audioBitsPerSecond: 24000 } : undefined); chunks = []; rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+    rec.onstop = () => { st.getTracks().forEach(t => t.stop()); const blob = new Blob(chunks, { type: rec.mimeType || 'audio/webm' }); rec = null; $('#frec').textContent = '🎙 ضبط دوباره'; $('#fst').textContent = '';
+      const r = new FileReader(); r.onload = () => { audio = r.result; $('#fau').innerHTML = `<audio controls src="${audio}" style="width:100%"></audio><button class="btn line sm" id="fdel">حذف صدا</button>`; $('#fdel').onclick = () => { audio = null; $('#fau').innerHTML = ''; }; }; r.readAsDataURL(blob); };
+    rec.start(); $('#frec').textContent = '⏹ پایان ضبط'; $('#fst').textContent = '● در حال ضبط (حداکثر ۲ دقیقه)'; setTimeout(() => rec?.state === 'recording' && rec.stop(), 120000);
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (SR) { sr = new SR(); sr.lang = 'fa-IR'; sr.continuous = false; sr.interimResults = false; sr.onresult = e => { const t = e.results[e.results.length - 1]; if (t.isFinal) { const cur = $('#fb').value.trim(); $('#fb').value = cleanRepeats((cur ? cur + ' ' : '') + t[0].transcript); } }; sr.onend = () => { if (rec?.state === 'recording') try { sr.start(); } catch { } }; try { sr.start(); } catch { } }
+  };
+  $('#fsend').onclick = async () => {
+    const body = cleanRepeats($('#fb').value.trim()); if (!body && !audio) return toast('چیزی ننوشتی و ضبط نکردی.'); if (audio && audio.length > 1_500_000) return toast('صدا خیلی طولانی است؛ کوتاه‌تر ضبط کن.');
+    const p = await myProfile(); if (!p) return toast('برای فرستادن، وارد حساب شو.');
+    const { error } = await sb().from('feedback').insert({ username: p.username, display_name: p.display_name, kind, body, audio });
+    if (error) return toast('فرستاده نشد: ' + error.message); toast('ممنون! پیامت به مدیر رسید 🙏'); $('#fb').value = ''; audio = null; $('#fau').innerHTML = ''; mine();
+  };
+  const mine = async () => { const p = await myProfile(); if (!p) return; const { data } = await sb().from('feedback').select('id,kind,body,created_at,seen').eq('user_id', p.id).order('created_at', { ascending: false }).limit(20);
+    $('#fmine').innerHTML = (data || []).length ? `<div class="sec">پیام‌های قبلی من</div>${data.map(f => `<div class="card small">${esc(f.body || '🎙 پیام صوتی')}<div class="tiny muted">${jLabel(isoDay(new Date(f.created_at)))} ${f.seen ? '· ✓ دیده شد' : ''}</div></div>`).join('')}` : ''; };
+  mine();
+};
+async function adminFeedback(box) {
+  const { data, error } = await sb().from('feedback').select('*').order('created_at', { ascending: false }).limit(100);
+  if (error) { box.innerHTML = `<span class="small muted">جدول انتقادات هنوز ساخته نشده.</span>`; return; }
+  const K = { idea: '💡', bug: '🐞', request: '🙋', other: '💬' };
+  box.innerHTML = `<b>💡 انتقادات و پیشنهادات (${faNum((data || []).filter(f => !f.seen).length)} تازه)</b>${(data || []).map(f => `<div class="card stack small" style="${f.seen ? 'opacity:.7' : 'box-shadow:0 0 0 2px var(--accent)'}"><div class="row"><b class="grow">${K[f.kind] || '💬'} ${esc(f.display_name || '')} <span class="en tiny muted">@${esc(f.username || '')}</span></b><span class="tiny muted">${jLabel(isoDay(new Date(f.created_at)), true)}</span></div>${f.body ? `<div>${esc(f.body)}</div>` : ''}${f.audio ? `<audio controls preload="none" src="${f.audio}" style="width:100%"></audio>` : ''}<div class="row">${f.seen ? '' : `<button class="btn sm" data-fs="${f.id}">✓ دیدم</button>`}<button class="btn line sm" data-fd="${f.id}">حذف</button></div></div>`).join('') || '<span class="small muted">هنوز پیامی نیامده.</span>'}`;
+  $$('[data-fs]', box).forEach(b => b.onclick = async () => { await sb().from('feedback').update({ seen: true }).eq('id', b.dataset.fs); adminFeedback(box); });
+  $$('[data-fd]', box).forEach(b => b.onclick = async () => { await sb().from('feedback').delete().eq('id', b.dataset.fd); adminFeedback(box); });
 }

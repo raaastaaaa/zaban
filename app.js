@@ -156,6 +156,7 @@ function forgottenFromPrevious(cur) { // واژه‌های درس‌های قب�
 function unitState(u) { return U.units[u.id] || (U.units[u.id] = { steps: {}, best: {} }); }
 function isMastered(u) { return !!unitState(u).mastered; }
 function isOpen(u) {
+  { const ul = lsGet('zd:unlock:' + G.active, ''); if (ul === 'all') return true; if (ul && u.idx < 1000) { const order = LEVELS.map(l => l.id); if (order.indexOf(u.level) <= order.indexOf(ul)) return true; } }
   if (u.track === 'ws') return true; // واژگان موضوعی مثل کتاب مرجع؛ همهٔ موضوع‌ها باز
   if (u.idx >= 1000) return true;
   if (u.idx === 0) return true;
@@ -623,7 +624,7 @@ function router() {
   routeGen++; const [r, ...args] = (location.hash.slice(1) || 'home').split('/');
   if (['unit', 'lesson', 'cards', 'quiz', 'teach', 'talk', 'dialog', 'exam', 'practice', 'sleep', 'myradio'].includes(r) && args[0]) { const gu = unitById(decodeURIComponent(args[0])); if (!gu) { location.hash = 'home'; return; } if (gu.idx < 1000 && !isOpen(gu)) { toast(`این درس هنوز قفل است؛ اول درس قبلی را با نمرهٔ ${faNum(G.settings.passScore)} قبول شو.`); location.hash = 'home'; return; } }
   if (['role', 'gclass'].includes(r) && !args[0]) { location.hash = r === 'role' ? 'chat' : 'grammar'; return; }
-  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', theater: 'library', practice: 'home', vision: 'home', rooms: 'chat', path: 'home', u: 'home', admin: 'me', dm: 'chat', grammar: 'tools', gclass: 'tools', verbs: 'tools', wtopics: 'tools', leitner: 'tools', lesson: 'home', listen: 'tools', vclass: 'tools', news: 'tools', sleep: 'home', myradio: 'chat', music: 'tools', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat', coach: 'chat' }[r] || r)));
+  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', theater: 'library', practice: 'home', vision: 'home', rooms: 'chat', path: 'home', u: 'home', admin: 'me', dm: 'chat', grammar: 'tools', gclass: 'tools', verbs: 'tools', wtopics: 'tools', feedback: 'tools', live: 'home', leitner: 'tools', lesson: 'home', listen: 'tools', vclass: 'tools', news: 'tools', sleep: 'home', myradio: 'chat', music: 'tools', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat', coach: 'chat' }[r] || r)));
   { const a0 = decodeURIComponent(args[0] || ''); const lv = wsLevelOf(a0) || (r === 'course' && WORD_TRACK.some(l => l.id === a0) ? a0 : null); if (lv && !WS_UNITS.some(u => u.level === lv && u.baseWords.length)) { view().innerHTML = loading('واژه‌ها را باز می‌کنم…'); const h = location.hash; return wsLoad(lv).then(() => { if (location.hash === h) router(); }); } }
   (routes[r] || routes.home)(...args.map(decodeURIComponent));
 }
@@ -1412,6 +1413,7 @@ routes.tools = () => {
     ['listen', '🎧', 'شنیدن روزانه: رادیو و خبر', 'رادیوی زندهٔ آمریکایی یا بریتانیایی، خبر واقعی امروز به زبان ساده و برنامهٔ شنیداری روزانه.'],
     ['leitner', '🗃️', 'جعبهٔ لایتنر', 'کارت‌های امروز، تازه و آموخته‌شده؛ دسته‌ها و افزودن کارت دستی.'],
     ['grammar', '📐', 'گرامر کامل', 'همهٔ زمان‌ها و مباحث از مقدماتی تا متوسط با توضیح فارسی، مثال صوتی و تمرین.'],
+    ['feedback', '💡', 'انتقادات و پیشنهادات', 'ایده، درخواست یا ایرادی دیدی؟ با صدا یا متن به مدیر برنامه بگو.'],
     ['wtopics', '🗂️', 'واژه‌ها بر اساس موضوع', 'هر موضوعی بنویس (فرودگاه، ترید، پوشاک…)؛ همهٔ واژه‌ها با رسمی/عامیانه، کاربرد و مثال.'],
     ['verbs', '🔁', 'افعال کاربردی', 'فعل‌های پرکاربرد دسته‌بندی‌شده با سه شکل فعل، معنی، مثال و آزمون.'],
     ['theater', '🎬', 'تئاتر داستان صوتی', 'داستان با سناریو، صحنه‌های تصویری، صداپیشه و موسیقی متن، با واژه‌های خودت.'],
@@ -1427,7 +1429,7 @@ routes.tools = () => {
     ['import', '📥', 'درس از کتاب خودم', 'لغت‌های هر درس کتابت را وارد کن یا با AI درس تازه بساز.'],
     ['role', '🎭', 'نقش‌آفرینی موقعیت‌های واقعی', 'موقعیت‌های واقعی زندگی روزمره.']
   ];
-  view().innerHTML = `<div class="tools">${T.map(([k, ic, t, d]) => `<a class="tool" href="#${['role', 'dict', 'theater', 'vision', 'grammar', 'verbs', 'wtopics', 'leitner', 'listen'].includes(k) ? k : k === 'practice' ? 'practice/' + currentUnit().id : 'tool/' + k}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>`;
+  view().innerHTML = `<div class="tools">${T.map(([k, ic, t, d]) => `<a class="tool" href="#${['role', 'dict', 'theater', 'vision', 'grammar', 'verbs', 'wtopics', 'feedback', 'leitner', 'listen'].includes(k) ? k : k === 'practice' ? 'practice/' + currentUnit().id : 'tool/' + k}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>`;
 };
 routes.tool = k => (TOOLS[k] || routes.tools)();
 const TOOLS = {
@@ -1540,6 +1542,7 @@ routes.me = () => {
   <div class="card stack"><b>حافظهٔ معلم دربارهٔ من</b><span class="small muted">هوش مصنوعی این‌ها را از گفتگوها یاد گرفته و در همهٔ درس‌ها به کار می‌برد.</span>${U.mem.length ? U.mem.slice().reverse().map((m, i) => `<div class="row small"><span class="grow">• ${esc(m.t)}</span><button class="btn line sm" data-dm="${U.mem.length - 1 - i}">حذف</button></div>`).join('') : '<span class="small muted">هنوز چیزی ثبت نشده.</span>'}
   <div class="row"><input id="nm" class="in grow" placeholder="چیزی که معلم باید بداند (مثلاً: هدفم مصاحبهٔ کاری است)"><button class="btn sm" id="am">افزودن</button></div></div>
   <div class="card stack"><b>آخرین اشتباه‌ها</b>${U.mistakes.slice(-12).reverse().map(m => `<div class="small"><s class="en">${esc(m.wrong)}</s> ← <b class="en">${esc(m.right)}</b> <span class="muted">${esc(m.why)}</span></div>`).join('') || '<span class="small muted">فعلاً اشتباهی ثبت نشده.</span>'}<a class="btn ghost sm" href="#tool/mistakes">تحلیل و تمرین</a></div>
+  <a class="btn ghost wide" href="#feedback">💡 انتقادات و پیشنهادات (با صدا یا متن)</a>
   <div class="card stack"><b>پشتیبان و انتقال</b><span class="small muted">برای بردن پیشرفت به گوشی یا کامپیوتر دیگر: پشتیبان بگیر و در دستگاه دیگر بازیابی کن.</span><div class="row"><button class="btn ghost sm" id="bk">گرفتن پشتیبان</button><label class="btn ghost sm">بازیابی<input type="file" hidden accept=".json" id="rs"></label><a class="btn ghost sm" href="#settings">تنظیمات</a></div></div></div>`;
   window.meOnline && meOnline();
   $$('[data-dm]').forEach(b => b.onclick = () => { U.mem.splice(+b.dataset.dm, 1); saveU(); routes.me(); });
