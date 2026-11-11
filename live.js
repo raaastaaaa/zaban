@@ -191,7 +191,7 @@ async function liveStart(mode, ui) {
     const loc = /location|region|not supported|unsupported|1007|PERMISSION/i.test(why);
     return abort(loc ? 'سرور گوگل لوکیشن فیلترشکنت را قبول نکرد. لوکیشن فیلترشکن را روی آلمان، هلند، انگلیس یا آمریکا بگذار و دوباره بزن. (ایران، روسیه، چین و هنگ‌کنگ کار نمی‌کند)'
       : /quota|exceed|429|RESOURCE/i.test(why) ? 'سهمیهٔ رایگان امروز کلاس زنده تمام شده؛ کمی بعد یا فردا دوباره امتحان کن.'
-      : 'کلاس زنده وصل نشد. فیلترشکن را روی حالت «همهٔ برنامه‌ها/Global» (نه فقط مرورگر) و لوکیشن آلمان یا هلند بگذار و دوباره بزن.' + (why ? ` [${why.slice(0, 60)}]` : ''), 9000); }
+      : 'کلاس زنده وصل نشد. فیلترشکن را روی حالت «همهٔ برنامه‌ها/Global» (نه فقط مرورگر) و لوکیشن آلمان یا هلند بگذار و دوباره بزن؛ یا بالا «ChatGPT» را انتخاب کن.' + (why ? ` [${why.slice(0, 60)}]` : ''), 10000); }
   if (left()) { clearTimeout(Live.mvT); try { ws.close(); } catch { } return abort(); }
   Live.ws = ws; Live.starting = false; Live.hash = hash0;
   Live.on = true; Live.started = Date.now(); Live.mic = stream; Live.log = []; ui.live();
@@ -290,11 +290,12 @@ function liveStop(ui, silent) {
 routes.live = (mode = 'lesson') => {
   if (!LIVE_MODES[mode]) mode = 'lesson'; setTop('کلاس زنده با معلم', true); const v = view(); const L = todayLog();
   v.innerHTML = `<div class="stack">
-  <div class="card stack gpt-card"><b>🎙 کلاس صوتی با ChatGPT (رایگان)</b>
+  <div class="card stack gpt-card" id="lgpt" ${(G.settings.liveEngine || 'gemini') === 'gpt' ? '' : 'hidden'}><b>🎙 کلاس صوتی با ChatGPT (رایگان)</b>
     <ol class="small gpt-steps"><li>اگر خواستی، پایین همین صفحه انتخاب کن چه چیزی یاد بگیری (درس، واژه، گرامر یا موضوع دلخواه).</li><li>دکمهٔ سبز را بزن؛ طرح کامل درس کپی می‌شود و ChatGPT باز می‌شود.</li><li>در ChatGPT نگه دار و «Paste / چسباندن» را بزن و بفرست.</li><li>بعد دکمهٔ حالت صوتی 🎙 (کنار جای نوشتن) را بزن و حرف بزن. غلط‌های نوشتاری‌ات را با خط‌خوردگی ❌ و شکل درست ✅ تصحیح می‌کند.</li></ol>
     <div class="row"><button class="btn" id="gpt">🚀 شروع کلاس در ChatGPT</button><button class="btn line sm" id="gptc">فقط کپی دستور</button></div>
     <span class="tiny muted">${mode === 'group' ? 'برای کلاس گروهی: یک نفر ChatGPT را روی بلندگو باز کند و همه کنار هم باشید؛ هر کس قبل از حرف زدن اسمش را بگوید.' : 'برنامهٔ امروز، اشتباه‌های قبلی و حافظهٔ کلاس‌هایت هم به ChatGPT داده می‌شود.'}</span></div>
   <div class="live-card"><div class="live-av" id="lav"><span>👩‍🏫</span><i></i></div><b id="lst">${esc(G.settings.teacher)} آماده است</b><span class="small" id="lclk">${faNum(Math.round(L.live || 0))} دقیقه کلاس زندهٔ امروز</span>
+    <div class="seg eng-seg" id="leng">${[['gemini', '✨ Gemini'], ['gpt', '🤖 ChatGPT']].map(([k, t]) => `<button data-v="${k}" class="${(G.settings.liveEngine || 'gemini') === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <div class="row" style="justify-content:center"><button class="btn live-go" id="lgo">📞 شروع کلاس</button></div>
     <span class="tiny" style="opacity:.8">مثل تماس تلفنی حرف بزن؛ وسط حرف معلم هم می‌توانی بپری. هدفون بهتر است.</span></div>
   <label class="row small" style="gap:6px;flex-wrap:nowrap"><span style="white-space:nowrap">معلم مرا این‌طور صدا کند:</span><input class="in grow" id="lcm" value="${esc(callMe())}" placeholder="مثلاً رَستا"></label>
@@ -407,7 +408,11 @@ routes.live = (mode = 'lesson') => {
     if (window.VR?.on && !VR.host) { vrSend({ k: 'chat', n, t: msg }); ui.say('me', `✍️ ${msg}`); ui.say('end'); i.value = ''; return; }
     if (typedToTeacher(n, msg)) i.value = ''; };
   $('#ltb').onclick = sendTyped; $('#lti').onkeydown = e => { if (e.key === 'Enter') sendTyped(); };
-  $('#lgo').onclick = () => Live.starting ? null : Live.on ? liveStop(ui) : liveStart(mode, ui);
+  const engine = () => G.settings.liveEngine || 'gemini';
+  const drawEng = () => { $$('#leng button').forEach(b => b.classList.toggle('on', b.dataset.v === engine())); $('#lgpt').hidden = engine() !== 'gpt'; if (!Live.on) $('#lgo').textContent = engine() === 'gpt' ? '🤖 شروع کلاس با ChatGPT' : '📞 شروع کلاس'; };
+  $('#leng').onclick = e => { const b = e.target.closest('button'); if (!b || Live.on || Live.starting) return; G.settings.liveEngine = b.dataset.v; saveG('settings'); drawEng(); };
+  drawEng(); const idle0 = ui.idle; ui.idle = () => { idle0(); drawEng(); };
+  $('#lgo').onclick = () => Live.starting ? null : Live.on ? liveStop(ui) : engine() === 'gpt' ? $('#gpt').click() : liveStart(mode, ui);
   $$('[data-lm]', v).forEach(b => b.onclick = () => { if (Live.on) liveStop(ui, true); go('live/' + b.dataset.lm); });
   liveLessonText();
   const GPT_ADAPT = `

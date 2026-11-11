@@ -454,3 +454,7 @@ body.nopron .pron{display:none!important}
 .gpt-card{border:2px solid #10a37f;background:color-mix(in srgb,#10a37f 7%,var(--card,#fff))}
 .gpt-card #gpt{background:#10a37f;color:#fff}
 .gpt-steps{margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:4px}
+.eng-seg{margin:4px auto 0;max-width:100%}.eng-seg button{font-size:13px;white-space:nowrap}
+.live-card .eng-seg{display:inline-flex;background:rgba(255,255,255,.12);border-radius:999px;padding:3px;gap:2px;align-self:center}
+.live-card .eng-seg button{color:#e6fffb;background:transparent;border:0;border-radius:999px;padding:6px 14px;font-weight:700}
+.live-card .eng-seg button.on{background:#fff;color:#0f766e}
