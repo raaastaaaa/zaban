@@ -111,7 +111,8 @@ async function gemFetch(models, path, body, key) { // اگر مدلی شلوغ �
 
 let U = null; // داده‌های کاربر فعال
 const blankUser = () => ({ srs: {}, units: {}, mistakes: [], mem: [], log: {}, xp: 0, badges: [], convos: {}, plan: null, placement: null, custom: [] });
-function loadUser(id) { U = Object.assign(blankUser(), lsGet('zd:u:' + id, {})); G.active = id; saveG('active'); if (!U.mig1) { U.mig1 = 1; if (Object.values(U.units).some(x => x.mastered) && !U.units.hello) U.units.hello = { mastered: true, auto: true, steps: {}, best: {} }; if (U.placement) U.placement.openTo = (U.placement.openTo || 0) + 1; saveU(); } }
+function loadUser(id) { U = Object.assign(blankUser(), lsGet('zd:u:' + id, {})); G.active = id; saveG('active'); if (!U.mig1) { U.mig1 = 1; if (Object.values(U.units).some(x => x.mastered) && !U.units.hello) U.units.hello = { mastered: true, auto: true, steps: {}, best: {} }; if (U.placement) U.placement.openTo = (U.placement.openTo || 0) + 1; saveU(); }
+  if (!U.mig2) { U.mig2 = 1; if (U.plan) { try { const P = U.plan; const end = addDays(P.start, P.dayCount - 1); const left = Math.max(30, Math.round((parseDay(end) - parseDay(isoDay())) / DAY) + 1); U.plan = buildPlan({ ...P, start: isoDay(), days: left }); U.plan.dayCount = left; } catch { } } saveU(); } }
 function saveU() { if (G.active) lsSet('zd:u:' + G.active, U); }
 const userData = id => Object.assign(blankUser(), lsGet('zd:u:' + id, {}));
 const me = () => G.users.find(u => u.id === G.active);
@@ -590,6 +591,7 @@ function router() {
   stopSpeak(); window.scrollTo(0, 0); view().onclick = null; $('nav.bottom').hidden = false; $$('.sheet-bg').forEach(x => x.remove()); document.body.classList.toggle('session', /^#(cards|quiz|exam|guide)\b/.test(location.hash));
   if (!G.users.length || !G.active || !G.users.some(u => u.id === G.active)) { if (!G.users.length) return viewWelcome(); loadUser(G.users[0].id); }
   if (!U) loadUser(G.active);
+  if (!U.online && !sessionStorage.getItem('zd:askedLogin') && !location.hash.replace('#', '')) { sessionStorage.setItem('zd:askedLogin', '1'); return viewWelcome('in', true); }
   routeGen++; const [r, ...args] = (location.hash.slice(1) || 'home').split('/');
   if (['unit', 'lesson', 'cards', 'quiz', 'teach', 'talk', 'dialog', 'exam', 'practice', 'sleep', 'myradio'].includes(r) && args[0]) { const gu = unitById(decodeURIComponent(args[0])); if (!gu) { location.hash = 'home'; return; } if (gu.idx < 1000 && !isOpen(gu)) { toast(`این درس هنوز قفل است؛ اول درس قبلی را با نمرهٔ ${faNum(G.settings.passScore)} قبول شو.`); location.hash = 'home'; return; } }
   if (['role', 'gclass'].includes(r) && !args[0]) { location.hash = r === 'role' ? 'chat' : 'grammar'; return; }
@@ -620,8 +622,9 @@ function viewIntro(i = 0) {
   const end = () => { lsSet('zd:introSeen', 1); viewWelcome('in'); };
   $('#nx').onclick = () => i < INTRO.length - 1 ? viewIntro(i + 1) : end(); $('#sk').onclick = end;
 }
-function viewWelcome(tab = 'in') {
+function viewWelcome(tab = 'in', returning = false) {
   if (!G.users.length && !lsGet('zd:introSeen', 0)) return viewIntro(0);
+  if (returning) window._wReturning = true;
   $('#top').innerHTML = ''; $('nav.bottom').hidden = true;
   const up = tab === 'up';
   view().innerHTML = `<div class="auth">
@@ -643,7 +646,8 @@ function viewWelcome(tab = 'in') {
   let av = AVATARS[0]; $$('#av button').forEach(b => b.onclick = () => { $$('#av button').forEach(x => x.classList.remove('on')); b.classList.add('on'); av = b.dataset.a; });
   const code = () => { const c = $('#cd').value.trim(); if (!c) return true; try { useCode(c); toast('هوش مصنوعی وصل شد ✓'); return true; } catch { toast('کد اتصال درست نیست؛ دوباره کپی کن.'); return false; } };
   const enter = (n, a, h = 'guide') => { addUser(n, a); $('nav.bottom').hidden = false; go(h); router(); };
-  $('#go2').onclick = () => { if (!code()) return; enter('کاربر', AVATARS[0], 'guide'); };
+  if (window._wReturning && G.users.length) { $('#go2').textContent = `ادامه با ${me()?.name || 'همین دستگاه'} بدون ورود`; $('#go2').onclick = () => { window._wReturning = false; $('nav.bottom').hidden = false; go('home'); router(); }; }
+  else $('#go2').onclick = () => { if (!code()) return; enter('کاربر', AVATARS[0], 'guide'); };
   $('#ml') && ($('#ml').onclick = () => { if (!code()) return; enter('کاربر', AVATARS[0], 'home'); setTimeout(() => window.loginSheet && loginSheet(p => { if (p?.display_name) { me().name = p.display_name; if (p.avatar) me().avatar = p.avatar; saveG('users'); router(); } }), 300); });
   $('#fg') && ($('#fg').onclick = () => window.forgotPassword && forgotPassword($('#un').value.trim()));
   $('#go').onclick = async () => {

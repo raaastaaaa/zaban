@@ -262,7 +262,7 @@ async function authSignUp({ name, un, email, pw, avatar }) {
   if (!window.supabase) { toast('اتصال آنلاین در دسترس نیست.'); return; }
   const tmp = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false } });
   try { const { data, error } = await tmp.rpc('username_free', { uname: un }); if (!error && data === false) return 'taken'; } catch { }
-  addUser(name, avatar); $('nav.bottom').hidden = false;
+  if (U && !U.online && G.active) { Object.assign(me(), { name, avatar }); saveG('users'); } else addUser(name, avatar); $('nav.bottom').hidden = false;
   const { data, error } = await sb().auth.signUp({ email, password: pw, options: { emailRedirectTo: location.origin + location.pathname, data: { username: un, display_name: name, avatar } } });
   if (error) { toast(authErrFa(error.message), 6000); go('guide'); router(); return; }
   if (data.session) { await sb().from('profiles').insert({ id: data.user.id, username: un, display_name: name, avatar }); const p = await myProfile(true); if (p) { U.online = { uid: p.id, username: p.username }; saveU(); syncNow(); } go('guide'); router(); toast('حسابت ساخته شد @' + un + ' 🎉'); return; }
@@ -282,7 +282,10 @@ async function authSignIn(id, pw) {
   if (error) return toast(authErrFa(error.message), 6000);
   const { data: prof } = await tmp.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
   const md = data.user.user_metadata || {};
-  addUser(prof?.display_name || md.display_name || 'کاربر', prof?.avatar || md.avatar || '🙂'); if (prof?.photo) { me().photo = safeImg(prof.photo); saveG('users'); }
+  const nm = prof?.display_name || md.display_name || 'کاربر', av = prof?.avatar || md.avatar || '🙂';
+  const same = G.users.find(x => userData(x.id).online?.uid === data.user.id); const reuse = !same && U && !U.online && G.active;
+  if (same) loadUser(same.id); else if (reuse) { Object.assign(me(), { name: nm, avatar: av }); saveG('users'); } else addUser(nm, av);
+  if (prof?.photo) { me().photo = safeImg(prof.photo); saveG('users'); }
   await sb().auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token });
   let p = await myProfile(true);
   if (!p && /^[a-z0-9_]{3,20}$/.test(md.username || '')) { await sb().from('profiles').insert({ id: data.user.id, username: md.username, display_name: md.display_name || me().name, avatar: md.avatar || '🙂' }); p = await myProfile(true); }
