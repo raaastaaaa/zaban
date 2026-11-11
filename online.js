@@ -1,7 +1,7 @@
 /* زبان رستا — بخش آنلاین: حساب با کد تأیید ایمیل، رقابت زنده، صفحهٔ کاربر، انجمن و چت‌روم با معلم ناظر، پنل مدیر */
 'use strict';
-const SB_URL = 'https://xlubjxbpwwmaddpgswik.supabase.co';
-const SB_KEY = 'sb_publishable_MW-qwJWudZu7GVXsY4g8nw_0cqbv7gE'; // کلید عمومی (برای استفاده در برنامهٔ عمومی ساخته شده)
+const SB_URL = 'https://zixshmfjdsefmxhpneou.supabase.co';
+const SB_KEY = 'sb_publishable_i-aeD5YnhwtFZ3f-3sG3Ww_j64Oflxg'; // کلید عمومی (برای استفاده در برنامهٔ عمومی ساخته شده)
 const FORUM_RULES = [
   'اینجا برای تمرین مکالمهٔ انگلیسی است؛ تا جای ممکن انگلیسی بنویس.',
   'حرف رکیک، جنسی، توهین‌آمیز، سیاسیِ تفرقه‌انگیز یا آزار دیگران ممنوع است و پیام پاک می‌شود.',

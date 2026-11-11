@@ -78,6 +78,12 @@ async function chatFallback(p: any) {
   if (sys) msgs.push({ role: "system", content: sys + "\nAlways write Persian (Farsi) fluently and naturally when Persian is needed." });
   for (const c of p.contents ?? []) msgs.push({ role: c.role === "model" ? "assistant" : "user", content: (c.parts ?? []).map((x: any) => x.text ?? "").join("\n") });
   const wantJson = p.generationConfig?.responseMimeType === "application/json";
+  const ak = Deno.env.get("ANTHROPIC_KEY");
+  if (ak) { // Claude (Haiku): فارسی بسیار روان
+    const sysA = (sys ? sys + "\n" : "") + (wantJson ? "Return ONLY valid JSON, no markdown fences." : "");
+    const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "content-type": "application/json", "x-api-key": ak, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: Deno.env.get("ANTHROPIC_MODEL") ?? "claude-haiku-5-5", max_tokens: Math.min(p.generationConfig?.maxOutputTokens ?? 1400, 8000), temperature: Math.min(1, p.generationConfig?.temperature ?? 0.8), ...(sysA ? { system: sysA } : {}), messages: msgs.filter((m) => m.role !== "system") }) });
+    if (r.ok) { const d = await r.json(); const t = (d.content ?? []).map((b: any) => b.text ?? "").join(""); if (t) return { candidates: [{ content: { role: "model", parts: [{ text: t }] } }], usageMetadata: {}, fallback: "anthropic" }; }
+  }
   const providers = [
     { key: Deno.env.get("GROQ_KEY"), url: "https://api.groq.com/openai/v1/chat/completions", model: Deno.env.get("GROQ_MODEL") ?? "llama-3.3-70b-versatile" },
     { key: Deno.env.get("OPENROUTER_KEY"), url: "https://openrouter.ai/api/v1/chat/completions", model: Deno.env.get("OPENROUTER_MODEL") ?? "meta-llama/llama-3.3-70b-instruct:free" },
