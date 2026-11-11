@@ -1,5 +1,5 @@
 /* زبان رستا — کار آفلاین و سرعت: پوستهٔ برنامه از حافظه باز می‌شود */
-const V = 'zd-v31';
+const V = 'zd-v33';
 const SHELL = ['./', 'index.html', 'styles.css', 'data.js', 'app.js', 'library.js', 'dict.js', 'extras.js', 'learn.js', 'leitner.js', 'news.js', 'lessons.js', 'book.js', 'supabase.js', 'online.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'vazir-400.woff2', 'vazir-700.woff2', 'vazir-800.woff2', 'vazir-latin-400.woff2', 'vazir-latin-700.woff2', 'vazir-latin-800.woff2', 'lexend-400.woff2', 'lexend-600.woff2'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== V && k !== 'zd-media').map(k => caches.delete(k)))).then(() => self.clients.claim())); });
