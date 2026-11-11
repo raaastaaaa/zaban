@@ -47,7 +47,14 @@ Students in the room: ${names.join(', ') || 'unknown — ask them'}.
 5) CORRECTION: correct each student by name, briefly and kindly, in Persian when needed; remember each student's own mistakes and level, and adapt difficulty per student.
 6) EMOTIONS: be a lively, human teacher — laugh, praise specific achievements, show playful competitiveness in games, keep energy high, never embarrass anyone.
 7) PLAN & HOMEWORK: at the end give each student, by name, one personal tip and one small task for tomorrow, and announce the team score.
-Never let two students speak over each other for long: ask them to take turns.`;
+Never let two students speak over each other for long: ask them to take turns.
+TOOLS FOR A FUN CLASSROOM (use them often, they drive the students' screen):
+- call_on(name): ALWAYS call this right before you ask a specific student to speak (puts a spotlight on them).
+- give_points(name, points 1-3, reason in Persian): reward good answers, brave attempts, helping others, great pronunciation. Be generous but fair.
+- set_activity(title in Persian, instructions in Persian, seconds): start each activity/game with a timer. Use a variety of GAMES: «مسابقهٔ کلمه» (who says more words of a group in 30 s), «نقش‌آفرینی دونفره», «کی بود؟ حدس بزن» (describe a classmate/thing, others guess), «جمله‌سازی زنجیره‌ای» (each adds one sentence to a story), «مناظرهٔ کوتاه» on a fun topic, «۲۰ سؤال», «تلفظ سریع» (tongue twisters), «Find someone who…».
+- give_homework(name, task in Persian): at the end, one personal task for each student.
+- show_board(...) for new words and phrases.
+Keep the energy of a live game show: announce the scores now and then, celebrate, tease playfully, and finish with a winner on the podium.`;
 const FOCUS_METHOD = {
   full: null,
   conv: `FOCUS = CONVERSATION. Plan: 1) set the scene in Persian (who, where, why) 2) pre-teach 4-5 key chunks from it 3) call play_conversation (gist question first: "کی با کی حرف می‌زنه و دربارهٔ چی؟") 4) detail questions 5) line by line: meaning, natural native pronunciation and the reusable chunk 6) shadowing: student repeats each line after you 7) role-play A/B, then swap 8) variation: change details (names, places) and replay 9) a personal version of the dialogue about the student's own life.`,
@@ -119,6 +126,10 @@ async function liveStart(mode, ui) {
       tools: [{ functionDeclarations: [
         { name: 'play_conversation', description: 'Play today\'s lesson conversation audio (two native speakers) to the student. Returns when it finished playing.', parameters: { type: 'OBJECT', properties: {} } },
         { name: 'show_board', description: 'Show the current lesson step on the student\'s screen like a whiteboard.', parameters: { type: 'OBJECT', properties: { title: { type: 'STRING', description: 'Persian step title' }, items: { type: 'ARRAY', items: { type: 'OBJECT', properties: { en: { type: 'STRING' }, fa: { type: 'STRING' }, note: { type: 'STRING', description: 'Persian: register / when to use' } } } } }, required: ['title'] } },
+        { name: 'call_on', description: 'Spotlight the student you are about to address (group class).', parameters: { type: 'OBJECT', properties: { name: { type: 'STRING' } }, required: ['name'] } },
+        { name: 'give_points', description: 'Award points to a student (group class).', parameters: { type: 'OBJECT', properties: { name: { type: 'STRING' }, points: { type: 'INTEGER' }, reason: { type: 'STRING' } }, required: ['name', 'points'] } },
+        { name: 'set_activity', description: 'Start a class activity or game with a countdown timer on screen.', parameters: { type: 'OBJECT', properties: { title: { type: 'STRING' }, instructions: { type: 'STRING' }, seconds: { type: 'INTEGER' } }, required: ['title'] } },
+        { name: 'give_homework', description: 'Give one personal homework task to a student at the end.', parameters: { type: 'OBJECT', properties: { name: { type: 'STRING' }, task: { type: 'STRING' } }, required: ['name', 'task'] } },
         { name: 'ask_brain', description: 'Ask the expert planning brain a question that needs deep thinking, complete lists or planning. Returns notes to explain in your own words.', parameters: { type: 'OBJECT', properties: { question: { type: 'STRING' } }, required: ['question'] } },
         { name: 'mark_done', description: 'Mark one of today\'s planned tasks as done when the student finished it in this session.', parameters: { type: 'OBJECT', properties: { task: { type: 'STRING', description: 'task text' } }, required: ['task'] } }] }] } }));
     ws.onmessage = async ev => { const m = JSON.parse(typeof ev.data === 'string' ? ev.data : await ev.data.text()); if (m.setupComplete && !ok) { ok = true; res(ws); } else liveMsg(m, ui); };
@@ -182,6 +193,10 @@ function liveMsg(m, ui) {
       catch { ans = 'The brain is not available right now; answer from the lesson material yourself.'; }
       ui.status('حرف بزن 🙂'); Live.ws?.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: ab.id, name: ab.name, response: { result: ans } }] } })); })(); }
     const res = calls.filter(fc => fc.name !== 'play_conversation' && fc.name !== 'ask_brain').map(fc => {
+      if (fc.name === 'call_on') { ui.spot?.(fc.args?.name); return { id: fc.id, name: fc.name, response: { result: 'ok' } }; }
+      if (fc.name === 'give_points') { const tot = ui.points?.(fc.args?.name, +fc.args?.points || 1, fc.args?.reason || ''); return { id: fc.id, name: fc.name, response: { result: 'scores: ' + JSON.stringify(tot || {}) } }; }
+      if (fc.name === 'set_activity') { ui.activity?.(fc.args?.title || '', fc.args?.instructions || '', +fc.args?.seconds || 0); return { id: fc.id, name: fc.name, response: { result: 'started' } }; }
+      if (fc.name === 'give_homework') { ui.homework?.(fc.args?.name, fc.args?.task); return { id: fc.id, name: fc.name, response: { result: 'saved' } }; }
       if (fc.name === 'show_board') { ui.board(fc.args?.title || '', fc.args?.items || []); return { id: fc.id, name: fc.name, response: { result: 'shown' } }; } const want = (fc.args?.task || '').trim(); const t = (todayPlan()?.tasks || []).find(x => x.t.includes(want) || want.includes(x.t.slice(0, 12)));
       if (t) { U.mdone = U.mdone || {}; U.mdone[isoDay() + '|' + t.k] = 1; addXP(3); saveU(); toast('✓ در برنامهٔ امروز علامت خورد: ' + t.t); }
       return { id: fc.id, name: fc.name, response: { result: t ? 'done' : 'task not found' } }; });
@@ -192,7 +207,7 @@ function liveMsg(m, ui) {
 function liveStop(ui, silent) {
   Live.on = false; clearInterval(Live.timer); try { Live.node?.disconnect(); Live.src?.disconnect(); } catch { } Live.mic?.getTracks().forEach(t => t.stop());
   Live.queue.forEach(s => { try { s.stop(); } catch { } }); Live.queue = []; const ws = Live.ws; Live.ws = null; try { ws?.close(); } catch { } try { Live.ctx?.close(); } catch { }
-  saveU(); ui?.idle(); if (!silent) ui?.status('تماس تمام شد. آفرین! 👏'); liveRemember();
+  saveU(); ui?.idle(); if (!silent) ui?.status('تماس تمام شد. آفرین! 👏'); ui?.podium?.(); liveRemember();
 }
 
 routes.live = (mode = 'lesson') => {
@@ -212,6 +227,7 @@ routes.live = (mode = 'lesson') => {
     <label class="f">یا یک مبحث گرامر (مثلاً زمان‌ها)<select class="in" id="lsg"><option value="">—</option>${(typeof GRAMMAR !== 'undefined' ? GRAMMAR : []).map(g => `<option value="${g.id}"${S.gram === g.id ? ' selected' : ''}>${esc(g.lvl)} · ${esc(g.fa)}</option>`).join('')}</select></label>
     <div class="seg" id="lsa">${[['US', '🇺🇸 آمریکایی'], ['UK', '🇬🇧 بریتانیایی']].map(([k, t]) => `<button data-v="${k}" class="${(G.settings.accent === 'UK' ? 'UK' : 'US') === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <span class="tiny muted">برنامهٔ تدریس هر درس از قبل کامل نوشته شده: بانک کامل واژه‌ها، الگوها، نقش‌آفرینی، گرامر، تلفظ و کوییز.</span></div>`; })() : ''}
+  ${mode === 'group' ? `<div class="classroom" id="lclass"><div class="cr-act" id="lact" hidden></div><div class="cr-seats" id="lseats"></div><div class="cr-hw" id="lhw" hidden></div></div>` : ''}
   <div class="card stack live-board" id="lboard" hidden></div>
   <div class="card stack live-log" id="llog"><span class="small muted">متن گفتگو اینجا نوشته می‌شود.</span></div>
   <div class="card stack"><b>🎙 تمرین رایگان با ChatGPT</b><span class="small muted">اگر حساب ChatGPT داری (رایگان هم کافی است)، این دکمه ChatGPT را با دستور آمادهٔ درس امروز، برنامه و اشتباه‌هایت باز می‌کند؛ بعد در ChatGPT دکمهٔ حالت صوتی را بزن.</span>
@@ -236,7 +252,22 @@ routes.live = (mode = 'lesson') => {
     $('#lsf').onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('#lsf button').forEach(x => x.classList.toggle('on', x === b)); saveSel({ focus: b.dataset.v, ws: '', gram: '' }); $('#lsw').value = ''; $('#lsg').value = ''; };
     $('#lsa').onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('#lsa button').forEach(x => x.classList.toggle('on', x === b)); G.settings.accent = b.dataset.v; saveG('settings'); };
   }
-  $('#lgn') && ($('#lgn').onchange = e => lsSet('zd:group:' + G.active, e.target.value.trim()));
+  const GN = () => lsGet('zd:group:' + G.active, '').split(/[,،]/).map(x => x.trim()).filter(Boolean);
+  const SC = {}; const AV = ['🦊', '🐼', '🐯', '🦁', '🐨', '🐸', '🦉', '🐙'];
+  const seats = (spot) => { const el = $('#lseats'); if (!el) return; const names = GN(); el.innerHTML = names.map((n, i) => `<div class="cr-seat${spot && n.replace(/[َُِ]/g, '').includes(String(spot).replace(/[َُِ]/g, '').slice(0, 3)) ? ' spot' : ''}" data-n="${esc(n)}"><span class="cr-av">${AV[i % AV.length]}</span><b>${esc(n)}</b><span class="cr-pt">⭐ ${faNum(SC[n] || 0)}</span></div>`).join('') || '<span class="small muted">اسم شرکت‌کننده‌ها را بالا بنویس.</span>'; };
+  const match = n => GN().find(x => x.replace(/[َُِ]/g, '').includes(String(n || '').replace(/[َُِ]/g, '').slice(0, 3)) || String(n || '').toLowerCase().includes(x.toLowerCase())) || n;
+  const beep = (f = 880) => { try { const C = new (window.AudioContext || window.webkitAudioContext)(); const o = C.createOscillator(), g = C.createGain(); o.frequency.value = f; g.gain.setValueAtTime(0.15, C.currentTime); g.gain.exponentialRampToValueAtTime(0.001, C.currentTime + 0.35); o.connect(g).connect(C.destination); o.start(); o.stop(C.currentTime + 0.35); setTimeout(() => C.close(), 500); } catch { } };
+  let actTm = 0;
+  Object.assign(ui, {
+    spot: n => seats(match(n)),
+    points: (n, p, why) => { const k = match(n); SC[k] = (SC[k] || 0) + p; seats(k); beep(660 + p * 110); const el = $(`.cr-seat[data-n="${CSS.escape(k)}"]`); if (el) { const f = document.createElement('span'); f.className = 'cr-float'; f.textContent = `+${faNum(p)}⭐ ${why || ''}`; el.appendChild(f); setTimeout(() => f.remove(), 2200); } return SC; },
+    activity: (t, d, sec) => { const el = $('#lact'); if (!el) return; clearInterval(actTm); el.hidden = false; let left = sec; const draw = () => el.innerHTML = `<b>🎮 ${esc(t)}</b>${d ? `<div class="small">${esc(d)}</div>` : ''}${sec ? `<div class="cr-timer">${faNum(Math.floor(left / 60))}:${faNum(String(left % 60).padStart(2, '0'))}</div>` : ''}`; draw(); beep(520);
+      if (sec) actTm = setInterval(() => { left--; draw(); if (left <= 0) { clearInterval(actTm); beep(330); setTimeout(() => beep(330), 250); } }, 1000); },
+    homework: (n, t) => { const el = $('#lhw'); if (!el) return; el.hidden = false; el.insertAdjacentHTML('beforeend', `<div class="small">📝 <b>${esc(match(n))}:</b> ${esc(t)}</div>`); const H = lsGet('zd:grouphw', []); H.push({ d: isoDay(), n: match(n), t }); lsSet('zd:grouphw', H.slice(-50)); }
+  });
+  ui.podium = () => { const el = $('#lclass'); if (!el) return; const r = Object.entries(SC).sort((a, b) => b[1] - a[1]); if (!r.length) return; el.insertAdjacentHTML('afterbegin', `<div class="cr-podium">${r.slice(0, 3).map(([n, p], i) => `<div class="pd p${i + 1}"><span>${['🥇', '🥈', '🥉'][i]}</span><b>${esc(n)}</b><small>${faNum(p)} ⭐</small></div>`).join('')}</div>`); for (let i = 0; i < 4; i++) setTimeout(() => beep(523 + i * 130), i * 160); };
+  if (mode === 'group') { seats(); } window.__liveUI = ui;
+  $('#lgn') && ($('#lgn').onchange = e => { lsSet('zd:group:' + G.active, e.target.value.trim()); seats(); });
   $('#lcm').onchange = e => lsSet('zd:callme:' + G.active, e.target.value.trim());
   $('#lgo').onclick = () => Live.on ? liveStop(ui) : liveStart(mode, ui);
   $$('[data-lm]', v).forEach(b => b.onclick = () => { if (Live.on) liveStop(ui, true); go('live/' + b.dataset.lm); });
