@@ -101,3 +101,19 @@ drop policy if exists "lessons read" on public.lessons;
 create policy "lessons read" on public.lessons for select to anon, authenticated using (true);
 drop policy if exists "lessons admin write" on public.lessons;
 create policy "lessons admin write" on public.lessons for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+-- ───── مصرف هوش مصنوعی هر کاربر (فقط سرور واسط می‌نویسد؛ کاربر فقط مصرف خودش را می‌بیند) ─────
+create table if not exists public.ai_usage (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  day date not null,
+  usd numeric not null default 0,
+  calls int not null default 0,
+  primary key (user_id, day)
+);
+alter table public.ai_usage enable row level security;
+drop policy if exists "usage read own" on public.ai_usage;
+create policy "usage read own" on public.ai_usage for select to authenticated using (user_id = auth.uid() or public.is_admin());
+create or replace function public.add_ai_usage(uid uuid, d date, amount numeric) returns void language sql security definer set search_path = public as
+$$ insert into public.ai_usage(user_id, day, usd, calls) values (uid, d, amount, 1)
+   on conflict (user_id, day) do update set usd = public.ai_usage.usd + excluded.usd, calls = public.ai_usage.calls + 1 $$;
+revoke all on function public.add_ai_usage(uuid, date, numeric) from public, anon, authenticated;

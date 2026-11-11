@@ -81,8 +81,8 @@ async function playStory(id) {
   <button class="icon-btn on" id="pl">▶</button><button class="icon-btn" id="nx">⏭</button><span class="small grow" id="st">آماده</span><label class="small">🎵<input type="range" id="vol" min="0" max="1" step="0.1" value="${lsGet('zd:musicVol', 0.5)}" style="width:70px"></label><button class="icon-btn" id="tr">آ</button></div></div>`;
   const hi = (i, k) => { $$('.ln', v).forEach(x => x.style.background = ''); const el = $(`.sc[data-s="${i}"] .ln[data-l="${k}"]`, v); if (el) { el.style.background = 'var(--accent-soft)'; el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } };
   const speakLine = async (text, who, emo) => {
-    const keep = G.settings.geminiVoice; if (G.settings.prov.gemini.key) G.settings.geminiVoice = voiceOf(who);
-    const ve = G.settings.voiceEn; if (G.settings.prov.gemini.key) G.settings.voiceEn = 'gemini';
+    const keep = G.settings.geminiVoice; if (gemKey()) G.settings.geminiVoice = voiceOf(who);
+    const ve = G.settings.voiceEn; if (gemKey()) G.settings.voiceEn = 'gemini';
     try { const ci = chars.indexOf(who); Spatial.at(who === 'narrator' ? 0 : [-1.4, 1.4, -0.7, 0.7][ci % 4], who === 'narrator' ? -0.6 : -1.3); Music.duck(true); return await say(text, 'en', emo || 'calm'); } finally { G.settings.geminiVoice = keep; G.settings.voiceEn = ve; Music.duck(false); Spatial.at(0, -1.2); }
   };
   let gen = 0; const myHash = location.hash;

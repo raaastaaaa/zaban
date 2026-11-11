@@ -86,7 +86,20 @@ if (G.settings.teacher === 'سارا') { G.settings.teacher = 'رستا'; lsSet(
 if (G.settings.prov.gemini.model === 'gemini-2.5-flash') { G.settings.prov.gemini.model = 'gemini-3.1-flash-lite'; G.settings.geminiTtsModel = 'gemini-3.8-flash-tts'; saveG('settings'); }
 const GEM_FALLBACK = ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3.5-flash-lite'];
 const TTS_FALLBACK = ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-2.5-flash-preview-tts'];
+/* سرور واسط: کلیدهای مدیر روی سرور (Supabase Edge Function) است؛ کاربر هیچ کلیدی وارد نمی‌کند */
+const serverOK = () => !!window.supabase && typeof SB_URL !== 'undefined' && lsGet('zd:noServer', 0) < Date.now();
+const gemKey = () => G.settings.prov.gemini.key || (serverOK() ? 'server' : '');
+async function serverGem(models, path, body) {
+  let s = await session(); if (!s) { const { error } = await sb().auth.signInAnonymously(); if (error) throw new Error('NOKEY'); s = await session(); }
+  const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), 60000);
+  let r; try { r = await fetch(SB_URL + '/functions/v1/ai', { method: 'POST', signal: ac.signal, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + s.access_token, apikey: SB_KEY }, body: JSON.stringify({ models: [...new Set(models)], path, payload: body }) }); }
+  catch (e) { clearTimeout(tm); if (e.name === 'AbortError') throw new Error('پاسخ دیر شد'); lsSet('zd:noServer', Date.now() + 10 * 60000); throw new Error('NOKEY'); }
+  clearTimeout(tm); const d = await r.json().catch(() => ({}));
+  if (r.ok) return d; if (r.status === 402) throw new Error('BUDGET'); if (r.status === 404 || (r.status === 503 && /no server key/.test(d.error || ''))) { lsSet('zd:noServer', Date.now() + 60 * 60000); throw new Error('NOKEY'); }
+  throw new Error(d.error || r.status);
+}
 async function gemFetch(models, path, body, key) { // اگر مدلی شلوغ یا حذف شده بود، مدل بعدی
+  if (key === 'server') return serverGem(models, path, body);
   let last; for (const m of [...new Set(models)]) {
     const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), 20000);
     let r; try { r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:${path}`, { method: 'POST', signal: ac.signal, headers: { 'content-type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(body) }); }
@@ -190,13 +203,14 @@ const PROVIDERS = {
   openrouter: { fa: 'OpenRouter', keyUrl: 'https://openrouter.ai/keys' },
   custom: { fa: 'سرویس سازگار با OpenAI', keyUrl: '' }
 };
-const hasAI = () => !!G.settings.prov[G.settings.brain]?.key;
-function firstKeyed() { const p = G.settings.prov; return ['gemini', 'groq', 'anthropic', 'openai', 'openrouter', 'custom'].find(k => p[k]?.key); }
+const hasAI = () => !!G.settings.prov[G.settings.brain]?.key || serverOK();
+function firstKeyed() { const p = G.settings.prov; return ['gemini', 'groq', 'anthropic', 'openai', 'openrouter', 'custom'].find(k => p[k]?.key) || (serverOK() ? 'server' : undefined); }
 
 /* اگر سهمیهٔ یک سرویس تمام شد یا خطا داد، خودکار سراغ سرویس بعدیِ دارای کلید می‌رود */
 async function ai(opts) {
   const order = [G.settings.brain, 'gemini', 'groq', 'openrouter', 'anthropic', 'openai', 'custom'].filter((k, i, a) => a.indexOf(k) === i && G.settings.prov[k]?.key);
-  if (!order.length) throw new Error('NOKEY'); budgetGuard();
+  if (serverOK()) order.push('server');
+  if (!order.length) throw new Error('NOKEY'); if (order[0] !== 'server') budgetGuard();
   let last; for (const pv of order) {
     if (lsGet('zd:cool:' + pv, 0) > Date.now() && pv !== order[order.length - 1]) continue; // سرویسی که تازه به سقف خورده، چند دقیقه کنار می‌رود
     try { return await aiOne(pv, opts); }
@@ -205,10 +219,10 @@ async function ai(opts) {
   throw last;
 }
 async function aiOne(pv, { system, messages, json = true, images = [], max = 1400, temp = 0.8, heavy = false }) {
-  const c = G.settings.prov[pv];
+  const c = pv === 'server' ? { key: 'server', model: G.settings.prov.gemini.model } : G.settings.prov[pv];
   const sys = system + (json ? '\nReturn ONLY valid JSON, no markdown fences.' : '');
   let text = '';
-  if (pv === 'gemini') {
+  if (pv === 'gemini' || pv === 'server') {
     const contents = messages.map((m, i) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }, ...(i === messages.length - 1 ? images.map(im => ({ inlineData: { mimeType: im.mime, data: im.b64 } })) : [])] }));
     const gc = { temperature: temp, maxOutputTokens: max };
     if (json) gc.responseMimeType = 'application/json';
@@ -328,7 +342,7 @@ async function cloudTTS(engine, text, lang, emotion) {
   if (!blob) {
     budgetGuard();
     if (engine === 'gemini') {
-      const c = G.settings.prov.gemini; if (!c.key) throw new Error('NOKEY');
+      const c = { key: gemKey() }; if (!c.key) throw new Error('NOKEY');
       const d = await gemFetch([G.settings.geminiTtsModel, ...TTS_FALLBACK], 'generateContent', { contents: [{ parts: [{ text: `${style}:\n${text}` }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: G.settings.geminiVoice } } } } }, c.key);
       const part = d.candidates?.[0]?.content?.parts?.find(p => p.inlineData); if (!part) throw new Error('صدا ساخته نشد');
       const m = /rate=(\d+)/.exec(part.inlineData.mimeType || ''); blob = pcmToWav(part.inlineData.data, m ? +m[1] : 24000);
@@ -375,7 +389,7 @@ async function joinWavs(blobs, rate = 24000) {
 /* chunks: [{text, lang}] → یک فایل صوتی؛ هر تکه یک بار ساخته و ذخیره می‌شود */
 async function buildAudio(key, chunks, onProgress) {
   const done = await idb.get(key); if (done) return done;
-  const eng = G.settings.prov.gemini.key ? 'gemini' : G.settings.prov.openai.key ? 'openai' : null; if (!eng) throw new Error('NOKEY');
+  const eng = gemKey() ? 'gemini' : G.settings.prov.openai.key ? 'openai' : null; if (!eng) throw new Error('NOKEY');
   const blobs = []; for (let i = 0; i < chunks.length; i++) { onProgress?.(i, chunks.length); blobs.push(await cloudTTS(eng, chunks[i].text, chunks[i].lang, chunks[i].emo || 'calm')); }
   const out = eng === 'gemini' ? await joinWavs(blobs) : new Blob(blobs, { type: 'audio/mpeg' }); await idb.set(key, out); return out;
 }
@@ -419,7 +433,7 @@ async function transcribe(blob, lang) {
   const eng = G.settings.listen === 'browser' ? (G.settings.prov.groq.key ? 'groq' : G.settings.prov.openai.key ? 'openai' : 'gemini') : G.settings.listen;
   const ext = /mp4|aac/.test(blob.type) ? 'm4a' : 'webm';
   if (eng === 'gemini') {
-    const c = G.settings.prov.gemini; if (!c.key) throw new Error('NOKEY');
+    const c = { key: gemKey(), model: G.settings.prov.gemini.model }; if (!c.key) throw new Error('NOKEY');
     const b64 = await blobB64(blob);
     const d = await gemFetch([c.model, ...GEM_FALLBACK], 'generateContent', { contents: [{ parts: [{ text: `Transcribe this audio exactly as spoken (language: ${lang}). Output only the transcript, keep the learner's mistakes.` }, { inlineData: { mimeType: blob.type.split(';')[0], data: b64 } }] }] }, c.key);
     return d.candidates?.[0]?.content?.parts?.map(p => p.text).join('').trim() || '';
@@ -445,12 +459,12 @@ function pronCoach(el, target) {
   $('#pl', el).onclick = e => say(target, 'en', 'calm', e.currentTarget);
   let job = null; const btn = $('#pc', el);
   btn.onclick = async () => {
-    if (job) { job.stop(); return; } if (!G.settings.prov.gemini.key) return toast('مربی تلفظ با کلید Gemini کار می‌کند؛ در تنظیمات بگذارش.');
+    if (job) { job.stop(); return; } if (!gemKey()) return toast('مربی تلفظ با کلید Gemini کار می‌کند؛ در تنظیمات بگذارش.');
     stopSpeak(); job = recordAudio(); btn.textContent = '⏹ تمام شد'; btn.classList.add('bad');
     try {
       const blob = await job.promise; job = null; btn.textContent = '🎙 ضبط و ارزیابی'; btn.classList.remove('bad'); $('#pr', el).innerHTML = loading('در حال گوش دادن به تلفظت…');
       const b64 = await blobB64(blob);
-      const d = await gemFetch([G.settings.prov.gemini.model, ...GEM_FALLBACK], 'generateContent', { contents: [{ parts: [{ text: `You are an expert ${acc} pronunciation coach for Persian (Farsi) speakers. The learner tried to say: "${target}". Listen carefully to the audio. Judge against ${acc}. Detect specific errors: wrong phonemes (e.g. /w/→/v/, /θ/→/t/ or /s/, /ð/→/d/ or /z/, /æ/ vs /e/, /ɪ/ vs /iː/, /ʊ/ vs /uː/), extra vowel before or inside consonant clusters (e.g. "espeak", "estreet"), wrong word stress, flat intonation, final consonants dropped, ${acc.startsWith('British') ? 'pronounced r after vowels (should be silent in RP)' : 'missing r-coloring or flap t'}. Also note if the learner sounds unnatural because they pronounce every word separately instead of natural connected speech (linking, weak forms, flap t, yod coalescence). Explain WHY a Persian speaker makes each error and exactly HOW to place tongue/lips. JSON {"heard":"what you heard","score":0-100,"verdict":"Persian one sentence, human and encouraging","errors":[{"sound":"the sound or word part","you":"what learner did","correct":"IPA target","why":"Persian: why (Persian L1 influence)","how":"Persian: mouth/tongue instructions","practice":"English minimal pairs or drill words"}],"stress":"Persian note about stress/intonation or empty"}` }, { inlineData: { mimeType: blob.type.split(';')[0], data: b64 } }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.2 } }, G.settings.prov.gemini.key);
+      const d = await gemFetch([G.settings.prov.gemini.model, ...GEM_FALLBACK], 'generateContent', { contents: [{ parts: [{ text: `You are an expert ${acc} pronunciation coach for Persian (Farsi) speakers. The learner tried to say: "${target}". Listen carefully to the audio. Judge against ${acc}. Detect specific errors: wrong phonemes (e.g. /w/→/v/, /θ/→/t/ or /s/, /ð/→/d/ or /z/, /æ/ vs /e/, /ɪ/ vs /iː/, /ʊ/ vs /uː/), extra vowel before or inside consonant clusters (e.g. "espeak", "estreet"), wrong word stress, flat intonation, final consonants dropped, ${acc.startsWith('British') ? 'pronounced r after vowels (should be silent in RP)' : 'missing r-coloring or flap t'}. Also note if the learner sounds unnatural because they pronounce every word separately instead of natural connected speech (linking, weak forms, flap t, yod coalescence). Explain WHY a Persian speaker makes each error and exactly HOW to place tongue/lips. JSON {"heard":"what you heard","score":0-100,"verdict":"Persian one sentence, human and encouraging","errors":[{"sound":"the sound or word part","you":"what learner did","correct":"IPA target","why":"Persian: why (Persian L1 influence)","how":"Persian: mouth/tongue instructions","practice":"English minimal pairs or drill words"}],"stress":"Persian note about stress/intonation or empty"}` }, { inlineData: { mimeType: blob.type.split(';')[0], data: b64 } }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.2 } }, gemKey());
       const r = parseJSON(d.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '{}');
       $('#pr', el).innerHTML = `<div class="stack"><div class="row"><span class="score" style="font-size:36px">${faNum(r.score ?? 0)}</span><div class="grow small">شنیدم: <b class="en">${esc(r.heard || '')}</b><br>${esc(r.verdict || '')}</div></div>
       ${(r.errors || []).map(x => `<div class="card stack small" style="box-shadow:inset 0 0 0 1px var(--line)"><div><b class="en">${esc(x.sound)}</b> — تو گفتی <span class="en">${esc(x.you)}</span>، درستش <b class="en">/${esc(x.correct)}/</b></div><div><b>چرا:</b> ${esc(x.why)}</div><div><b>چطور:</b> ${esc(x.how)}</div>${x.practice ? `<div><b>تمرین:</b> <span class="en">${esc(x.practice)}</span> <button class="pill" data-p="${esc(x.practice)}">🔊</button></div>` : ''}</div>`).join('')}

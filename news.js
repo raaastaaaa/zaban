@@ -111,7 +111,7 @@ function drawRadio() {
 
 /* ───── اخبار سادهٔ امروز (خبر واقعی از جستجوی گوگل، بازنویسی در سطح تو) ───── */
 async function fetchNews(lv) {
-  const key = G.settings.prov.gemini.key; if (!key) throw new Error('NOGEM'); budgetGuard();
+  const key = gemKey(); if (!key) throw new Error('NOGEM'); if (key !== 'server') budgetGuard();
   const acc = G.settings.accent === 'UK' ? 'British' : 'American';
   const prompt = `Today is ${isoDay()}. Use Google Search to find 4 real, important news stories from the last 48 hours (mix: world, Middle East, science/technology, health or sport; avoid graphic violence). Use ONLY facts found in the search results; never invent details.
 Rewrite each for an English learner at CEFR ${lv} (${lv.startsWith('A1') ? 'very short sentences, present simple mostly, 60-80 words' : lv.startsWith('A2') ? 'short clear sentences, 90-110 words' : '120-150 words, natural but clear'}), ${acc} spelling.
@@ -200,7 +200,7 @@ routes.news = async () => {
 /* ───── پخش با صدای شخصیت و جای سه‌بعدی ───── */
 async function voiceAt(text, lang, emo, gv, x, z) {
   const keep = G.settings.geminiVoice, ve = G.settings.voiceEn;
-  if (G.settings.prov.gemini.key) { if (gv) G.settings.geminiVoice = gv; if (lang === 'en') G.settings.voiceEn = 'gemini'; }
+  if (gemKey()) { if (gv) G.settings.geminiVoice = gv; if (lang === 'en') G.settings.voiceEn = 'gemini'; }
   try { Spatial.at(x, z); return await say(text, lang, emo); } finally { G.settings.geminiVoice = keep; G.settings.voiceEn = ve; }
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
