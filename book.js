@@ -23,7 +23,8 @@ routes.book = async id => {
     <button data-b="more" aria-label="منو">⋮<small>بیشتر</small></button></div>
   <button class="mini-play" id="mp" aria-label="پخش مکالمه">▶</button>
   <article class="book${bookTr() ? ' tr' : ''}" id="bk">
-    <div class="bk-head"><span class="small muted">${esc((COVER[u.level] || [])[2] || lv.fa || '')} · لهجهٔ ${acc === 'UK' ? 'بریتانیایی 🇬🇧' : 'آمریکایی 🇺🇸'}</span>
+    <div class="bk-head"><span class="small muted">${esc((COVER[u.level] || [])[2] || lv.fa || '')}</span>
+      <div class="seg acc-seg" role="group" aria-label="لهجه">${[['US', '🇺🇸 لهجهٔ آمریکایی'], ['UK', '🇬🇧 لهجهٔ بریتانیایی']].map(([k, t]) => `<button data-acc="${k}" class="${acc === k ? 'on' : ''}">${t}</button>`).join('')}</div>
       <h2 class="en">Unit ${n}</h2><div class="bk-title en">${esc(u.en)}</div><div class="fa-tr">${esc(u.fa)}</div></div>
     <button class="btn wide teach-cta" data-b="teach">👩‍🏫 آموزش کامل این درس به فارسی<small>مکالمه، ترجمهٔ خط‌به‌خط، گرامر و واژه‌ها — صوتی و آفلاین</small></button>
     ${conv?.lines?.length ? `<section><div class="bk-chip en">Conversation</div>${conv.title ? `<b class="en">${esc(conv.title)}</b>` : ''}${conv.setting ? `<div class="small muted">${esc(conv.setting)}</div>` : ''}
@@ -45,6 +46,7 @@ routes.book = async id => {
   v.onclick = async e => {
     const tw = e.target.closest('.tw'); if (tw) return wordPanel(tw.textContent, tw.closest('p')?.textContent?.slice(0, 200));
     const lt = e.target.closest('[data-lt]'); if (lt) { const w = words.find(x => x.w === lt.dataset.lt); if (w) { const k = wid(u, w); if (!U.srs[k]) U.srs[k] = { box: 0, due: isoDay(), seen: 0, wrong: 0, right: 0 }; saveU(); window.LMAP = null; lt.textContent = '✓'; toast('به جعبهٔ لایتنر اضافه شد؛ به‌موقع یادآوری می‌شود.'); } return; }
+    const ab = e.target.closest('[data-acc]'); if (ab) { G.settings.accent = ab.dataset.acc; saveG('settings'); stopSpeak(); $$('[data-acc]', v).forEach(x => x.classList.toggle('on', x === ab)); toast(ab.dataset.acc === 'UK' ? 'از این به بعد همهٔ صداها با لهجهٔ بریتانیایی' : 'از این به بعد همهٔ صداها با لهجهٔ آمریکایی'); return say(conv?.lines?.[0]?.en || words[0]?.w || 'Hello!', 'en', 'calm'); }
     const p = e.target.closest('[data-play]'); if (p) return say(p.dataset.play, 'en', 'calm', p.classList.contains('icon-btn') ? p : null);
     const b = e.target.closest('[data-b]'); if (!b) return;
     const k = b.dataset.b;
