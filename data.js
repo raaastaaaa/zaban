@@ -3,8 +3,168 @@
    سرفصل‌ها به ترتیب سطوح رایج کتاب‌های عمومی (مقدماتی تا متوسط) چیده شده‌اند؛ محتوا تألیف خود برنامه است. */
 const LEVELS = [
 { id:'intro', fa:'مقدماتی', en:'Intro · A1', units:[
+{ id:'hello', en:'Hello! Greetings & Introductions', fa:'سلام و آشنایی', icon:'👋', hue:160,
+  gram:'فعل to be با I / you (I am…, Are you…?) و سؤال‌های What / Where / How',
+  talk:'سلام و احوالپرسی کن، خودت را معرفی کن (اسم، کشور، شغل)، اسمت را هجی کن و خداحافظی کن.',
+  words:`hello|həˈloʊ|سلام|👋|phr|Hello! I'm Rasta.
+hi|haɪ|سلام (خودمانی)|🙋|phr|Hi, Sara! How are you?
+good morning|ɡʊd ˈmɔːrnɪŋ|صبح بخیر|🌅|phr|Good morning, everyone!
+good afternoon|ɡʊd ˌæftərˈnuːn|بعدازظهر بخیر|🌤️|phr|Good afternoon. Can I help you?
+good evening|ɡʊd ˈiːvnɪŋ|عصربخیر / شب بخیر (هنگام دیدار)|🌆|phr|Good evening, sir.
+good night|ɡʊd ˈnaɪt|شب بخیر (هنگام خداحافظی و خواب)|🌙|phr|Good night! See you tomorrow.
+How are you?|haʊ ɑːr juː|حالت چطور است؟|🙂|phr|Hi, Ali! How are you?
+I'm fine, thanks.|aɪm faɪn θæŋks|خوبم، ممنون.|👍|phr|I'm fine, thanks. And you?
+What's your name?|wʌts jʊr neɪm|اسمت چیست؟|❓|phr|Hi! What's your name?
+My name is…|maɪ neɪm ɪz|اسم من … است|🪪|phr|My name is Rasta.
+Nice to meet you.|naɪs tə miːt juː|از آشنایی‌ات خوشحالم.|🤝|phr|Nice to meet you, Maryam.
+Where are you from?|wer ɑːr juː frʌm|اهل کجایی؟|🌍|phr|Where are you from? I'm from Iran.
+I'm from…|aɪm frʌm|من اهل … هستم|📍|phr|I'm from Iran, but I live in Canada.
+live|lɪv|زندگی کردن|🏠|v|I live in Tehran.
+spell|spel|هجی کردن|🔤|v|How do you spell your name?
+please|pliːz|لطفاً|🙏|adv|Please sit down.
+thank you|ˈθæŋk juː|متشکرم|💐|phr|Thank you very much!
+You're welcome.|jʊr ˈwelkəm|خواهش می‌کنم (در جواب تشکر)|😊|phr|"Thank you!" "You're welcome."
+excuse me|ɪkˈskjuːz miː|ببخشید (برای جلب توجه)|✋|phr|Excuse me, where is the bank?
+sorry|ˈsɑːri|متأسفم / ببخشید (عذرخواهی)|😔|adj|Sorry, I'm late.
+goodbye|ɡʊdˈbaɪ|خداحافظ|👋|phr|Goodbye! Have a nice day.
+See you later.|siː juː ˈleɪtər|بعداً می‌بینمت.|🫡|phr|Bye, Sara! See you later.
+Mr.|ˈmɪstər|آقای …|👨‍💼|n|Good morning, Mr. Khan.
+Ms.|mɪz|خانم … (رسمی)|👩‍💼|n|This is Ms. Ahmadi, our teacher.
+first name|ˈfɜːrst neɪm|نام (کوچک)|🏷️|n|My first name is Rasta.
+last name|ˈlæst neɪm|نام خانوادگی|📛|n|What's your last name?
+country|ˈkʌntri|کشور|🗺️|n|Iran is a big country.
+job|dʒɑːb|شغل|💼|n|What's your job? I'm a nurse.`},
+{ id:'things', en:'Things Around Me', fa:'وسایل شخصی و کلاس', icon:'🎒', hue:205,
+  gram:'a / an، this / these، اسم جمع، و حروف اضافهٔ مکان (in, on, under, next to)',
+  talk:'بگو وسایلت کجاست و بپرس «Where is my…?»؛ چیزهای دور و برت را نام ببر.',
+  words:`bag|bæɡ|کیف|👜|n|My bag is on the chair.
+book|bʊk|کتاب|📘|n|This is my English book.
+notebook|ˈnoʊtbʊk|دفترچه|📓|n|Write the new words in your notebook.
+pen|pen|خودکار|🖊️|n|Can I borrow a pen?
+pencil|ˈpensəl|مداد|✏️|n|I have a pencil and an eraser.
+eraser|ɪˈreɪsər|پاک‌کن|🧽|n|Where's my eraser?
+keys|kiːz|کلیدها|🔑|n|Where are my keys?
+wallet|ˈwɑːlɪt|کیف پول|👛|n|My wallet is in my bag.
+phone|foʊn|گوشی|📱|n|Is this your phone?
+glasses|ˈɡlæsɪz|عینک|👓|n|My glasses are on the table.
+watch|wɑːtʃ|ساعت مچی|⌚|n|This watch is new.
+umbrella|ʌmˈbrelə|چتر|☂️|n|Take an umbrella. It's raining.
+desk|desk|میز تحریر|🗄️|n|The laptop is on the desk.
+chair|tʃer|صندلی|🪑|n|Your bag is under the chair.
+table|ˈteɪbəl|میز|🪵|n|The keys are on the table.
+window|ˈwɪndoʊ|پنجره|🪟|n|Please open the window.
+door|dɔːr|در|🚪|n|Close the door, please.
+in|ɪn|داخلِ|📥|prep|The pen is in the bag.
+on|ɑːn|رویِ|⬆️|prep|The book is on the desk.
+under|ˈʌndər|زیرِ|⬇️|prep|The cat is under the table.
+next to|ˈnekst tə|کنارِ|↔️|prep|The lamp is next to the bed.
+this|ðɪs|این (مفرد)|👉|adj|This is my pen.
+these|ðiːz|این‌ها (جمع)|👇|adj|These are my keys.
+Where is…?|wer ɪz|… کجاست؟|❓|phr|Where is my phone?`},
+{ id:'countries', en:'Countries & Languages', fa:'کشورها و ملیت‌ها', icon:'🌍', hue:185,
+  gram:'فعل to be در جملهٔ منفی و سؤالی (Are you…? Is she…? I\'m not…) و صفت‌های توصیفی',
+  talk:'بگو اهل کجایی، به چه زبانی حرف می‌زنی و دربارهٔ یک دوست بگو اهل کجاست و چه شکلی است.',
+  words:`country|ˈkʌntri|کشور|🗺️|n|What country are you from?
+city|ˈsɪti|شهر|🏙️|n|Shiraz is a beautiful city.
+Iran|ɪˈrɑːn|ایران|🇮🇷|n|I'm from Iran.
+Iranian|ɪˈreɪniən|ایرانی|🧕|adj|She's Iranian.
+Persian|ˈpɜːrʒən|فارسی (زبان)|🗣️|n|My first language is Persian.
+English|ˈɪŋɡlɪʃ|انگلیسی|🇬🇧|n|I'm learning English.
+the United States|ðə juˌnaɪtɪd ˈsteɪts|ایالات متحده|🇺🇸|n|He lives in the United States.
+American|əˈmerɪkən|آمریکایی|🗽|adj|My teacher is American.
+Britain|ˈbrɪtən|بریتانیا|💂|n|London is in Britain.
+British|ˈbrɪtɪʃ|بریتانیایی|☕|adj|Is she British?
+Canada|ˈkænədə|کانادا|🇨🇦|n|My cousin lives in Canada.
+Turkey|ˈtɜːrki|ترکیه|🇹🇷|n|We go to Turkey every summer.
+Turkish|ˈtɜːrkɪʃ|ترکی؛ ترک|🧿|adj|I like Turkish coffee.
+Germany|ˈdʒɜːrməni|آلمان|🇩🇪|n|Germany is in Europe.
+German|ˈdʒɜːrmən|آلمانی|🥨|adj|He speaks German.
+Arabic|ˈærəbɪk|عربی (زبان)|📜|n|She speaks Arabic and English.
+language|ˈlæŋɡwɪdʒ|زبان|💬|n|How many languages do you speak?
+speak|spiːk|صحبت کردن (به زبانی)|🗨️|v|Do you speak English?
+from|frʌm|اهلِ؛ از|📍|prep|Where are you from?
+tall|tɔːl|قدبلند|🧍|adj|My brother is very tall.
+short|ʃɔːrt|کوتاه‌قد؛ کوتاه|🙎|adj|She's short and friendly.
+friendly|ˈfrendli|خوش‌برخورد؛ مهربان|🤗|adj|Your friends are very friendly.
+beautiful|ˈbjuːtəfəl|زیبا|🌸|adj|Isfahan is a beautiful city.
+I'm not…|aɪm nɑːt|من … نیستم|🙅|phr|I'm not from Tehran. I'm from Tabriz.`},
+{ id:'clothes', en:'Clothes, Colors & Weather', fa:'لباس، رنگ‌ها و آب‌وهوا', icon:'👕', hue:330,
+  gram:'حال استمراری: I\'m wearing…, Are you wearing…? و جای صفت قبل از اسم (a red dress)',
+  talk:'بگو امروز چه پوشیده‌ای و چه رنگی است، و هوا چطور است.',
+  words:`shirt|ʃɜːrt|پیراهن|👔|n|He's wearing a white shirt.
+T-shirt|ˈtiː ʃɜːrt|تی‌شرت|👕|n|I bought a new T-shirt.
+pants|pænts|شلوار|👖|n|These pants are too long.
+dress|dres|پیراهن زنانه|👗|n|She looks beautiful in that dress.
+jacket|ˈdʒækɪt|کت / کاپشن|🧥|n|This jacket is too expensive.
+coat|koʊt|پالتو|🧥|n|Wear your coat, it's cold.
+shoes|ʃuːz|کفش|👞|n|These shoes are new.
+socks|sɑːks|جوراب|🧦|n|My socks are wet.
+hat|hæt|کلاه|🎩|n|He always wears a hat.
+scarf|skɑːrf|شال‌گردن / روسری|🧣|n|It's windy; take a scarf.
+gloves|ɡlʌvz|دستکش|🧤|n|Wear gloves in winter.
+glasses|ˈɡlæsɪz|عینک|👓|n|I need glasses to read.
+bag|bæɡ|کیف|👜|n|Don't forget your bag.
+wear|wer|پوشیدن (به تن داشتن)|👚|v|I wear a uniform at work.
+put on|pʊt ɑːn|پوشیدن (عمل پوشیدن)|👕|phr|Put on your jacket.
+take off|teɪk ɔːf|درآوردن|👟|phr|Take off your shoes, please.
+try on|traɪ ɑːn|پرو کردن|🪞|phr|Can I try on this shirt?
+size|saɪz|سایز|🔢|n|What size are you?
+comfortable|ˈkʌmftərbəl|راحت|🧸|adj|These shoes are very comfortable.
+expensive|ɪkˈspensɪv|گران|💎|adj|This watch is too expensive.
+cheap|tʃiːp|ارزان|🪙|adj|It's cheap and good.
+color|ˈkʌlər|رنگ|🎨|n|What color is your car?
+red|red|قرمز|#d62828|adj|Stop at the red light.
+blue|bluː|آبی|#1d4ed8|adj|The sky is blue today.
+green|ɡriːn|سبز|#15803d|adj|Green means go.
+yellow|ˈjeloʊ|زرد|#eab308|adj|Bananas are yellow.
+black|blæk|سیاه|#111111|adj|I like black coffee.
+white|waɪt|سفید|#f5f5f5|adj|Snow is white.
+brown|braʊn|قهوه‌ای|#7c4a1e|adj|She has brown eyes.
+purple|ˈpɜːrpəl|بنفش|#7e22ce|adj|Purple is my favorite color.
+pink|pɪŋk|صورتی|#ec4899|adj|She wore a pink dress.
+gray|ɡreɪ|خاکستری|#8a8f98|adj|The sky is gray and cloudy.
+weather|ˈweðər|آب‌وهوا|🌦️|n|What's the weather like today?
+sunny|ˈsʌni|آفتابی|☀️|adj|It's sunny and hot.
+rainy|ˈreɪni|بارانی|🌧️|adj|It's rainy, so wear a raincoat.
+cold|koʊld|سرد|🥶|adj|It's cold today. Wear a coat.
+hot|hɑːt|گرم؛ داغ|🥵|adj|It's very hot in summer.`},
+{ id:'time', en:'Time & Daily Activities', fa:'ساعت و کارهای روزانه', icon:'🕐', hue:45,
+  gram:'ساعت (It\'s seven o\'clock / half past six) و حال استمراری برای کاری که الان انجام می‌دهی: What are you doing? I\'m cooking.',
+  talk:'بگو ساعت چند است، الان چه کار می‌کنی و صبح‌ها معمولاً چه کار می‌کنی.',
+  words:`day|deɪ|روز|🌤️|n|Have a nice day!
+night|naɪt|شب|🌙|n|Good night, see you tomorrow.
+morning|ˈmɔːrnɪŋ|صبح|🌅|n|I drink coffee every morning.
+evening|ˈiːvnɪŋ|غروب تا شب / سرِ شب (عصر = late afternoon)|🌆|n|We watch TV in the evening.
+weekend|ˈwiːkend|آخر هفته|🎉|n|What do you do on the weekend?
+hour|ˈaʊər|ساعت (مدت)|⏳|n|The flight takes two hours.
+minute|ˈmɪnɪt|دقیقه|⏱️|n|Wait a minute, please.
+today|təˈdeɪ|امروز|🔆|adv|What's the date today?
+tomorrow|təˈmɑːroʊ|فردا|➡️|adv|See you tomorrow.
+yesterday|ˈjestərdeɪ|دیروز|⬅️|adv|I was very busy yesterday.
+o'clock|əˈklɑːk|(ساعت) … تمام|🕗|phr|It's eight o'clock.
+half past|hæf pæst|… و نیم|🕣|phr|The class starts at half past nine.
+early|ˈɜːrli|زود|🐓|adv|I get up early.
+late|leɪt|دیر|⌛|adj|Sorry, I'm late.
+always|ˈɔːlweɪz|همیشه|♾️|adv|I always drink tea in the morning.
+usually|ˈjuːʒuəli|معمولاً|🔂|adv|I usually walk to work.
+sometimes|ˈsʌmtaɪmz|گاهی|🎲|adv|Sometimes I take a taxi.
+never|ˈnevər|هرگز|🚫|adv|I never eat fast food.
+wake up|weɪk ʌp|بیدار شدن|⏰|phr|I wake up at seven.
+get up|ɡet ʌp|از رختخواب بلند شدن|🛏️|phr|I get up at 7:15.
+brush your teeth|brʌʃ jɔːr tiːθ|مسواک زدن|🪥|phr|Brush your teeth before bed.
+take a shower|teɪk ə ˈʃaʊər|دوش گرفتن|🚿|phr|I take a shower every morning.
+get dressed|ɡet drest|لباس پوشیدن|👗|phr|I get dressed quickly.
+have breakfast|hæv ˈbrekfəst|صبحانه خوردن|🥐|phr|We have breakfast together.
+leave home|liːv hoʊm|از خانه بیرون رفتن|🚪|phr|I leave home at eight.
+go to work|ɡoʊ tə wɜːrk|سر کار رفتن|🧑‍💻|phr|I go to work by bus.
+start|stɑːrt|شروع کردن / شروع شدن|🏁|v|School starts at 7:30.
+finish|ˈfɪnɪʃ|تمام کردن|✅|v|I finish work at five.
+go home|ɡoʊ hoʊm|به خانه رفتن|🏠|phr|I go home at six.
+cook|kʊk|آشپزی کردن|🥘|v|My father likes to cook.
+eat|iːt|خوردن|🍴|v|What do you want to eat?
+do the dishes|duː ðə ˈdɪʃɪz|ظرف شستن|🍽️|phr|I do the dishes after dinner.`},
 { id:'family', en:'Family', fa:'خانواده', icon:'👪', hue:12,
-  gram:'فعل to be و صفات ملکی (my, your, his, her, our, their)',
+  gram:'حال ساده: My sister works downtown. Does he live…? و صفات ملکی (my, your, his, her)',
   talk:'دربارهٔ اعضای خانواده‌ات حرف بزن: اسم، سن، شغل و جایی که زندگی می‌کنند.',
   words:`mother|ˈmʌðər|مادر|👩|n|My mother is a teacher.
 father|ˈfɑːðər|پدر|👨|n|My father works in a bank.
@@ -16,110 +176,16 @@ grandfather|ˈɡrænˌfɑːðər|پدربزرگ|👴|n|My grandfather lives with
 husband|ˈhʌzbənd|شوهر|🤵|n|Her husband is a doctor.
 wife|waɪf|همسر (زن)|👰|n|His wife speaks three languages.
 son|sʌn|پسر (فرزند)|🧒|n|Their son is ten years old.
-daughter|ˈdɔːtər|دختر (فرزند)|👧|n|She has two daughters.
+daughter|ˈdɔːtər|دختر (فرزند)|👩‍👧|n|She has two daughters.
 baby|ˈbeɪbi|نوزاد|👶|n|The baby is sleeping.
 aunt|ænt|عمه / خاله|👩‍🦰|n|My aunt is a nurse.
 uncle|ˈʌŋkəl|عمو / دایی|👨‍🦱|n|My uncle has a farm.
-cousin|ˈkʌzən|عموزاده، خاله‌زاده و…|👫|n|My cousin lives in London.
-get married|ɡet ˈmærid|ازدواج کردن|💍|phr|They got married last year.
+cousin|ˈkʌzən|عموزاده / دایی‌زاده / عمه‌زاده / خاله‌زاده|👫|n|My cousin lives in London.
+get married|ɡet ˈmerid|ازدواج کردن|💍|phr|They got married last year.
 live with|lɪv wɪð|زندگی کردن با|🏡|phr|I live with my parents.
 take care of|teɪk ker əv|مراقبت کردن از|🤲|phr|I take care of my little brother.
 look like|lʊk laɪk|شبیه … بودن|🪞|phr|You look like your mother.
 grow up|ɡroʊ ʌp|بزرگ شدن|🌱|phr|I grew up in Shiraz.`},
-{ id:'colors', en:'Colors', fa:'رنگ‌ها', icon:'🎨', hue:290,
-  gram:'جای صفت قبل از اسم: a red car, a big blue house',
-  talk:'رنگ وسایل اطرافت و رنگ مورد علاقه‌ات را توصیف کن.',
-  words:`color|ˈkʌlər|رنگ|🎨|n|What color is your car?
-red|red|قرمز|#d62828|adj|Stop at the red light.
-blue|bluː|آبی|#1d4ed8|adj|The sky is blue today.
-green|ɡriːn|سبز|#15803d|adj|Green means go.
-yellow|ˈjeloʊ|زرد|#eab308|adj|Bananas are yellow.
-black|blæk|سیاه|#111111|adj|I like black coffee.
-white|waɪt|سفید|#f5f5f5|adj|Snow is white.
-brown|braʊn|قهوه‌ای|#7c4a1e|adj|She has brown eyes.
-purple|ˈpɜːrpəl|بنفش|#7e22ce|adj|Purple is my favorite color.
-pink|pɪŋk|صورتی|#ec4899|adj|She wore a pink dress.
-gray|ɡreɪ|خاکستری|#8a8f98|adj|The sky is gray and cloudy.
-gold|ɡoʊld|طلایی|#c9a227|adj|He won a gold medal.
-silver|ˈsɪlvər|نقره‌ای|#b8bec7|adj|She bought a silver ring.
-dark|dɑːrk|تیره|🌑|adj|He has dark hair.
-light|laɪt|روشن (رنگ)|🌕|adj|I want a light blue shirt.
-bright|braɪt|روشن و درخشان|✨|adj|She likes bright colors.
-colorful|ˈkʌlərfəl|رنگارنگ|🌈|adj|The market is very colorful.
-favorite|ˈfeɪvərɪt|مورد علاقه|⭐|adj|What's your favorite color?
-paint|peɪnt|رنگ زدن|🖌️|v|We painted the room white.`},
-{ id:'body', en:'The Body', fa:'بدن', icon:'🧍', hue:20,
-  gram:'have / has: I have…, She has…',
-  talk:'ظاهر یک نفر از خانواده یا دوستانت را توصیف کن.',
-  words:`face|feɪs|صورت|😊|n|Wash your face every morning.
-eye|aɪ|چشم|👁️|n|Close your eyes.
-ear|ɪr|گوش|👂|n|I have a pain in my ear.
-nose|noʊz|بینی|👃|n|My nose is cold.
-mouth|maʊθ|دهان|👄|n|Open your mouth, please.
-tooth|tuːθ|دندان (جمع: teeth)|🦷|n|I brush my teeth twice a day.
-hair|her|مو|💇|n|She has long black hair.
-neck|nek|گردن|🦒|n|My neck is stiff.
-shoulder|ˈʃoʊldər|شانه|🤷|n|He has broad shoulders.
-back|bæk|کمر / پشت|🧍|n|I have back pain.
-arm|ɑːrm|بازو / دست|💪|n|He broke his arm.
-hand|hænd|دست (کف دست)|✋|n|Raise your hand.
-finger|ˈfɪŋɡər|انگشت|☝️|n|I cut my finger.
-stomach|ˈstʌmək|معده / شکم|🫃|n|My stomach hurts.
-leg|leɡ|پا (ساق)|🦵|n|My legs are tired.
-knee|niː|زانو|🧎|n|I hurt my knee playing football.
-foot|fʊt|پا (کف پا؛ جمع: feet)|🦶|n|I hurt my foot.
-heart|hɑːrt|قلب|🫀|n|Your heart beats fast when you run.
-hurt|hɜːrt|درد کردن / آسیب زدن|🤕|v|My back hurts.
-tall|tɔːl|قدبلند|📏|adj|My brother is very tall.
-short|ʃɔːrt|کوتاه‌قد / کوتاه|📐|adj|She is short and slim.`},
-{ id:'food', en:'Food & Drinks', fa:'غذا و نوشیدنی', icon:'🍽️', hue:30,
-  gram:'اسم‌های شمارش‌پذیر و ناشمارش؛ some و any',
-  talk:'بگو صبحانه، ناهار و شام معمولاً چه می‌خوری و غذای محبوبت چیست.',
-  words:`bread|bred|نان|🍞|n|We buy fresh bread every day.
-rice|raɪs|برنج|🍚|n|Rice is popular in Iran.
-meat|miːt|گوشت|🥩|n|I don't eat red meat.
-chicken|ˈtʃɪkɪn|مرغ|🍗|n|Chicken kebab is delicious.
-fish|fɪʃ|ماهی|🐟|n|Fish is good for your health.
-egg|eɡ|تخم‌مرغ|🥚|n|I eat two eggs for breakfast.
-cheese|tʃiːz|پنیر|🧀|n|Can I have cheese on my sandwich?
-milk|mɪlk|شیر|🥛|n|Drink a glass of milk.
-soup|suːp|سوپ|🍲|n|This soup is too hot.
-salad|ˈsæləd|سالاد|🥗|n|I'd like a green salad.
-tea|tiː|چای|🍵|n|Would you like a cup of tea?
-water|ˈwɔːtər|آب|💧|n|Please drink more water.
-breakfast|ˈbrekfəst|صبحانه|🥞|n|Breakfast is ready.
-lunch|lʌntʃ|ناهار|🥪|n|Let's have lunch together.
-dinner|ˈdɪnər|شام|🍝|n|We have dinner at eight.
-hungry|ˈhʌŋɡri|گرسنه|😋|adj|I'm hungry.
-thirsty|ˈθɜːrsti|تشنه|🥤|adj|I'm thirsty. Can I have some water?
-delicious|dɪˈlɪʃəs|خوشمزه|🤤|adj|This kebab is delicious.
-order|ˈɔːrdər|سفارش دادن|🛎️|v|Are you ready to order?
-bill|bɪl|صورت‌حساب|💵|n|Can I have the bill, please?
-I'd like|aɪd laɪk|… می‌خواهم (مؤدبانه)|🙋|phr|I'd like a coffee, please.`},
-{ id:'fruits', en:'Fruits & Vegetables', fa:'میوه و سبزیجات', icon:'🍎', hue:95,
-  gram:'جمع بستن اسم‌ها: apple → apples، tomato → tomatoes، strawberry → strawberries',
-  talk:'از خرید میوه و سبزی در بازار حرف بزن: چه می‌خری و چقدر.',
-  words:`apple|ˈæpəl|سیب|🍎|n|An apple a day keeps the doctor away.
-orange|ˈɔːrɪndʒ|پرتقال|🍊|n|I drink orange juice every morning.
-banana|bəˈnænə|موز|🍌|n|Monkeys love bananas.
-grapes|ɡreɪps|انگور|🍇|n|These grapes are very sweet.
-watermelon|ˈwɔːtərˌmelən|هندوانه|🍉|n|Watermelon is perfect for summer.
-strawberry|ˈstrɔːˌberi|توت‌فرنگی|🍓|n|She put strawberries on the cake.
-lemon|ˈlemən|لیمو|🍋|n|Add some lemon to the tea.
-mango|ˈmæŋɡoʊ|انبه|🥭|n|I love mango juice.
-dates|deɪts|خرما|🌴|n|Oman is famous for its dates.
-vegetables|ˈvedʒtəbəlz|سبزیجات|🥬|n|Eat more vegetables.
-tomato|təˈmeɪtoʊ|گوجه‌فرنگی|🍅|n|Cut the tomatoes for the salad.
-potato|pəˈteɪtoʊ|سیب‌زمینی|🥔|n|I'd like fried potatoes.
-carrot|ˈkærət|هویج|🥕|n|Carrots are good for your eyes.
-onion|ˈʌnjən|پیاز|🧅|n|Onions make me cry.
-cucumber|ˈkjuːkʌmbər|خیار|🥒|n|Cucumber and yogurt go well together.
-fresh|freʃ|تازه|🌿|adj|These vegetables are fresh.
-sweet|swiːt|شیرین|🍬|adj|Dates are very sweet.
-sour|ˈsaʊər|ترش|🥴|adj|Green apples are a little sour.
-ripe|raɪp|رسیده|🍑|adj|The mangoes are ripe.
-peel|piːl|پوست کندن|🔪|v|Peel the potatoes first.
-kilo|ˈkiːloʊ|کیلو|⚖️|n|A kilo of tomatoes, please.`},
 { id:'home', en:'Home', fa:'خانه', icon:'🏠', hue:200,
   gram:'There is / There are و حروف اضافهٔ مکان (in, on, under, next to)',
   talk:'خانه یا آپارتمانت را توصیف کن: چند اتاق دارد و در هر اتاق چه هست.',
@@ -135,113 +201,16 @@ bathroom|ˈbæθruːm|حمام و دستشویی|🛁|n|The bathroom is on the l
 table|ˈteɪbəl|میز|🪵|n|Put the plates on the table.
 chair|tʃer|صندلی|🪑|n|Sit on this chair.
 bed|bed|تخت‌خواب|🛌|n|I go to bed at eleven.
-sofa|ˈsoʊfə|مبل|🛋️|n|The cat is on the sofa.
+sofa|ˈsoʊfə|کاناپه / مبل|🛋️|n|The cat is on the sofa.
 fridge|frɪdʒ|یخچال|🧊|n|Put the milk in the fridge.
 air conditioner|ˈer kənˌdɪʃənər|کولر|🌀|n|The air conditioner isn't working.
 lamp|læmp|چراغ|💡|n|Turn on the lamp, please.
 mirror|ˈmɪrər|آینه|🪞|n|She looked in the mirror.
 key|kiː|کلید|🔑|n|I can't find my keys.
 neighbor|ˈneɪbər|همسایه|🏘️|n|Our neighbors are very kind.
-rent|rent|اجاره کردن / اجاره|🏷️|v|We rent a flat in Muscat.
+rent|rent|اجاره کردن / اجاره|🏷️|v|We rent an apartment in Tehran.
 clean|kliːn|تمیز کردن|🧹|v|I clean the house on Fridays.`},
-{ id:'clothes', en:'Clothes', fa:'لباس', icon:'👕', hue:330,
-  gram:'حال استمراری: I am wearing…, She is wearing…',
-  talk:'بگو امروز چه پوشیده‌ای و در فروشگاه لباس چطور خرید می‌کنی.',
-  words:`shirt|ʃɜːrt|پیراهن|👔|n|He's wearing a white shirt.
-T-shirt|ˈtiː ʃɜːrt|تی‌شرت|👕|n|I bought a new T-shirt.
-pants|pænts|شلوار|👖|n|These pants are too long.
-dress|dres|پیراهن زنانه|👗|n|She looks beautiful in that dress.
-jacket|ˈdʒækɪt|کاپشن / ژاکت|🥼|n|This jacket is too expensive.
-coat|koʊt|پالتو|🧥|n|Wear your coat, it's cold.
-shoes|ʃuːz|کفش|👞|n|These shoes are new.
-socks|sɑːks|جوراب|🧦|n|My socks are wet.
-hat|hæt|کلاه|🎩|n|He always wears a hat.
-scarf|skɑːrf|شال‌گردن / روسری|🧣|n|It's windy; take a scarf.
-gloves|ɡlʌvz|دستکش|🧤|n|Wear gloves in winter.
-glasses|ˈɡlæsɪz|عینک|👓|n|I need glasses to read.
-bag|bæɡ|کیف|👜|n|Don't forget your bag.
-wear|wer|پوشیدن (به تن داشتن)|👚|v|I wear a uniform at work.
-put on|pʊt ɑːn|پوشیدن (عمل پوشیدن)|🧥|phr|Put on your jacket.
-take off|teɪk ɔːf|درآوردن|👟|phr|Take off your shoes, please.
-try on|traɪ ɑːn|پرو کردن|🪞|phr|Can I try on this shirt?
-size|saɪz|سایز|🔢|n|What size are you?
-comfortable|ˈkʌmftərbəl|راحت|🧸|adj|These shoes are very comfortable.
-expensive|ɪkˈspensɪv|گران|💎|adj|This watch is too expensive.
-cheap|tʃiːp|ارزان|🪙|adj|It's cheap and good.`},
-{ id:'time', en:'Time & Calendar', fa:'زمان و تقویم', icon:'🕐', hue:45,
-  gram:'حروف اضافهٔ زمان: at (ساعت)، on (روز)، in (ماه و سال)',
-  talk:'برنامهٔ یک هفته‌ات را بگو: چه روزهایی و چه ساعت‌هایی چه کار می‌کنی.',
-  words:`day|deɪ|روز|🌤️|n|Have a nice day!
-night|naɪt|شب|🌙|n|Good night, see you tomorrow.
-morning|ˈmɔːrnɪŋ|صبح|🌅|n|I drink coffee every morning.
-evening|ˈiːvnɪŋ|عصر|🌆|n|We watch TV in the evening.
-week|wiːk|هفته|📅|n|I go to the gym three times a week.
-weekend|ˈwiːkend|آخر هفته|🎉|n|What do you do on the weekend?
-month|mʌnθ|ماه|📆|n|My birthday is next month.
-year|jɪr|سال|🎆|n|Happy New Year!
-hour|ˈaʊər|ساعت (مدت)|⏳|n|The flight takes two hours.
-minute|ˈmɪnɪt|دقیقه|⏱️|n|Wait a minute, please.
-today|təˈdeɪ|امروز|🔆|adv|What's the date today?
-tomorrow|təˈmɑːroʊ|فردا|➡️|adv|See you tomorrow.
-yesterday|ˈjestərdeɪ|دیروز|⬅️|adv|I was very busy yesterday.
-o'clock|əˈklɑːk|(ساعت) … تمام|🕗|phr|It's eight o'clock.
-half past|hæf pæst|… و نیم|🕣|phr|The class starts at half past nine.
-early|ˈɜːrli|زود|🐓|adj|I get up early.
-late|leɪt|دیر|⌛|adj|Sorry, I'm late.
-always|ˈɔːlweɪz|همیشه|♾️|adv|I always drink tea in the morning.
-usually|ˈjuːʒuəli|معمولاً|🔂|adv|I usually walk to work.
-sometimes|ˈsʌmtaɪmz|گاهی|🎲|adv|Sometimes I take a taxi.
-never|ˈnevər|هرگز|🚫|adv|I never eat fast food.`},
-{ id:'routine', en:'Daily Routine', fa:'کارهای روزانه', icon:'⏰', hue:170,
-  gram:'حال ساده و قیدهای تکرار: I usually get up at 7. He never watches TV.',
-  talk:'یک روز معمولی‌ات را از صبح تا شب تعریف کن.',
-  words:`wake up|weɪk ʌp|بیدار شدن|⏰|phr|I wake up at seven.
-get up|ɡet ʌp|از رختخواب بلند شدن|🛏️|phr|I get up at 7:15.
-brush your teeth|brʌʃ jɔːr tiːθ|مسواک زدن|🪥|phr|Brush your teeth before bed.
-take a shower|teɪk ə ˈʃaʊər|دوش گرفتن|🚿|phr|I take a shower every morning.
-get dressed|ɡet drest|لباس پوشیدن|👗|phr|I get dressed quickly.
-have breakfast|hæv ˈbrekfəst|صبحانه خوردن|🥐|phr|We have breakfast together.
-leave home|liːv hoʊm|از خانه بیرون رفتن|🚪|phr|I leave home at eight.
-go to work|ɡoʊ tə wɜːrk|سر کار رفتن|🧑‍💻|phr|I go to work by bus.
-start|stɑːrt|شروع کردن / شروع شدن|🏁|v|School starts at 7:30.
-finish|ˈfɪnɪʃ|تمام کردن|✅|v|I finish work at five.
-go home|ɡoʊ hoʊm|به خانه رفتن|🏠|phr|I go home at six.
-cook|kʊk|آشپزی کردن|🥘|v|My father likes to cook.
-eat|iːt|خوردن|🍴|v|What do you want to eat?
-do the dishes|duː ðə ˈdɪʃɪz|ظرف شستن|🍽️|phr|I do the dishes after dinner.
-go shopping|ɡoʊ ˈʃɑːpɪŋ|خرید رفتن|🛍️|phr|We go shopping on Thursdays.
-read|riːd|خواندن|📖|v|I read a book every night.
-write|raɪt|نوشتن|✍️|v|Please write your name here.
-walk|wɔːk|پیاده رفتن|🚶|v|Let's walk to the park.
-watch TV|wɑːtʃ ˌtiːˈviː|تلویزیون تماشا کردن|📺|phr|We watch TV after dinner.
-take a nap|teɪk ə næp|چرت زدن|💤|phr|I take a nap after lunch.
-sleep|sliːp|خوابیدن|😴|v|Babies sleep a lot.`},
-{ id:'animals', en:'Animals', fa:'حیوانات', icon:'🐾', hue:140,
-  gram:'can / can\'t برای توانایی: Birds can fly. Fish can\'t walk.',
-  talk:'دربارهٔ حیوان مورد علاقه‌ات بگو: کجا زندگی می‌کند و چه کارهایی می‌تواند بکند.',
-  words:`cat|kæt|گربه|🐈|n|My cat sleeps all day.
-dog|dɔːɡ|سگ|🐕|n|The dog is barking.
-bird|bɜːrd|پرنده|🐦|n|A bird is singing in the tree.
-horse|hɔːrs|اسب|🐎|n|He rides a horse.
-cow|kaʊ|گاو|🐄|n|Cows give us milk.
-sheep|ʃiːp|گوسفند|🐑|n|The sheep are in the field.
-goat|ɡoʊt|بز|🐐|n|There are many goats in Oman.
-camel|ˈkæməl|شتر|🐫|n|Camels can live in the desert.
-lion|ˈlaɪən|شیر (حیوان)|🦁|n|The lion is the king of the jungle.
-elephant|ˈelɪfənt|فیل|🐘|n|Elephants have big ears.
-monkey|ˈmʌŋki|میمون|🐒|n|The monkey is eating a banana.
-rabbit|ˈræbɪt|خرگوش|🐇|n|The rabbit has long ears.
-snake|sneɪk|مار|🐍|n|Be careful, there's a snake!
-turtle|ˈtɜːrtəl|لاک‌پشت|🐢|n|Sea turtles lay eggs at Ras al Jinz.
-dolphin|ˈdɑːlfɪn|دلفین|🐬|n|You can see dolphins near Muscat.
-pet|pet|حیوان خانگی|🐾|n|Do you have a pet?
-wild|waɪld|وحشی|🐺|adj|Lions are wild animals.
-feed|fiːd|غذا دادن|🥣|v|Don't feed the animals.
-fly|flaɪ|پرواز کردن|🕊️|v|Birds can fly.
-swim|swɪm|شنا کردن|🏊|v|Fish can swim.`}
-]},
-{ id:'l1', fa:'سطح ۱', en:'Level 1 · A2', units:[
-{ id:'jobs', en:'Jobs', fa:'مشاغل', icon:'💼', hue:220,
+{ id:'jobs', en:'Jobs & Workplaces', fa:'شغل‌ها و محل کار', icon:'💼', hue:220,
   gram:'حال ساده برای کار و شغل: She works in a hospital. What do you do?',
   talk:'شغل خودت یا شغلی که دوست داری را توضیح بده: کجا کار می‌کنی و چه می‌کنی.',
   words:`job|dʒɑːb|شغل|💼|n|I'm looking for a new job.
@@ -264,7 +233,119 @@ shop assistant|ˈʃɑːp əˌsɪstənt|فروشنده|🏪|n|The shop assistant 
 earn|ɜːrn|درآمد داشتن|💵|v|She earns a good salary.
 retired|rɪˈtaɪərd|بازنشسته|🧓|adj|My father is retired.
 unemployed|ˌʌnɪmˈplɔɪd|بیکار|🪫|adj|He's unemployed at the moment.`},
-{ id:'city', en:'City & Directions', fa:'شهر و نشانی', icon:'🏙️', hue:250,
+{ id:'food', en:'Food & Drinks', fa:'غذا و نوشیدنی', icon:'🍽️', hue:30,
+  gram:'اسم‌های شمارش‌پذیر و ناشمارش (some / any، How many / How much) و I like / I don\'t like',
+  talk:'بگو صبحانه، ناهار و شام معمولاً چه می‌خوری و غذای محبوبت چیست.',
+  words:`bread|bred|نان|🍞|n|We buy fresh bread every day.
+rice|raɪs|برنج|🍚|n|Rice is popular in Iran.
+meat|miːt|گوشت|🥩|n|I don't eat red meat.
+chicken|ˈtʃɪkɪn|مرغ|🍗|n|Chicken kebab is delicious.
+fish|fɪʃ|ماهی|🐟|n|Fish is good for your health.
+egg|eɡ|تخم‌مرغ|🥚|n|I eat two eggs for breakfast.
+cheese|tʃiːz|پنیر|🧀|n|Can I have cheese on my sandwich?
+milk|mɪlk|شیر|🥛|n|Drink a glass of milk.
+soup|suːp|سوپ|🍲|n|This soup is too hot.
+salad|ˈsæləd|سالاد|🥗|n|I'd like a green salad.
+tea|tiː|چای|🍵|n|Would you like a cup of tea?
+water|ˈwɔːtər|آب|💧|n|Please drink more water.
+breakfast|ˈbrekfəst|صبحانه|🥞|n|Breakfast is ready.
+lunch|lʌntʃ|ناهار|🥪|n|Let's have lunch together.
+dinner|ˈdɪnər|شام|🍝|n|We have dinner at eight.
+hungry|ˈhʌŋɡri|گرسنه|😋|adj|I'm hungry.
+thirsty|ˈθɜːrsti|تشنه|🥤|adj|I'm thirsty. Can I have some water?
+delicious|dɪˈlɪʃəs|خوشمزه|🤤|adj|This kebab is delicious.
+order|ˈɔːrdər|سفارش دادن|🛎️|v|Are you ready to order?
+bill|bɪl|صورت‌حساب|💵|n|Can I have the bill, please?
+I'd like|aɪd laɪk|… می‌خواهم (مؤدبانه)|🙋|phr|I'd like a coffee, please.
+apple|ˈæpəl|سیب|🍎|n|An apple a day keeps the doctor away.
+orange|ˈɔːrɪndʒ|پرتقال|🍊|n|I drink orange juice every morning.
+banana|bəˈnænə|موز|🍌|n|Monkeys love bananas.
+grapes|ɡreɪps|انگور|🍇|n|These grapes are very sweet.
+watermelon|ˈwɔːtərˌmelən|هندوانه|🍉|n|Watermelon is perfect for summer.
+strawberry|ˈstrɔːˌberi|توت‌فرنگی|🍓|n|She put strawberries on the cake.
+lemon|ˈlemən|لیمو|🍋|n|Add some lemon to the tea.
+mango|ˈmæŋɡoʊ|انبه|🥭|n|I love mango juice.
+dates|deɪts|خرما|🌴|n|Bam is famous for its dates.
+vegetables|ˈvedʒtəbəlz|سبزیجات|🥬|n|Eat more vegetables.
+tomato|təˈmeɪtoʊ|گوجه‌فرنگی|🍅|n|Cut the tomatoes for the salad.
+potato|pəˈteɪtoʊ|سیب‌زمینی|🥔|n|I'd like fried potatoes.`},
+{ id:'abilities', en:'Sports & Talents', fa:'ورزش و توانایی‌ها', icon:'🏊', hue:115,
+  gram:'can و can\'t برای توانایی: I can swim. Can you cook? Yes, I can. / No, I can\'t.',
+  talk:'بگو چه کارهایی بلدی و چه کارهایی بلد نیستی؛ از دیگران بپرس چه استعدادی دارند.',
+  words:`can|kæn|می‌توانم؛ بلدم|💪|v|I can swim very well.
+can't|kænt|نمی‌توانم؛ بلد نیستم|🚫|v|I can't drive.
+swim|swɪm|شنا کردن|🏊|v|Can you swim?
+cook|kʊk|آشپزی کردن|🍳|v|My father can cook very well.
+sing|sɪŋ|آواز خواندن|🎤|v|She can sing beautifully.
+dance|dæns|رقصیدن|💃|v|I can't dance at all.
+draw|drɔː|طراحی کردن؛ کشیدن|✏️|v|My son can draw cats.
+paint|peɪnt|نقاشی کردن (با رنگ)|🎨|v|She paints in her free time.
+play the guitar|pleɪ ðə ɡɪˈtɑːr|گیتار زدن|🎸|phr|Can you play the guitar?
+play the piano|pleɪ ðə piˈænoʊ|پیانو زدن|🎹|phr|My sister plays the piano.
+play soccer|pleɪ ˈsɑːkər|فوتبال بازی کردن|⚽|phr|We play soccer on Fridays.
+play volleyball|pleɪ ˈvɑːlibɔːl|والیبال بازی کردن|🏐|phr|They play volleyball at the park.
+ride a bike|raɪd ə baɪk|دوچرخه‌سواری کردن|🚲|phr|My daughter can ride a bike.
+run|rʌn|دویدن|🏃|v|I run every morning.
+ski|skiː|اسکی کردن|⛷️|v|Can you ski?
+fix|fɪks|تعمیر کردن|🔧|v|He can fix cars.
+sport|spɔːrt|ورزش|🏅|n|What's your favorite sport?
+team|tiːm|تیم|👥|n|Our team is very good.
+well|wel|خوب (به‌خوبی)|👍|adv|She speaks English very well.
+at all|ət ˈɔːl|اصلاً (در جملهٔ منفی)|❌|phr|I can't sing at all.
+talent|ˈtælənt|استعداد|🌟|n|Cooking is my talent.
+good at|ˈɡʊd æt|در … خوب بودن|🏆|phr|I'm good at math.`},
+{ id:'dates', en:'Dates & Birthdays', fa:'تاریخ‌ها و تولد', icon:'🎂', hue:325,
+  gram:'اعداد ترتیبی (first, second…)، ماه‌ها و روزها، و be going to برای برنامه: I\'m going to have a party.',
+  talk:'بگو تولدت کی است و برای تولد یا آخر هفته‌ات چه برنامه‌ای داری.',
+  words:`birthday|ˈbɜːrθdeɪ|تولد|🎂|n|When's your birthday?
+January|ˈdʒænjueri|ژانویه|❄️|n|My birthday is in January.
+February|ˈfebrueri|فوریه|💌|n|February is a short month.
+March|mɑːrtʃ|مارس|🌱|n|Nowruz is in March.
+April|ˈeɪprəl|آوریل|🌷|n|It rains a lot in April.
+May|meɪ|مه|🌼|n|Her wedding is in May.
+June|dʒuːn|ژوئن|🌞|n|School finishes in June.
+July|dʒuˈlaɪ|ژوئیه|🏖️|n|It's very hot in July.
+August|ˈɔːɡəst|اوت|🍉|n|We travel in August.
+September|sepˈtembər|سپتامبر|🍂|n|Classes start in September.
+October|ɑːkˈtoʊbər|اکتبر|🎃|n|My exam is in October.
+November|noʊˈvembər|نوامبر|🍁|n|It's November now.
+December|dɪˈsembər|دسامبر|🎄|n|December is the last month.
+Monday|ˈmʌndeɪ|دوشنبه|1️⃣|n|I have class on Monday.
+Saturday|ˈsætərdeɪ|شنبه|🛋️|n|See you on Saturday!
+first|fɜːrst|اول|🥇|adj|My birthday is on May first.
+second|ˈsekənd|دوم|🥈|adj|It's the second of June.
+third|θɜːrd|سوم|🥉|adj|Today is March third.
+date|deɪt|تاریخ|📅|n|What's the date today?
+party|ˈpɑːrti|مهمانی|🎉|n|I'm going to have a party.
+present|ˈprezənt|هدیه|🎁|n|Thank you for the present!
+be going to|bi ˈɡoʊɪŋ tə|قصد داشتن؛ می‌خواهم (برنامه)|➡️|phr|We're going to visit my grandmother.
+celebrate|ˈseləbreɪt|جشن گرفتن|🥳|v|How do you celebrate your birthday?
+Happy birthday!|ˈhæpi ˈbɜːrθdeɪ|تولدت مبارک!|🎈|phr|Happy birthday, Sara!`},
+{ id:'body', en:'Body & Health', fa:'بدن و سلامتی', icon:'🧍', hue:20,
+  gram:'What\'s the matter? / I have a headache. و جملهٔ امری برای توصیه (Take…, Don\'t…)',
+  talk:'ظاهر یک نفر از خانواده یا دوستانت را توصیف کن.',
+  words:`face|feɪs|صورت|😊|n|Wash your face every morning.
+eye|aɪ|چشم|👁️|n|Close your eyes.
+ear|ɪr|گوش|👂|n|I have a pain in my ear.
+nose|noʊz|بینی|👃|n|My nose is cold.
+mouth|maʊθ|دهان|👄|n|Open your mouth, please.
+tooth|tuːθ|دندان (جمع: teeth)|🦷|n|I brush my teeth twice a day.
+hair|her|مو|💇|n|She has long black hair.
+neck|nek|گردن|🦒|n|My neck is stiff.
+shoulder|ˈʃoʊldər|شانه|🤷|n|He has broad shoulders.
+back|bæk|کمر / پشت|🧍|n|I have back pain.
+arm|ɑːrm|بازو / دست|💪|n|He broke his arm.
+hand|hænd|دست (از مچ به پایین)|✋|n|Raise your hand.
+finger|ˈfɪŋɡər|انگشت|☝️|n|I cut my finger.
+stomach|ˈstʌmək|معده / شکم|🤢|n|My stomach hurts.
+leg|leɡ|پا (از ران تا مچ)|🦵|n|My legs are tired.
+knee|niː|زانو|🧎|n|I hurt my knee playing football.
+foot|fʊt|پا (از مچ به پایین؛ جمع: feet)|🦶|n|I hurt my foot.
+heart|hɑːrt|قلب|🫀|n|Your heart beats fast when you run.
+hurt|hɜːrt|درد کردن / آسیب زدن|🤕|v|My back hurts.
+tall|tɔːl|قدبلند|📏|adj|My brother is very tall.
+short|ʃɔːrt|کوتاه‌قد / کوتاه|📐|adj|She is short and slim.`},
+{ id:'city', en:'Places & Directions', fa:'مکان‌ها و نشانی دادن', icon:'🏙️', hue:250,
   gram:'پرسیدن و دادن نشانی: Where is…? Go straight, turn left, it\'s next to…',
   talk:'مسیر خانه‌ات تا نزدیک‌ترین داروخانه یا سوپرمارکت را توضیح بده.',
   words:`street|striːt|خیابان|🛣️|n|Cross the street carefully.
@@ -288,6 +369,83 @@ next to|ˈnekst tuː|کنارِ|🤝|prep|The bank is next to the hotel.
 opposite|ˈɑːpəzɪt|روبه‌روی|↔️|prep|The pharmacy is opposite the mosque.
 near|nɪr|نزدیکِ|📍|prep|I live near the sea.
 far|fɑːr|دور|🔭|adj|Is it far from here?`},
+{ id:'weekend', en:'My Weekend', fa:'آخر هفته‌ام', icon:'🧺', hue:40,
+  gram:'گذشتهٔ ساده (افعال باقاعده و بی‌قاعده): I watched…, I went…, Did you…? Yes, I did.',
+  talk:'تعریف کن آخر هفتهٔ گذشته چه کار کردی و از دیگران بپرس آخر هفته‌شان چطور بود.',
+  words:`weekend|ˈwiːkend|آخر هفته|🗓️|n|How was your weekend?
+last weekend|læst ˈwiːkend|آخر هفتهٔ گذشته|⏪|phr|What did you do last weekend?
+went|went|رفتم/رفت (گذشتهٔ go)|🚶|v|I went to the park.
+watched|wɑːtʃt|تماشا کردم (گذشتهٔ watch)|📺|v|We watched a movie.
+stayed home|steɪd hoʊm|خانه ماندم|🏠|phr|I stayed home and relaxed.
+visited|ˈvɪzɪtɪd|دیدن کردم از (گذشتهٔ visit)|👵|v|I visited my grandparents.
+cleaned|kliːnd|تمیز کردم (گذشتهٔ clean)|🧹|v|I cleaned the house on Saturday.
+did|dɪd|انجام دادم (گذشتهٔ do)|✅|v|I did my homework.
+had|hæd|داشتم؛ خوردم (گذشتهٔ have)|🍕|v|We had pizza for dinner.
+saw|sɔː|دیدم (گذشتهٔ see)|👀|v|I saw my friends.
+ate|eɪt|خوردم (گذشتهٔ eat)|🍽️|v|We ate at a nice restaurant.
+bought|bɔːt|خریدم (گذشتهٔ buy)|🛍️|v|I bought new shoes.
+slept|slept|خوابیدم (گذشتهٔ sleep)|😴|v|I slept late on Friday.
+went shopping|went ˈʃɑːpɪŋ|خرید رفتم|🛒|phr|My sister went shopping.
+had fun|hæd fʌn|خوش گذراندم|😄|phr|Did you have fun? Yes, I did!
+relaxed|rɪˈlækst|استراحت کردم|🧘|v|I relaxed all day.
+Did you…?|dɪd juː|آیا … کردی؟|❓|phr|Did you go out last night?
+Yes, I did.|jes aɪ dɪd|بله، (کردم).|👍|phr|Did you like the movie? Yes, I did.
+No, I didn't.|noʊ aɪ ˈdɪdənt|نه، (نکردم).|👎|phr|Did you work on Saturday? No, I didn't.
+yesterday|ˈjestərdeɪ|دیروز|⬅️|adv|I was very busy yesterday.
+last night|læst ˈnaɪt|دیشب|🌃|phr|I watched TV last night.
+ago|əˈɡoʊ|پیش (… قبل)|⏳|adv|I saw her two days ago.`},
+{ id:'lifestory', en:'My Life Story', fa:'داستان زندگی من', icon:'📖', hue:270,
+  gram:'گذشتهٔ فعل to be (was / were) و سؤال‌های When / Where با گذشته: Where were you born?',
+  talk:'زندگی‌ات را کوتاه تعریف کن: کجا به دنیا آمدی، کجا درس خواندی و چه چیزهای مهمی اتفاق افتاد.',
+  words:`born|bɔːrn|به دنیا آمده|👶|adj|I was born in Mashhad.
+was|wʌz|بودم/بود (گذشتهٔ am/is)|🕰️|v|I was a shy child.
+were|wɜːr|بودیم/بودند/بودی (گذشتهٔ are)|👫|v|Where were you born?
+grow up|ˌɡroʊ ˈʌp|بزرگ شدن|🌱|phr|I grew up in a small town.
+childhood|ˈtʃaɪldhʊd|کودکی|🧸|n|I had a happy childhood.
+school|skuːl|مدرسه|🏫|n|My school was near my house.
+university|ˌjuːnɪˈvɜːrsəti|دانشگاه|🎓|n|She went to Tehran University.
+study|ˈstʌdi|درس خواندن؛ تحصیل کردن|📚|v|I studied computer science.
+graduate|ˈɡrædʒueɪt|فارغ‌التحصیل شدن|👩‍🎓|v|He graduated in 2015.
+get married|ɡet ˈmerid|ازدواج کردن|💍|phr|They got married in 2018.
+move|muːv|نقل مکان کردن|📦|v|We moved to Shiraz last year.
+start|stɑːrt|شروع کردن|▶️|v|I started my first job at 22.
+first job|ˈfɜːrst dʒɑːb|اولین شغل|💼|n|My first job was in a bank.
+favorite|ˈfeɪvərɪt|مورد علاقه|❤️|adj|My favorite teacher was Mr. Karimi.
+teacher|ˈtiːtʃər|معلم|👩‍🏫|n|My teacher was very kind.
+classmate|ˈklæsmeɪt|همکلاسی|🧑‍🤝‍🧑|n|She was my classmate.
+shy|ʃaɪ|خجالتی|🙈|adj|I was very shy at school.
+happy|ˈhæpi|خوشحال|😊|adj|Those were happy days.
+When…?|wen|کِی…؟|🗓️|phr|When did you move to Tehran?
+in (year)|ɪn|در (سالِ)|📆|prep|I was born in 1995.
+age|eɪdʒ|سن|🔢|n|At the age of 18, I started university.
+remember|rɪˈmembər|به یاد داشتن|🧠|v|I remember my first day at school.`},
+{ id:'phone', en:'Calls & Invitations', fa:'تماس تلفنی و دعوت', icon:'📞', hue:195,
+  gram:'would like / want to برای دعوت و پیشنهاد، و ضمیرهای مفعولی (me, him, her, us, them)',
+  talk:'تلفنی کسی را بخواه، پیغام بگذار، کسی را به جایی دعوت کن و دعوت را مؤدبانه قبول یا رد کن.',
+  words:`call|kɔːl|تلفن زدن|📞|v|Can I call you tonight?
+call back|ˌkɔːl ˈbæk|دوباره زنگ زدن|🔁|phr|Can she call me back, please?
+Hello, this is…|həˈloʊ ðɪs ɪz|الو، … هستم|☎️|phr|Hello, this is Ali. Is Sara there?
+Can I speak to…?|kæn aɪ spiːk tə|می‌توانم با … صحبت کنم؟|🗣️|phr|Can I speak to Mr. Rahimi, please?
+Just a minute.|dʒʌst ə ˈmɪnɪt|یک لحظه صبر کنید.|⏱️|phr|Just a minute, please.
+message|ˈmesɪdʒ|پیغام؛ پیام|💬|n|Can I take a message?
+leave a message|liːv ə ˈmesɪdʒ|پیغام گذاشتن|📝|phr|Can I leave a message for her?
+busy|ˈbɪzi|سرش شلوغ است؛ (خط) اشغال|⏳|adj|Sorry, he's busy right now.
+invite|ɪnˈvaɪt|دعوت کردن|💌|v|I want to invite you to my party.
+Would you like to…?|wʊd ju laɪk tə|دوست داری …؟ (دعوت مؤدبانه)|🙂|phr|Would you like to see a movie?
+I'd love to.|aɪd ˈlʌv tə|خیلی دوست دارم؛ با کمال میل|😍|phr|I'd love to. What time?
+I'm sorry, I can't.|aɪm ˈsɑːri aɪ kænt|ببخشید، نمی‌توانم.|🙏|phr|I'm sorry, I can't. I have to work.
+Let's…|lets|بیا … (پیشنهاد)|👫|phr|Let's go for coffee.
+How about…?|haʊ əˈbaʊt|نظرت دربارهٔ … چیست؟|🤔|phr|How about Friday evening?
+tonight|təˈnaɪt|امشب|🌙|adv|Are you free tonight?
+free|friː|بیکار؛ وقت آزاد|🆓|adj|Are you free on Saturday?
+meet|miːt|ملاقات کردن؛ دیدن|🤝|v|Let's meet at seven.
+me|miː|مرا؛ به من|🙋|pron|Call me later.
+him|hɪm|او را (مرد)|👨|pron|Can you ask him?
+her|hɜːr|او را (زن)|👩|pron|I invited her to the party.
+us|ʌs|ما را|👥|pron|Do you want to join us?
+them|ðem|آن‌ها را|👪|pron|I see them every week.`}
+]},
+{ id:'l1', fa:'سطح ۱', en:'Level 1 · A2', units:[
 { id:'transport', en:'Transportation', fa:'حمل‌ونقل', icon:'🚗', hue:5,
   gram:'by car / by bus / on foot و سؤال How do you get to…?',
   talk:'بگو هر روز چطور به سر کار یا کلاس می‌روی و چقدر طول می‌کشد.',
@@ -306,7 +464,7 @@ ticket|ˈtɪkɪt|بلیت|🎫|n|I bought two tickets.
 fare|fer|کرایه|💸|n|How much is the taxi fare?
 traffic|ˈtræfɪk|ترافیک|🚦|n|There's a lot of traffic today.
 parking|ˈpɑːrkɪŋ|پارکینگ / جای پارک|🅿️|n|Is there parking near here?
-driving license|ˈdraɪvɪŋ ˌlaɪsəns|گواهینامه|🪪|n|I need an Omani driving license.
+driver's license|ˈdraɪvərz ˌlaɪsəns|گواهینامه|🪪|n|I need a new driver’s license.
 seat belt|ˈsiːt belt|کمربند ایمنی|🔒|n|Fasten your seat belt.
 drive|draɪv|رانندگی کردن|🚘|v|Can you drive?
 get on|ɡet ɑːn|سوار شدن (اتوبوس، قطار)|🚏|phr|Get on the bus here.
@@ -314,7 +472,7 @@ get off|ɡet ɔːf|پیاده شدن|🛑|phr|Get off at the next stop.
 miss|mɪs|از دست دادن (وسیلهٔ نقلیه)|🏃‍♂️|v|Hurry up or we'll miss the train.`},
 { id:'weather', en:'Weather & Nature', fa:'آب‌وهوا و طبیعت', icon:'🌤️', hue:190,
   gram:'It\'s + صفت (It\'s hot) و گذشتهٔ to be: It was rainy yesterday.',
-  talk:'آب‌وهوای مسقط را با شهر خودت در ایران مقایسه کن.',
+  talk:'آب‌وهوای شهر خودت را توصیف کن و با یک شهر دیگر مقایسه کن.',
   words:`weather|ˈweðər|آب‌وهوا|🌦️|n|What's the weather like today?
 sun|sʌn|خورشید|☀️|n|The sun is shining.
 sunny|ˈsʌni|آفتابی|🌞|adj|It's sunny and hot.
@@ -327,9 +485,9 @@ wind|wɪnd|باد|🌬️|n|The wind is very strong today.
 storm|stɔːrm|طوفان|⛈️|n|A big storm is coming.
 hot|hɑːt|گرم / داغ|🥵|adj|It's very hot in summer.
 cold|koʊld|سرد|🥶|adj|It's cold outside.
-humid|ˈhjuːmɪd|شرجی / مرطوب|💦|adj|Muscat is very humid in summer.
+humid|ˈhjuːmɪd|شرجی / مرطوب|💦|adj|Bandar Abbas is very humid in summer.
 temperature|ˈtemprətʃər|دما|🌡️|n|The temperature is 45 degrees.
-season|ˈsiːzən|فصل|🍂|n|Winter is the best season in Oman.
+season|ˈsiːzən|فصل|🍂|n|Spring is the best season in Shiraz.
 mountain|ˈmaʊntən|کوه|⛰️|n|We climbed the mountain.
 sea|siː|دریا|🌊|n|Let's swim in the sea.
 desert|ˈdezərt|بیابان|🏜️|n|The desert is beautiful at night.
@@ -344,7 +502,7 @@ happy|ˈhæpi|خوشحال|😄|adj|I'm so happy to see you.
 sad|sæd|ناراحت|😢|adj|Why are you sad?
 angry|ˈæŋɡri|عصبانی|😠|adj|Don't be angry with me.
 tired|ˈtaɪərd|خسته|😩|adj|I'm tired after work.
-afraid|əˈfreɪd|ترسیده|😨|adj|She is afraid of dogs.
+afraid|əˈfreɪd|ترسان؛ (از چیزی) ترسیدن|😨|adj|She is afraid of dogs.
 surprised|sərˈpraɪzd|متعجب|😲|adj|I was surprised by the news.
 bored|bɔːrd|کسل (حوصله‌سررفته)|🥱|adj|I'm bored; let's go out.
 boring|ˈbɔːrɪŋ|خسته‌کننده|😐|adj|The movie was boring.
@@ -394,7 +552,7 @@ swimming|ˈswɪmɪŋ|شنا|🏊|n|Swimming is great exercise.
 running|ˈrʌnɪŋ|دویدن|🏃|n|I go running every morning.
 wrestling|ˈreslɪŋ|کشتی (ورزش)|🤼|n|Wrestling is a traditional sport in Iran.
 cycling|ˈsaɪklɪŋ|دوچرخه‌سواری|🚴|n|Cycling is good for your heart.
-hiking|ˈhaɪkɪŋ|کوه‌پیمایی|🥾|n|We go hiking in Jebel Akhdar.
+hiking|ˈhaɪkɪŋ|کوه‌پیمایی|🥾|n|We go hiking in the mountains.
 gym|dʒɪm|باشگاه ورزشی|🏋️|n|I go to the gym after work.
 team|tiːm|تیم|🙌|n|Our team won the game.
 player|ˈpleɪər|بازیکن|🏃‍♀️|n|He is a famous player.
@@ -425,15 +583,15 @@ prescription|prɪˈskrɪpʃən|نسخه|🧾|n|You need a prescription for this 
 dentist|ˈdentɪst|دندان‌پزشک|😁|n|I go to the dentist twice a year.
 injection|ɪnˈdʒekʃən|آمپول / تزریق|💉|n|The nurse gave me an injection.
 ambulance|ˈæmbjələns|آمبولانس|🚑|n|Call an ambulance!
-emergency|ɪˈmɜːrdʒənsi|اورژانس / وضعیت اضطراری|🚨|n|In an emergency, call 9999.
+emergency|ɪˈmɜːrdʒənsi|اورژانس / وضعیت اضطراری|🚨|n|In an emergency, call 911 in the US.
 insurance|ɪnˈʃʊrəns|بیمه|🛡️|n|Do you have health insurance?
 rest|rest|استراحت کردن|🧘|v|You need to rest for a few days.`},
 { id:'travel', en:'Travel', fa:'سفر', icon:'🧳', hue:180,
-  gram:'آیندهٔ برنامه‌ریزی‌شده با be going to: I\'m going to visit Salalah.',
+  gram:'آیندهٔ برنامه‌ریزی‌شده با be going to: I\'m going to visit Isfahan.',
   talk:'برنامهٔ سفر بعدی‌ات را تعریف کن: کجا، با چه، کی و چه کارهایی.',
   words:`trip|trɪp|سفر (کوتاه)|🚙|n|Have a good trip!
 passport|ˈpæspɔːrt|گذرنامه|🛂|n|Don't forget your passport.
-visa|ˈviːzə|ویزا|📄|n|Do I need a visa for Oman?
+visa|ˈviːzə|ویزا|📄|n|Do I need a visa for Canada?
 suitcase|ˈsuːtkeɪs|چمدان|🧳|n|My suitcase is very heavy.
 luggage|ˈlʌɡɪdʒ|بار و چمدان|🎒|n|Where can I collect my luggage?
 airport|ˈerpɔːrt|فرودگاه|🛫|n|We arrived at the airport early.
@@ -444,11 +602,11 @@ tourist|ˈtʊrɪst|گردشگر|📸|n|Many tourists visit Isfahan.
 reservation|ˌrezərˈveɪʃən|رزرو|🏷️|n|I have a reservation for two nights.
 souvenir|ˌsuːvəˈnɪr|سوغاتی|🎁|n|I bought a souvenir for my friend.
 book|bʊk|رزرو کردن|📲|v|I booked a hotel online.
-check in|ˈtʃek ɪn|پذیرش شدن (هتل/پرواز)|🛎️|phr|We can check in after two o'clock.
-check out|ˈtʃek aʊt|تحویل اتاق و ترک هتل|🔑|phr|We have to check out by noon.
-arrive|əˈraɪv|رسیدن|📍|v|We arrived in Salalah at night.
+check in|ˌtʃek ˈɪn|پذیرش گرفتن / چک‌این کردن|🛎️|phr|We can check in after two o'clock.
+check out|ˌtʃek ˈaʊt|تحویل اتاق و ترک هتل|🔑|phr|We have to check out by noon.
+arrive|əˈraɪv|رسیدن|📍|v|We arrived in Istanbul at night.
 delay|dɪˈleɪ|تأخیر|⏰|n|There is a two-hour delay.
-round trip|ˌraʊnd ˈtrɪp|رفت‌وبرگشت|🔄|n|A round trip ticket, please.
+round trip|ˌraʊnd ˈtrɪp|رفت‌وبرگشت|🔄|n|A round-trip ticket, please.
 exchange money|ɪksˈtʃeɪndʒ ˈmʌni|پول تبدیل کردن|💱|phr|Where can I exchange money?`},
 { id:'work', en:'Work & Office', fa:'کار و محیط کار', icon:'🗂️', hue:235,
   gram:'حال کامل ساده: I have worked here for two years. Have you ever…?',
@@ -472,7 +630,30 @@ apply for|əˈplaɪ fɔːr|درخواست دادن برای|📨|phr|I applied f
 send|send|فرستادن|📤|v|Can you send me the file?
 on time|ɑːn taɪm|سر وقت|⏱️|phr|Please be on time for the meeting.
 day off|ˌdeɪ ˈɔːf|روز مرخصی|🌴|n|Can I take a day off tomorrow?
-overtime|ˈoʊvərtaɪm|اضافه‌کاری|🌙|n|I work overtime on Thursdays.`}
+overtime|ˈoʊvərtaɪm|اضافه‌کاری|🌙|n|I work overtime on Thursdays.`},
+{ id:'animals', en:'Animals', fa:'حیوانات', icon:'🐾', hue:140,
+  gram:'can / can\'t برای توانایی: Birds can fly. Fish can\'t walk.',
+  talk:'دربارهٔ حیوان مورد علاقه‌ات بگو: کجا زندگی می‌کند و چه کارهایی می‌تواند بکند.',
+  words:`cat|kæt|گربه|🐈|n|My cat sleeps all day.
+dog|dɔːɡ|سگ|🐕|n|The dog is barking.
+bird|bɜːrd|پرنده|🐦|n|A bird is singing in the tree.
+horse|hɔːrs|اسب|🐎|n|He rides a horse.
+cow|kaʊ|گاو|🐄|n|Cows give us milk.
+sheep|ʃiːp|گوسفند|🐑|n|The sheep are in the field.
+goat|ɡoʊt|بز|🐐|n|There are many goats on the farm.
+camel|ˈkæməl|شتر|🐫|n|Camels can live in the desert.
+lion|ˈlaɪən|شیر (حیوان)|🦁|n|Lions live in Africa.
+elephant|ˈelɪfənt|فیل|🐘|n|Elephants have big ears.
+monkey|ˈmʌŋki|میمون|🐒|n|The monkey is eating a banana.
+rabbit|ˈræbɪt|خرگوش|🐇|n|The rabbit has long ears.
+snake|sneɪk|مار|🐍|n|Be careful, there's a snake!
+turtle|ˈtɜːrtəl|لاک‌پشت|🐢|n|Sea turtles lay eggs on the beach.
+dolphin|ˈdɑːlfɪn|دلفین|🐬|n|You can see dolphins in the Persian Gulf.
+pet|pet|حیوان خانگی|🐾|n|Do you have a pet?
+wild|waɪld|وحشی|🐺|adj|Lions are wild animals.
+feed|fiːd|غذا دادن|🥣|v|Don't feed the animals.
+fly|flaɪ|پرواز کردن|🕊️|v|Birds can fly.
+swim|swɪm|شنا کردن|🏊|v|Fish can swim.`}
 ]},
 { id:'l2', fa:'سطح ۲', en:'Level 2 · A2+/B1', units:[
 { id:'shopping', en:'Shopping & Money', fa:'خرید و پول', icon:'💳', hue:150, gram:'صفت تفضیلی و عالی: cheaper, the cheapest, more expensive', talk:'از آخرین خرید مهمت بگو و قیمت‌ها را مقایسه کن.' },
@@ -483,12 +664,12 @@ overtime|ˈoʊvərtaɪm|اضافه‌کاری|🌙|n|I work overtime on Thursday
 { id:'banking', en:'Banks & Services', fa:'بانک و خدمات', icon:'🏦', hue:160, gram:'درخواست مؤدبانه: Could you…? Would you mind…ing?', talk:'در بانک برای باز کردن حساب یا انتقال پول درخواست کن.' },
 { id:'people', en:'Personality & Appearance', fa:'شخصیت و ظاهر', icon:'🧑‍🤝‍🧑', hue:310, gram:'صفت و قید: quick / quickly، good / well', talk:'بهترین دوستت را از نظر ظاهر و اخلاق توصیف کن.' },
 { id:'plans', en:'Future Plans', fa:'برنامه‌های آینده', icon:'🎯', hue:15, gram:'will و be going to و حال استمراری برای آینده', talk:'دربارهٔ برنامه‌هایت برای سال آینده حرف بزن.' },
-{ id:'past', en:'Life Experiences', fa:'تجربه‌های زندگی', icon:'📸', hue:55, gram:'used to و مقایسهٔ گذشتهٔ ساده با حال کامل', talk:'زندگی‌ات را قبل و بعد از آمدن به عمان مقایسه کن.' },
+{ id:'past', en:'Life Experiences', fa:'تجربه‌های زندگی', icon:'📸', hue:55, gram:'used to و مقایسهٔ گذشتهٔ ساده با حال کامل', talk:'زندگی‌ات را الان با چند سال پیش مقایسه کن.' },
 { id:'environment', en:'The Environment', fa:'محیط زیست', icon:'🌍', hue:110, gram:'جملهٔ شرطی نوع اول: If it rains, we will stay home.', talk:'دربارهٔ مشکلات محیط زیستی شهرت و راه‌حل‌ها حرف بزن.' }
 ]},
 { id:'l3', fa:'سطح ۳', en:'Level 3 · B1+', units:[
 { id:'news', en:'News & Media', fa:'اخبار و رسانه', icon:'📰', hue:225, gram:'مجهول: The road was built in 2010.', talk:'یک خبر مهم این هفته را تعریف کن و نظرت را بگو.' },
-{ id:'culture', en:'Culture & Customs', fa:'فرهنگ و آداب', icon:'🎎', hue:0, gram:'should / be supposed to / be allowed to', talk:'آداب و رسوم ایران و عمان را مقایسه کن.' },
+{ id:'culture', en:'Culture & Customs', fa:'فرهنگ و آداب', icon:'🎎', hue:0, gram:'should / be supposed to / be allowed to', talk:'آداب و رسوم ایران و یک کشور دیگر را مقایسه کن.' },
 { id:'relations', en:'Relationships', fa:'روابط', icon:'🤝', hue:340, gram:'حال کامل استمراری: I have been living here for…', talk:'از دوستی‌ای بگو که برایت مهم است و چطور شروع شد.' },
 { id:'business', en:'Business & Negotiation', fa:'کسب‌وکار و مذاکره', icon:'📈', hue:200, gram:'جملهٔ شرطی نوع دوم: If I had more money, I would…', talk:'یک مذاکرهٔ کاری را شبیه‌سازی کن و پیشنهاد بده.' },
 { id:'complaints', en:'Problems & Complaints', fa:'مشکلات و شکایت', icon:'🛠️', hue:20, gram:'نقل قول غیرمستقیم: He said that…, She asked me if…', talk:'از یک سرویس بد شکایت کن و راه‌حل بخواه.' },
@@ -498,19 +679,19 @@ overtime|ˈoʊvərtaɪm|اضافه‌کاری|🌙|n|I work overtime on Thursday
 ]}
 ];
 
-/* موقعیت‌های نقش‌آفرینی زندگی در عمان */
+/* موقعیت‌های نقش‌آفرینی زندگی واقعی */
 const SCENARIOS = [
-{ id:'taxi', icon:'🚕', fa:'تاکسی در مسقط', role:'an Omani taxi driver in Muscat. The learner needs to go from Ruwi to Muscat Grand Mall, negotiate the fare and give directions.' },
-{ id:'pharmacy', icon:'💊', fa:'داروخانه', role:'a pharmacist in a Muscat pharmacy. The learner has a cold and a sore throat and needs medicine; ask about symptoms and allergies.' },
-{ id:'interview', icon:'🎙️', fa:'مصاحبهٔ کاری', role:'an HR manager interviewing the learner for an office job at a logistics company in Sohar. Ask typical interview questions one by one.' },
+{ id:'taxi', icon:'🚕', fa:'تاکسی', role:'a taxi driver in a big city. The learner needs to go from the hotel to the shopping mall, ask the fare and give directions.' },
+{ id:'pharmacy', icon:'💊', fa:'داروخانه', role:'a pharmacist in a city pharmacy. The learner has a cold and a sore throat and needs medicine; ask about symptoms and allergies.' },
+{ id:'interview', icon:'🎙️', fa:'مصاحبهٔ کاری', role:'an HR manager interviewing the learner for an office job at an international company. Ask typical interview questions one by one.' },
 { id:'landlord', icon:'🌀', fa:'تماس با صاحبخانه دربارهٔ کولر', role:'the landlord of the learner\'s flat. The learner calls because the air conditioner stopped working in hot weather; be a bit busy and reluctant at first.' },
 { id:'colleague', icon:'👥', fa:'همکار جدید', role:'a friendly new colleague from India meeting the learner on the first day at work; small talk about background, family and weekend.' },
 { id:'bank', icon:'🏦', fa:'باز کردن حساب بانکی', role:'a bank officer. The learner wants to open a bank account and asks about documents and fees.' },
 { id:'supermarket', icon:'🛒', fa:'سوپرمارکت', role:'a shop assistant at a hypermarket. The learner looks for some products, asks prices and about a discount.' },
 { id:'doctor', icon:'🩺', fa:'مطب پزشک', role:'a doctor at a clinic. Ask about the learner\'s symptoms, examine, and give advice.' },
-{ id:'carrental', icon:'🚗', fa:'کرایهٔ ماشین', role:'a car rental agent at Muscat airport. Discuss car type, days, price, insurance and driving license.' },
-{ id:'restaurant', icon:'🍽️', fa:'رستوران', role:'a waiter at a seafood restaurant in Muttrah. Take the order, recommend dishes and handle the bill.' },
-{ id:'neighbor', icon:'🏘️', fa:'همسایهٔ جدید', role:'a new Omani neighbor who knocks on the door to say hello and invites the learner for coffee and dates.' },
+{ id:'carrental', icon:'🚗', fa:'کرایهٔ ماشین', role:'a car rental agent at the airport. Discuss car type, days, price, insurance and driver’s license.' },
+{ id:'restaurant', icon:'🍽️', fa:'رستوران', role:'a waiter at a busy seafood restaurant. Take the order, recommend dishes and handle the bill.' },
+{ id:'neighbor', icon:'🏘️', fa:'همسایهٔ جدید', role:'a friendly new neighbor who knocks on the door to say hello and invites the learner for coffee.' },
 { id:'phone', icon:'📞', fa:'تماس با پشتیبانی اینترنت', role:'a customer service agent of an internet provider. The learner\'s home internet is slow; troubleshoot and book a technician visit.' }
 ];
 

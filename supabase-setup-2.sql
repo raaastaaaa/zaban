@@ -1,4 +1,48 @@
--- زبان دوم — بخش دوم: پیام خصوصی بین کاربران (یک بار در SQL Editor اجرا شود)
+-- زبان دوم — بخش دوم: بستن حفره‌های امنیتی + پیام خصوصی + پشتیبان ابری (یک بار در SQL Editor اجرا شود)
+
+-- ۱) کاربر نتواند مدیر شود، محرومیت یا اخطار خودش را تغییر دهد
+drop policy if exists "profiles update own" on public.profiles;
+create policy "profiles update own" on public.profiles for update to authenticated
+  using (id = auth.uid() or public.is_admin())
+  with check (
+    public.is_admin() or (
+      id = auth.uid()
+      and is_admin = (select p.is_admin from public.profiles p where p.id = auth.uid())
+      and banned = (select p.banned from public.profiles p where p.id = auth.uid())
+      and warnings >= (select p.warnings from public.profiles p where p.id = auth.uid())
+    ));
+
+-- ۲) اخطار فقط با تابع امن اضافه شود (بعد از ۳ اخطار، محرومیت خودکار)
+create or replace function public.add_warning() returns int language plpgsql security definer set search_path = public as $$
+declare w int;
+begin
+  update public.profiles set warnings = warnings + 1, banned = (warnings + 1 >= 3) where id = auth.uid() returning warnings into w;
+  return w;
+end $$;
+grant execute on function public.add_warning() to authenticated;
+
+-- ۳) پیام «معلم» فقط بازخورد به خود نویسنده باشد؛ پیام «سیستم» فقط از مدیر؛ ویرایش پیام فقط با مدیر
+drop policy if exists "messages insert" on public.messages;
+create policy "messages insert" on public.messages for insert to authenticated with check (
+  user_id = auth.uid()
+  and not coalesce((select banned from public.profiles where id = auth.uid()), false)
+  and username = (select username from public.profiles where id = auth.uid())
+  and (kind = 'user'
+       or (kind = 'teacher' and (meta->>'to' = username or meta->>'scenario' = 'true'))
+       or (kind = 'system' and public.is_admin())));
+drop policy if exists "messages moderate" on public.messages;
+create policy "messages moderate" on public.messages for update to authenticated using (public.is_admin());
+
+-- ۴-الف) عکس پروفایل فقط تصویر سالم و کوچک؛ شکلک کوتاه
+alter table public.profiles drop constraint if exists profiles_photo_ok;
+alter table public.profiles add constraint profiles_photo_ok check (photo is null or (photo ~ '^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$' and length(photo) < 200000));
+alter table public.profiles drop constraint if exists profiles_avatar_ok;
+alter table public.profiles add constraint profiles_avatar_ok check (char_length(avatar) <= 16 and char_length(display_name) <= 40);
+
+-- ۴) امتیاز هفتگی غیرواقعی پذیرفته نشود (سقف معقول)
+alter table public.progress drop constraint if exists progress_sane;
+alter table public.progress add constraint progress_sane check (week_xp between 0 and 20000 and minutes_today between 0 and 1440);
+
 create table if not exists public.dms (
   id bigint generated always as identity primary key,
   from_user uuid not null references public.profiles(id) on delete cascade,
@@ -16,3 +60,44 @@ create policy "dms send" on public.dms for insert to authenticated with check (f
 drop policy if exists "dms mark read" on public.dms;
 create policy "dms mark read" on public.dms for update to authenticated using (to_user = auth.uid());
 do $$ begin alter publication supabase_realtime add table public.dms; exception when others then null; end $$;
+
+-- پشتیبان ابری خودکار (همهٔ پیشرفت، لایتنر، کتاب‌ها) برای انتقال بین دستگاه‌ها
+create table if not exists public.backups (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.backups enable row level security;
+drop policy if exists "backup own" on public.backups;
+create policy "backup own" on public.backups for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- ───── ورود با یوزرنیم و رمز: فقط اگر رمز درست باشد ایمیل برمی‌گردد (ایمیل کسی لو نمی‌رود) ─────
+create extension if not exists pgcrypto with schema extensions;
+create or replace function public.login_email(uname text, pw text) returns text
+language plpgsql stable security definer set search_path = public, extensions, auth as $$
+declare e text; h text;
+begin
+  select u.email, u.encrypted_password into e, h from auth.users u join public.profiles p on p.id = u.id where p.username = lower(trim(uname));
+  if e is null or h is null or h = '' then perform pg_sleep(0.4); return null; end if;
+  if extensions.crypt(pw, h) = h then return e; end if;
+  perform pg_sleep(0.4); return null;
+end $$;
+revoke all on function public.login_email(text, text) from public;
+grant execute on function public.login_email(text, text) to anon, authenticated;
+
+-- آیا این یوزرنیم آزاد است؟ (برای فرم ثبت‌نام)
+create or replace function public.username_free(uname text) returns boolean language sql stable security definer set search_path = public as
+$$ select not exists (select 1 from public.profiles where username = lower(trim(uname))) $$;
+grant execute on function public.username_free(text) to anon, authenticated;
+
+-- ───── درس‌های آماده (یک بار توسط مدیر ساخته می‌شوند، همه بدون هوش مصنوعی و آفلاین استفاده می‌کنند) ─────
+create table if not exists public.lessons (
+  id text primary key,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.lessons enable row level security;
+drop policy if exists "lessons read" on public.lessons;
+create policy "lessons read" on public.lessons for select to anon, authenticated using (true);
+drop policy if exists "lessons admin write" on public.lessons;
+create policy "lessons admin write" on public.lessons for all to authenticated using (public.is_admin()) with check (public.is_admin());

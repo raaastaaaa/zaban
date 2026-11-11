@@ -1,4 +1,4 @@
-/* زبان دوم — تئاتر داستان صوتی با موسیقی، تمرین‌های آنلاین/آفلاین، چشم‌انداز شخصی */
+/* زبان رستا — تئاتر داستان صوتی با موسیقی، تمرین‌های آنلاین/آفلاین، چشم‌انداز شخصی */
 'use strict';
 
 /* ───────── موسیقی پس‌زمینه (ساخته‌شده در خود مرورگر، بدون فایل و بدون حق نشر) ───────── */
@@ -51,7 +51,7 @@ routes.theater = async (id) => {
   const cur = currentUnit();
   v.innerHTML = `<div class="stack"><div class="today"><b style="font-size:18px">🎬 تئاتر داستان</b><span class="muted">داستانی با سناریو، صحنه‌های تصویری، صداپیشه برای هر شخصیت و موسیقی متن — ساخته‌شده با واژه‌های درس فعلی، واژه‌های ضعیفت و درس‌های قبل.</span></div>
   <div class="card stack"><label class="f">حال‌وهوای داستان<select id="md" class="in">${[['adventure', 'ماجرایی'], ['mystery', 'معمایی'], ['happy', 'شاد و خنده‌دار'], ['romantic', 'احساسی'], ['tense', 'هیجانی'], ['calm', 'آرام']].map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label>
-  <label class="f">ایدهٔ داستان (اختیاری)<input id="id" class="in" placeholder="مثلاً: گم شدن چمدان در فرودگاه مسقط"></label>
+  <label class="f">ایدهٔ داستان (اختیاری)<input id="id" class="in" placeholder="مثلاً: گم شدن چمدان در فرودگاه"></label>
   <button class="btn" id="mk">ساخت داستان تازه با واژه‌های «${esc(cur.fa)}»</button></div>
   ${list.length ? `<div class="sec">داستان‌های من</div>` + list.map(s => `<a class="card row" style="text-decoration:none;color:inherit;flex-wrap:nowrap" href="#theater/${s.id}"><img src="${sceneImg(s.scenes[0], s, 0)}" alt="" style="width:84px;height:56px;object-fit:cover;border-radius:10px;background:var(--sunk)" onerror="this.style.visibility='hidden'"><div class="grow"><b class="en">${esc(s.title)}</b><div class="small muted">${esc(s.fa_title || '')} · ${faNum(s.scenes.length)} صحنه</div></div>${s.done ? '<span class="pill ok">دیده شد</span>' : ''}</a>`).join('') : ''}</div>`;
   $('#mk').onclick = async () => {
@@ -59,7 +59,7 @@ routes.theater = async (id) => {
     const words = [...weakWords(8).map(x => x.w.w), ...pick(unitWords(cur), 8).map(w => w.w), ...ALL_UNITS.filter(x => x.idx < cur.idx).slice(-3).flatMap(x => pick(unitWords(x), 2).map(w => w.w))];
     v.innerHTML = loading('در حال نوشتن سناریو و طراحی صحنه‌ها… (حدود ۳۰ ثانیه)');
     try {
-      const s = await ai({ heavy: true, max: 9000, temp: 0.9, system: 'You are a screenwriter of short, gripping audio dramas for adult Persian-speaking English learners living in Oman. Language strictly at the learner level. Natural, idiomatic dialogue.', messages: [{ role: 'user', content: `${learnerContext(cur)}\nMood: ${mood}. ${idea ? 'Idea: ' + idea : 'Invent an original plot set in Oman or Iran.'}\nUse ALL these words naturally: ${words.join(', ')}.\nWrite 5-6 scenes; each has a short narration and 2-6 dialogue lines between 2-3 named characters. End with a twist or emotional moment. JSON {"title":"","fa_title":"","mood":"${mood}","characters":[{"name":"","desc_fa":""}],"scenes":[{"title":"","img":"visual description for illustration","narration":"","narration_fa":"","lines":[{"who":"name","en":"","fa":"","emotion":"cheerful|calm|excited|serious|surprised|empathetic"}]}],"vocab":[{"w":"","fa":""}],"quiz":[{"q":"","options":["","","",""],"a":0}]}` }] });
+      const s = await ai({ heavy: true, max: 9000, temp: 0.9, system: 'You are a screenwriter of short, gripping audio dramas for adult Persian-speaking English learners. Language strictly at the learner level. Natural, idiomatic dialogue.', messages: [{ role: 'user', content: `${learnerContext(cur)}\nMood: ${mood}. ${idea ? 'Idea: ' + idea : 'Invent an original plot set or Iran.'}\nUse ALL these words naturally: ${words.join(', ')}.\nWrite 5-6 scenes; each has a short narration and 2-6 dialogue lines between 2-3 named characters. End with a twist or emotional moment. JSON {"title":"","fa_title":"","mood":"${mood}","characters":[{"name":"","desc_fa":""}],"scenes":[{"title":"","img":"visual description for illustration","narration":"","narration_fa":"","lines":[{"who":"name","en":"","fa":"","emotion":"cheerful|calm|excited|serious|surprised|empathetic"}]}],"vocab":[{"w":"","fa":""}],"quiz":[{"q":"","options":["","","",""],"a":0}]}` }] });
       if (!s.scenes?.length) throw new Error('داستان کامل ساخته نشد؛ دوباره امتحان کن.');
       s.id = 's' + uid(); s.created = isoDay(); const l = await storyList(); l.unshift(s); await idb.set('stories:' + G.active, l.slice(0, 30)); addXP(10); saveU(); go('theater/' + s.id);
     } catch (e) { aiErr(e); routes.theater(); }
@@ -72,7 +72,7 @@ async function playStory(id) {
   let showFa = lsGet('zd:showFa', true), playing = false, si = 0, li = -1;
   v.innerHTML = `<div class="stack" style="padding-bottom:80px"><div class="card stack"><b style="font-size:18px" class="en">${esc(s.title)}</b><span class="small muted">${esc(s.fa_title || '')} · شخصیت‌ها: ${(s.characters || []).map(c => `<b>${esc(c.name)}</b> (${esc(c.desc_fa)})`).join('، ')}</span></div>
   ${s.scenes.map((sc, i) => `<div class="card stack sc" data-s="${i}"><span class="pill acc" style="align-self:flex-start">صحنهٔ ${faNum(i + 1)} · <span class="en">${esc(sc.title)}</span></span>
-  ${G.settings.img !== 'emoji' ? `<img alt="" src="${sceneImg(sc, s, i)}" loading="lazy" style="border-radius:12px;aspect-ratio:16/10;object-fit:cover;width:100%;background:var(--sunk)" onerror="this.remove()">` : ''}
+  ${G.settings.img === 'ai' ? `<img alt="" src="${sceneImg(sc, s, i)}" loading="lazy" style="border-radius:12px;aspect-ratio:16/10;object-fit:cover;width:100%;background:var(--sunk)" onerror="this.remove()">` : ''}
   <div class="ln" data-l="-1"><i class="en" style="font-size:16px">${esc(sc.narration)}</i><div class="small muted fa"${showFa ? '' : ' hidden'}>${esc(sc.narration_fa)}</div></div>
   ${(sc.lines || []).map((l, k) => `<div class="ln" data-l="${k}" style="border-radius:10px;padding:4px 6px"><span class="pill mark">${esc(l.who)}</span> <span class="en" style="font-size:16px">${esc(l.en)}</span><div class="small muted fa"${showFa ? '' : ' hidden'}>${esc(l.fa)}</div></div>`).join('')}</div>`).join('')}
   ${s.vocab?.length ? `<div class="card stack small"><b>واژه‌های این داستان</b>${s.vocab.map(w => `<span><b class="en">${esc(w.w)}</b> — ${esc(w.fa)}</span>`).join('')}<button class="btn ghost sm" id="addv">افزودن همه به فلش‌کارت‌ها</button></div>` : ''}
@@ -83,17 +83,18 @@ async function playStory(id) {
   const speakLine = async (text, who, emo) => {
     const keep = G.settings.geminiVoice; if (G.settings.prov.gemini.key) G.settings.geminiVoice = voiceOf(who);
     const ve = G.settings.voiceEn; if (G.settings.prov.gemini.key) G.settings.voiceEn = 'gemini';
-    try { Music.duck(true); await say(text, 'en', emo || 'calm'); } finally { G.settings.geminiVoice = keep; G.settings.voiceEn = ve; Music.duck(false); }
+    try { const ci = chars.indexOf(who); Spatial.at(who === 'narrator' ? 0 : [-1.4, 1.4, -0.7, 0.7][ci % 4], who === 'narrator' ? -0.6 : -1.3); Music.duck(true); return await say(text, 'en', emo || 'calm'); } finally { G.settings.geminiVoice = keep; G.settings.voiceEn = ve; Music.duck(false); Spatial.at(0, -1.2); }
   };
+  let gen = 0; const myHash = location.hash;
   const run = async () => {
-    playing = true; $('#pl').textContent = '⏸'; Music.play(s.mood); const tok = speakToken + 1;
-    for (; si < s.scenes.length && playing; si++, li = -1) {
-      const sc = s.scenes[si]; $('#st').textContent = `صحنهٔ ${faNum(si + 1)} از ${faNum(s.scenes.length)}`;
-      if (li < 0) { hi(si, -1); await speakLine(sc.narration, 'narrator', 'calm'); if (!playing || speakToken > tok + 50) break; li = 0; }
-      for (; li < (sc.lines || []).length && playing; li++) { const l = sc.lines[li]; hi(si, li); await speakLine(l.en, l.who, l.emotion); await sleep(250); }
-      if (playing) await sleep(700);
+    const my = ++gen; playing = true; $('#pl').textContent = '⏸'; Music.play(s.mood); const live = () => playing && my === gen && location.hash === myHash;
+    for (; si < s.scenes.length && live(); si++, li = -1) {
+      const sc = s.scenes[si]; if (!$('#st')) break; $('#st').textContent = `صحنهٔ ${faNum(si + 1)} از ${faNum(s.scenes.length)}`;
+      if (li < 0) { hi(si, -1); if (!(await speakLine(sc.narration, 'narrator', 'calm')) || !live()) break; li = 0; }
+      let cut = false; for (; li < (sc.lines || []).length && live(); li++) { const l = sc.lines[li]; hi(si, li); if (!(await speakLine(l.en, l.who, l.emotion)) || !live()) { cut = true; break; } await sleep(250); }
+      if (cut || !live()) break; await sleep(700);
     }
-    if (si >= s.scenes.length) { finish(); }
+    if (my !== gen) return; if (si >= s.scenes.length && location.hash === myHash) { finish(); }
     playing = false; $('#pl') && ($('#pl').textContent = '▶');
   };
   const pause = () => { playing = false; stopSpeak(); Music.stop(); $('#pl').textContent = '▶'; };
@@ -107,7 +108,7 @@ async function playStory(id) {
     if (!s.quiz?.length) return; let score = 0, qi = 0; const qz = $('#qz');
     const ask = () => { if (qi >= s.quiz.length) { qz.innerHTML = `<div class="card" style="text-align:center"><div class="score">${faNum(score)}/${faNum(s.quiz.length)}</div><b>${score === s.quiz.length ? 'آفرین! همه را درست فهمیدی 🎉' : 'خوب بود! یک بار دیگر گوش بده.'}</b></div>`; addXP(score * 3); saveU(); return; }
       const q = s.quiz[qi]; qz.innerHTML = `<div class="card stack"><b>سؤال درک مطلب ${faNum(qi + 1)}</b><div class="en">${esc(q.q)}</div><div class="opts">${q.options.map((o, k) => `<button class="opt en" data-k="${k}">${esc(o)}</button>`).join('')}</div></div>`;
-      $$('.opt', qz).forEach(b => b.onclick = () => { const ok = +b.dataset.k === +q.a; b.classList.add(ok ? 'right' : 'wrong'); if (ok) score++; else $$('.opt', qz)[q.a]?.classList.add('right'); setTimeout(() => { qi++; ask(); }, 1100); }); };
+      $$('.opt', qz).forEach(b => b.onclick = () => { if (qz.dataset.lock === String(qi)) return; qz.dataset.lock = String(qi); const ok = +b.dataset.k === +q.a; b.classList.add(ok ? 'right' : 'wrong'); if (ok) score++; else $$('.opt', qz)[q.a]?.classList.add('right'); setTimeout(() => { qi++; ask(); }, 1100); }); };
     ask(); qz.scrollIntoView({ behavior: 'smooth' });
   };
 }
@@ -183,8 +184,8 @@ function forecast() {
   const cur = currentUnit();
   const at = idx => addDays(isoDay(), Math.ceil((idx - cur.idx + 1) * daysPerUnit));
   const milestones = [
-    ['🙋', 'معرفی خودت و خانواده، صحبت از کارهای روزانه', ALL_UNITS.find(u => u.id === 'routine').idx],
-    ['🛒', 'خرید، رستوران و پرسیدن نشانی در مسقط', ALL_UNITS.find(u => u.id === 'city').idx],
+    ['🙋', 'معرفی خودت و خانواده، صحبت از کارهای روزانه', ALL_UNITS.find(u => u.id === 'family').idx],
+    ['🛒', 'خرید، رستوران و پرسیدن نشانی', ALL_UNITS.find(u => u.id === 'city').idx],
     ['🩺', 'داروخانه، دکتر و سفر', ALL_UNITS.find(u => u.id === 'travel').idx],
     ['💼', 'مصاحبهٔ کاری و صحبت در محیط کار', ALL_UNITS.find(u => u.id === 'work').idx],
     ['🏠', 'حل مشکلات روزمره: صاحبخانه، بانک، شکایت', ALL_UNITS.find(u => u.id === 'banking').idx],
@@ -198,5 +199,5 @@ routes.vision = () => {
   ${f.milestones.map(m => `<div class="card row" style="flex-wrap:nowrap"><span style="font-size:28px">${m.ic}</span><div class="grow"><b>${esc(m.t)}</b><div class="small muted">${m.done ? 'رسیدی ✓' : 'پیش‌بینی: ' + jLabel(m.date, true)}</div></div>${m.done ? '<span class="pill ok">✓</span>' : ''}</div>`).join('')}
   <div class="notice soft small">اگر روزی ${faNum(f.dailyMin + 20)} دقیقه بخوانی، همهٔ این تاریخ‌ها حدود ${faNum(Math.round(20 / Math.max(1, f.dailyMin + 20) * 100))}٪ جلوتر می‌آیند.</div>
   <button class="btn ghost" id="mv">پیام ${esc(G.settings.teacher)} دربارهٔ آینده‌ام</button><div id="mvo"></div></div>`;
-  $('#mv').onclick = async () => { if (needAI($('#mvo'))) return; $('#mvo').innerHTML = loading(); try { const r = await ai({ system: TEACHER_STYLE(), messages: [{ role: 'user', content: `${learnerContext()}\nForecast: ${f.milestones.map(m => `${m.t}: ${m.done ? 'done' : m.date}`).join('; ')}. Daily study ${f.avgMin} min.\nIn Persian (5-6 sentences), give a realistic, emotional, motivating vision: what they will be able to do and by when (use the dates), what changes in their life in Oman, and one concrete thing to do today. JSON {"say":"","emotion":"excited|proud|encouraging"}` }] }); $('#mvo').innerHTML = `<div class="notice soft">${esc(r.say)}</div>`; say(r.say, 'fa', r.emotion); } catch (e) { $('#mvo').innerHTML = ''; aiErr(e); } };
+  $('#mv').onclick = async () => { if (needAI($('#mvo'))) return; $('#mvo').innerHTML = loading(); try { const r = await ai({ system: TEACHER_STYLE(), messages: [{ role: 'user', content: `${learnerContext()}\nForecast: ${f.milestones.map(m => `${m.t}: ${m.done ? 'done' : m.date}`).join('; ')}. Daily study ${f.avgMin} min.\nIn Persian (5-6 sentences), give a realistic, emotional, motivating vision: what they will be able to do and by when (use the dates), what changes in their real life, and one concrete thing to do today. JSON {"say":"","emotion":"excited|proud|encouraging"}` }] }); $('#mvo').innerHTML = `<div class="notice soft">${esc(r.say)}</div>`; say(r.say, 'fa', r.emotion); } catch (e) { $('#mvo').innerHTML = ''; aiErr(e); } };
 };

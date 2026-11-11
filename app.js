@@ -1,11 +1,12 @@
-/* زبان دوم — منطق برنامه (بدون فریم‌ورک، برای سرعت) */
+/* زبان رستا — منطق برنامه (بدون فریم‌ورک، برای سرعت) */
 'use strict';
 
 /* ───────── ابزارهای پایه ───────── */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const faNum = n => Number(n).toLocaleString('fa-IR');
+const faNum = n => Number(n).toLocaleString('fa-IR', { useGrouping: Math.abs(n) >= 10000 });
+const bidi = s => esc(s).replace(/([A-Za-z][A-Za-z0-9'’,.\/\- ]*[A-Za-z0-9.'’)])/g, '<bdi class="en">$1</bdi>');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const uid = () => Math.random().toString(36).slice(2, 10);
 const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -37,9 +38,10 @@ function jLabel(s, withYear = false) { const j = toJ(s); return `${faNum(j.d)} $
 const weekdayIdx = s => (parseDay(s).getDay() + 1) % 7; // شنبه = ۰
 
 /* ───────── داده‌ها و وضعیت ───────── */
-const ALL_UNITS = LEVELS.flatMap(L => L.units.map(u => ({ ...u, level: L.id, levelFa: L.fa })));
+const CEFR_OF = { intro: 'A1', l1: 'A2', l2: 'A2+/B1', l3: 'B1', wsb: 'A1-A2', wsi: 'A2-B1' };
+const ALL_UNITS = LEVELS.flatMap(L => L.units.map((u, i) => ({ ...u, n: i + 1, level: L.id, levelFa: L.fa, cefr: CEFR_OF[L.id] || 'A2' })));
 ALL_UNITS.forEach((u, i) => { u.idx = i; u.baseWords = parseWords(u.words || ''); });
-const WS_UNITS = WORD_TRACK.flatMap(L => L.units.map(u => ({ ...u, level: L.id, levelFa: L.fa, track: 'ws' })));
+const WS_UNITS = WORD_TRACK.flatMap(L => L.units.map(u => ({ ...u, level: L.id, levelFa: L.fa, cefr: CEFR_OF[L.id] || 'A2', track: 'ws' })));
 WS_UNITS.forEach((u, i) => { u.idx = 2000 + i; u.wsi = i; u.baseWords = []; });
 const nextUnit = u => u.track === 'ws' ? WS_UNITS[u.wsi + 1] : u.idx < 1000 ? ALL_UNITS[u.idx + 1] : null;
 const currentWS = () => WS_UNITS.find(u => isOpen(u) && !isMastered(u)) || WS_UNITS[WS_UNITS.length - 1];
@@ -59,7 +61,7 @@ const DEFAULT_SETTINGS = {
   voiceEn: 'browser', voiceFa: 'gemini', listen: 'browser',
   accent: 'US', rate: 0.95,
   geminiTtsModel: 'gemini-3.8-flash-tts', geminiVoice: 'Kore', openaiVoice: 'nova',
-  teacher: 'رستا', img: 'ai', pixabayKey: '', passScore: 95, theme: 'auto', autoSpeak: true
+  teacher: 'رستا', img: 'set', pixabayKey: '', passScore: 95, theme: 'auto', autoSpeak: true
 };
 const G = { // سراسری (مشترک بین کاربران همین دستگاه)
   users: lsGet('zd:users', []),
@@ -69,11 +71,17 @@ const G = { // سراسری (مشترک بین کاربران همین دستگ�
   img: lsGet('zd:img', {}),          // آدرس تصویر هر واژه
   cache: lsGet('zd:cache', {})       // دیالوگ‌ها، «چرا این درس» و…
 };
-const makeCode = () => 'ZD1.' + btoa(unescape(encodeURIComponent(JSON.stringify({ b: G.settings.brain, p: Object.fromEntries(Object.entries(G.settings.prov).filter(([, x]) => x.key)), v: G.settings.voiceFa, l: G.settings.listen }))));
-function useCode(c) { const d = JSON.parse(decodeURIComponent(escape(atob(c.trim().replace(/^ZD1\./, ''))))); deepMerge(G.settings.prov, d.p || {}); if (d.b) G.settings.brain = d.b; if (d.v) G.settings.voiceFa = d.v; if (d.l) G.settings.listen = d.l; saveG('settings'); }
-function deepMerge(a, b) { for (const k in b) { if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k])) a[k] = deepMerge(a[k] || {}, b[k]); else a[k] = b[k]; } return a; }
+const makeCode = () => 'ZD1.' + btoa(unescape(encodeURIComponent(JSON.stringify({ q: +G.settings.dailyBudget || 1.5, b: G.settings.brain, p: Object.fromEntries(Object.entries(G.settings.prov).filter(([, x]) => x.key).map(([k, x]) => [k, { key: x.key, model: x.model }])), v: G.settings.voiceFa, l: G.settings.listen }))));
+function useCode(c) { // فقط کلید و نام مدل ارائه‌دهنده‌های شناخته‌شده پذیرفته می‌شود (آدرس سرور هرگز)
+  const d = JSON.parse(decodeURIComponent(escape(atob(c.trim().replace(/^ZD1\./, ''))))); const P = d && typeof d.p === 'object' ? d.p : {};
+  for (const k of Object.keys(DEFAULT_SETTINGS.prov)) { const x = P[k]; if (!x || typeof x !== 'object') continue; if (typeof x.key === 'string' && /^[\w.\-]{10,300}$/.test(x.key)) G.settings.prov[k].key = x.key; if (typeof x.model === 'string' && /^[\w.\-/:]{2,80}$/.test(x.model)) G.settings.prov[k].model = x.model; }
+  if (typeof d.q === 'number' && d.q >= 0.05 && d.q <= 50) G.settings.dailyBudget = d.q;
+  if (Object.keys(DEFAULT_SETTINGS.prov).includes(d.b)) G.settings.brain = d.b; if (['gemini', 'openai', 'browser'].includes(d.v)) G.settings.voiceFa = d.v; if (['browser', 'groq', 'gemini', 'openai'].includes(d.l)) G.settings.listen = d.l; saveG('settings'); }
+function deepMerge(a, b) { for (const k in b) { if (k === '__proto__' || k === 'constructor' || k === 'prototype' || !Object.prototype.hasOwnProperty.call(b, k)) continue; if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k])) a[k] = deepMerge(a[k] || {}, b[k]); else a[k] = b[k]; } return a; }
 const saveG = k => lsSet('zd:' + k, G[k]);
 G.settings.passScore = 95;
+if (G.settings.img !== 'photo' && G.settings.img !== 'set') { G.settings.img = 'set'; saveG('settings'); }
+for (const k in G.img) if (/pollinations/.test(G.img[k])) delete G.img[k]; saveG('img');
 if (G.settings.teacher === 'سارا') { G.settings.teacher = 'رستا'; lsSet('zd:settings', G.settings); }
 if (G.settings.prov.gemini.model === 'gemini-2.5-flash') { G.settings.prov.gemini.model = 'gemini-3.1-flash-lite'; G.settings.geminiTtsModel = 'gemini-3.8-flash-tts'; saveG('settings'); }
 const GEM_FALLBACK = ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3.5-flash-lite'];
@@ -90,7 +98,7 @@ async function gemFetch(models, path, body, key) { // اگر مدلی شلوغ �
 
 let U = null; // داده‌های کاربر فعال
 const blankUser = () => ({ srs: {}, units: {}, mistakes: [], mem: [], log: {}, xp: 0, badges: [], convos: {}, plan: null, placement: null, custom: [] });
-function loadUser(id) { U = Object.assign(blankUser(), lsGet('zd:u:' + id, {})); G.active = id; saveG('active'); }
+function loadUser(id) { U = Object.assign(blankUser(), lsGet('zd:u:' + id, {})); G.active = id; saveG('active'); if (!U.mig1) { U.mig1 = 1; if (Object.values(U.units).some(x => x.mastered) && !U.units.hello) U.units.hello = { mastered: true, auto: true, steps: {}, best: {} }; if (U.placement) U.placement.openTo = (U.placement.openTo || 0) + 1; saveU(); } }
 function saveU() { if (G.active) lsSet('zd:u:' + G.active, U); }
 const userData = id => Object.assign(blankUser(), lsGet('zd:u:' + id, {}));
 const me = () => G.users.find(u => u.id === G.active);
@@ -187,7 +195,7 @@ function firstKeyed() { const p = G.settings.prov; return ['gemini', 'groq', 'an
 
 async function ai({ system, messages, json = true, images = [], max = 1400, temp = 0.8, heavy = false }) {
   let pv = G.settings.brain; if (!G.settings.prov[pv]?.key) pv = firstKeyed();
-  if (!pv) throw new Error('NOKEY');
+  if (!pv) throw new Error('NOKEY'); budgetGuard();
   const c = G.settings.prov[pv];
   const sys = system + (json ? '\nReturn ONLY valid JSON, no markdown fences.' : '');
   let text = '';
@@ -211,11 +219,22 @@ async function ai({ system, messages, json = true, images = [], max = 1400, temp
     const d = await r.json(); if (!r.ok) throw new Error(d.error?.message || r.status);
     text = d.choices?.[0]?.message?.content || '';
   }
-  trackAI('chat', (sys.length + messages.reduce((n, m) => n + (m.content?.length || 0), 0) + text.length));
+  const inC = sys.length + messages.reduce((n, m) => n + (m.content?.length || 0), 0) + images.length * 1000; trackAI('chat', inC + text.length, costOf(pv, c.model, inC, text.length) * (heavy ? 2 : 1));
   if (!json) return text;
   return parseJSON(text);
 }
-function trackAI(kind, chars) { if (!U) return; const t = isoDay(); const a = U.aiUse || (U.aiUse = {}); const d = a[t] || (a[t] = { chat: 0, voice: 0, chars: 0 }); d[kind]++; d.chars += chars || 0; saveU(); }
+function trackAI(kind, chars, usd = 0) { if (!U) return; const t = isoDay(); const a = U.aiUse || (U.aiUse = {}); const d = a[t] || (a[t] = { chat: 0, voice: 0, chars: 0 }); d[kind]++; d.chars += chars || 0; d.usd = +((d.usd || 0) + usd).toFixed(5); if (!U.aiStart) U.aiStart = t; saveU(); }
+/* ───── سهمیهٔ روزانهٔ هوش مصنوعی: مانده هر روز برای روزهای بعد ذخیره می‌شود (حداکثر ۳۰ روز) ───── */
+const PRICE = { anthropic: m => /sonnet/.test(m) ? [2, 10] : /opus/.test(m) ? [10, 50] : [0.10, 0.50], gemini: m => /pro/.test(m) ? [1.25, 10] : [0.10, 0.40], openai: () => [0.15, 0.60], groq: () => [0.05, 0.10], openrouter: () => [0.20, 0.80], custom: () => [0.20, 0.80] };
+const costOf = (pv, model, inC, outC) => { const [pi, po] = (PRICE[pv] || PRICE.custom)(model || ''); return (inC / 4 * pi + outC / 4 * po) / 1e6; };
+const isAdminHere = () => !!lsGet('zd:admin:' + G.active, false);
+function aiBudget() {
+  const daily = +G.settings.dailyBudget || 1.5; const today = isoDay(); const start = U.aiStart || today; let bank = 0;
+  for (let d = start, n = 0; d < today && n < 400; d = addDays(d, 1), n++) bank = Math.min(daily * 30, bank + daily - (U.aiUse?.[d]?.usd || 0));
+  bank = Math.max(0, bank); const spent = U.aiUse?.[today]?.usd || 0; const left = daily + bank - spent;
+  return { daily, bank, spent, left, unlimited: isAdminHere() };
+}
+function budgetGuard() { if (!U) return; const b = aiBudget(); if (!b.unlimited && b.left <= 0) throw new Error('BUDGET'); }
 function aiUseSum(d, days = 30) { let chat = 0, voice = 0, chars = 0; for (let i = 0; i < days; i++) { const x = d.aiUse?.[addDays(isoDay(), -i)]; if (x) { chat += x.chat; voice += x.voice; chars += x.chars; } } return { chat, voice, chars }; }
 function parseJSON(t) {
   try { return JSON.parse(t); } catch { }
@@ -224,6 +243,7 @@ function parseJSON(t) {
   throw new Error('پاسخ هوش مصنوعی قابل خواندن نبود؛ دوباره امتحان کن.');
 }
 function aiErr(e) {
+  if (e.message === 'BUDGET') { toast('سهمیهٔ هوش مصنوعی امروزت تمام شد 🙂 فردا دوباره پر می‌شود؛ تا آن موقع فلش‌کارت، تمرین آفلاین و رادیو در دسترس است.', 6000); return; }
   if (e.message === 'NOKEY') { toast('اول در «تنظیمات» یک کلید هوش مصنوعی بگذار (Gemini رایگان است).'); return; }
   if (/failed to fetch|networkerror|load failed|location is not supported|not available in your country/i.test(e.message)) { toast('اتصال به هوش مصنوعی برقرار نشد. اگر در ایران هستی، VPN را روشن کن و دوباره امتحان کن.', 6000); return; }
   toast('خطای هوش مصنوعی: ' + e.message);
@@ -239,8 +259,8 @@ function learnerContext(unit) {
   const mistakes = U.mistakes.slice(-10).map(m => `${m.wrong} → ${m.right}`).join('; ');
   const mem = U.mem.slice(-25).map(m => '- ' + m.t).join('\n');
   return `LEARNER PROFILE
-Name: ${u?.name || ''} (always write this name exactly as given, never change its spelling). Native language: Persian. Lives in Oman.
-Current unit: ${cur.en} (${cur.levelFa || ''}), units mastered: ${p.mastered}/${ALL_UNITS.length}, study streak: ${streakOf(U)} days, pace: ${p.perWeek} units/week, total study ${p.minutes} minutes${p.eta ? ', predicted finish of B1+ path: ' + p.eta : ''}.
+Name: ${u?.name || ''} (always write this name exactly as given, never change its spelling). Native language: Persian. Lives.
+Current unit: ${cur.en} (${cur.levelFa || ''}, CEFR ${cur.cefr || ''}), units mastered: ${p.mastered}/${ALL_UNITS.length}, study streak: ${streakOf(U)} days, pace: ${p.perWeek} units/week, total study ${p.minutes} minutes${p.eta ? ', predicted finish of B1+ path: ' + p.eta : ''}.
 Words from previous units to recycle naturally: ${prevWords || '-'}
 Words from previous units the learner FORGOT (mention this humanly, e.g. "I didn't expect you to forget this one from unit X", then re-teach briefly): ${forgot || '-'}
 Study plan: ${U.plan ? `target ${U.plan.target === 'l1' ? 'Intro+Level 1' : 'up to B1+'} by ${addDays(U.plan.start, U.plan.dayCount - 1)}, ${U.plan.minutes} min/day, behind by ${planGap()} units (if behind, firmly but kindly push the learner to catch up today)` : 'none yet (encourage making one)'}.
@@ -266,7 +286,9 @@ function bestVoice(lang) {
   return list.sort((a, b) => score(b) - score(a))[0] || (lang === 'fa' ? null : voices.find(v => v.lang.startsWith('en')));
 }
 let speakToken = 0;
-function stopSpeak() { speakToken++; try { speechSynthesis.cancel(); } catch { } try { player.pause(); } catch { } }
+let blobRes = null;
+function haltAudio() { try { speechSynthesis.cancel(); } catch { } try { player.pause(); } catch { } const r = blobRes; blobRes = null; r?.(); }
+function stopSpeak() { speakToken++; haltAudio(); }
 function browserSay(text, lang, rate) {
   return new Promise(res => {
     if (!('speechSynthesis' in window)) return res(false);
@@ -295,6 +317,7 @@ async function cloudTTS(engine, text, lang, emotion) {
   const key = 'a:' + hashStr([engine, G.settings.geminiVoice, G.settings.openaiVoice, acc, lang, emotion, text].join('|'));
   let blob = await idb.get(key);
   if (!blob) {
+    budgetGuard();
     if (engine === 'gemini') {
       const c = G.settings.prov.gemini; if (!c.key) throw new Error('NOKEY');
       const d = await gemFetch([G.settings.geminiTtsModel, ...TTS_FALLBACK], 'generateContent', { contents: [{ parts: [{ text: `${style}:\n${text}` }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: G.settings.geminiVoice } } } } }, c.key);
@@ -306,16 +329,16 @@ async function cloudTTS(engine, text, lang, emotion) {
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error?.message || r.status);
       blob = await r.blob();
     }
-    idb.set(key, blob); trackAI('voice', text.length);
+    idb.set(key, blob); trackAI('voice', text.length, text.length * (engine === 'openai' ? 0.000015 : 0.00002));
   }
   return blob;
 }
 function playBlob(blob, tok) {
-  return new Promise(res => { if (tok !== speakToken) return res(); const url = URL.createObjectURL(blob); player.src = url; player.playbackRate = 1; player.onended = player.onerror = () => { URL.revokeObjectURL(url); res(); }; player.play().catch(() => res()); });
+  return new Promise(res => { if (tok !== speakToken) return res(); const url = URL.createObjectURL(blob); const done = () => { if (blobRes === done) blobRes = null; URL.revokeObjectURL(url); res(); }; blobRes = done; player.src = url; player.playbackRate = 1; player.onended = player.onerror = done; player.play().catch(done); });
 }
 /* lang: 'en' یا 'fa' (فارسی همراه با واژه‌های انگلیسی) */
 async function say(text, lang = 'en', emotion = 'cheerful', btn) {
-  if (!text) return; stopSpeak(); const tok = ++speakToken; btn?.classList.add('on');
+  if (!text) return; haltAudio(); const tok = ++speakToken; btn?.classList.add('on'); try { Spatial.wake(); } catch { }
   const engine = lang === 'fa' ? G.settings.voiceFa : G.settings.voiceEn;
   try {
     if (engine !== 'browser') { try { await playBlob(await cloudTTS(engine, text, lang, emotion), tok); return; } catch (e) { if (e.message !== 'NOKEY') console.warn(e); } }
@@ -327,6 +350,9 @@ async function say(text, lang = 'en', emotion = 'cheerful', btn) {
     if (!faOk) toast('صدای فارسی روی این دستگاه نیست؛ در تنظیمات «صدای فارسی» را روی Gemini بگذار.');
   } finally { btn?.classList.remove('on'); }
 }
+
+/* say() حالا true برمی‌گرداند اگر وسطش قطع نشده باشد (برای پخش پشت‌سرهم) */
+const _say = say; say = async (...a) => { const before = speakToken; await _say(...a); return speakToken === before + 1; };
 
 /* ───────── صوت کامل درس/فصل برای دانلود و آفلاین ───────── */
 async function pcmOf(blob) { const b = new Uint8Array(await blob.arrayBuffer()); let i = 12; while (i < b.length - 8) { const id = String.fromCharCode(...b.slice(i, i + 4)); const sz = b[i + 4] | b[i + 5] << 8 | b[i + 6] << 16 | b[i + 7] << 24; if (id === 'data') return b.slice(i + 8, i + 8 + sz); i += 8 + sz; } return b.slice(44); }
@@ -462,9 +488,11 @@ function similarity(a, b) {
 }
 
 /* ───────── تصاویر ───────── */
+const emCode = e => [...String(e || '')].map(c => c.codePointAt(0).toString(16)).filter(c => c !== 'fe0f').join('-');
+const em3d = e => e && !String(e).startsWith('#') ? `<img class="em3d" alt="" src="em/${emCode(e)}.webp" loading="lazy" onerror="this.remove()">` : '';
 function picHTML(u, w, big) {
   const k = wid(u, w); const url = G.img[k];
-  const inner = w.img?.startsWith('#') ? `<span class="sw" style="background:${w.img}"></span>` : esc(w.img || '🖼️');
+  const inner = w.img?.startsWith('#') ? `<span class="sw" style="background:${w.img}"></span>` : esc(w.img || '🖼️') + (url ? '' : em3d(w.img));
   return `<div class="pic${big ? ' big' : ''}" style="--h:${u.hue}" data-pic="${esc(k)}">${inner}${url ? `<img alt="${esc(w.w)}" src="${esc(url)}" loading="lazy" onerror="this.remove()">` : ''}</div>`;
 }
 function aiImageUrl(u, w) {
@@ -482,7 +510,7 @@ async function photoUrl(u, w) {
   return null;
 }
 function autoImages(root) {
-  const mode = G.settings.img; if (mode === 'emoji') return;
+  const mode = G.settings.img; if (mode !== 'photo') return; // پیش‌فرض: تصاویر سه‌بعدی داخل خود برنامه
   const io = new IntersectionObserver(es => es.forEach(async e => {
     if (!e.isIntersecting) return; io.unobserve(e.target); const k = e.target.dataset.pic; if (G.img[k]) return;
     const x = wordFromId(k); if (!x || x.w.img?.startsWith('#')) return;
@@ -507,7 +535,7 @@ const I = {
   lock: '🔒'
 };
 function toast(t, ms = 3200) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, ms); }
-function setTop(title, back) { $('#top').innerHTML = `${back ? `<button class="back" aria-label="بازگشت" onclick="history.length>1?history.back():go('home')">${I.back}</button>` : ''}<h1>${esc(title)}</h1>${me() ? `<button class="userchip" onclick="go('users')"><span class="avatar">${avHTML(me())}</span>${esc(me().name)}</button>` : ''}`; }
+function setTop(title, back) { $('#top').innerHTML = `${back ? `<button class="back" aria-label="بازگشت" onclick="history.length>1?history.back():go('home')">${I.back}</button>` : ''}<h1>${esc(title)}</h1>${U && !U.online && window.loginSheet ? `<button class="btn sm" style="margin-inline-start:auto" onclick="loginSheet(()=>router())">ورود / ثبت‌نام</button>` : ''}${me() ? `<button class="userchip" onclick="go('users')"><span class="avatar">${avHTML(me())}</span>${esc(me().name)}</button>` : ''}`; }
 function go(h) { location.hash = h; }
 const view = () => $('#view');
 function sheet(html) { const bg = document.createElement('div'); bg.className = 'sheet-bg'; bg.innerHTML = `<div class="sheet" role="dialog"><div class="grab"></div>${html}</div>`; bg.onclick = e => { if (e.target === bg) bg.remove(); }; document.body.appendChild(bg); return bg; }
@@ -517,60 +545,98 @@ function needAI(el) { if (hasAI() || firstKeyed()) return false; el.innerHTML = 
 /* ───────── نصب برنامه (آیکن روی صفحهٔ گوشی و کامپیوتر) ───────── */
 let installEvt = null;
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (location.hash === '' || location.hash === '#home') { const b = $('#install-box'); if (b) b.innerHTML = installHTML(); bindInstall(); } });
-addEventListener('appinstalled', () => { installEvt = null; toast('«زبان دوم» نصب شد 🎉 از این به بعد از آیکنش وارد شو.'); $('#install-box') && ($('#install-box').innerHTML = ''); });
+addEventListener('appinstalled', () => { installEvt = null; toast('«زبان رستا» نصب شد 🎉 از این به بعد از آیکنش وارد شو.'); $('#install-box') && ($('#install-box').innerHTML = ''); });
 const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-function installHTML() { if (isStandalone() || lsGet('zd:installHide', '') === isoDay()) return ''; if (!installEvt && !isIOS()) return ''; return `<div class="install"><img src="icon-192.png" alt="" style="width:40px;height:40px;border-radius:10px"><b>«زبان دوم» را روی ${isIOS() ? 'آیفونت' : 'دستگاهت'} نصب کن تا همیشه با یک لمس بازش کنی.</b><button id="inst">نصب</button><button id="insx" aria-label="بعداً" style="background:transparent;color:inherit;padding:8px">✕</button></div>`; }
+function installHTML() { if (isStandalone() || lsGet('zd:installHide', '') === isoDay()) return ''; if (!installEvt && !isIOS()) return ''; return `<div class="install"><img src="icon-192.png" alt="" style="width:40px;height:40px;border-radius:10px"><b>«زبان رستا» را روی ${isIOS() ? 'آیفونت' : 'دستگاهت'} نصب کن تا همیشه با یک لمس بازش کنی.</b><button id="inst">نصب</button><button id="insx" aria-label="بعداً" style="background:transparent;color:inherit;padding:8px">✕</button></div>`; }
 function bindInstall() {
   $('#insx') && ($('#insx').onclick = () => { lsSet('zd:installHide', isoDay()); $('#install-box').innerHTML = ''; });
   $('#inst') && ($('#inst').onclick = async () => {
     if (installEvt) { installEvt.prompt(); const r = await installEvt.userChoice; if (r.outcome === 'accepted') installEvt = null; return; }
     sheet(`<div class="stack" style="text-align:center"><img src="icon-192.png" alt="" style="width:72px;height:72px;border-radius:18px;align-self:center"><b style="font-size:18px">نصب روی آیفون</b>
     <div class="stack" style="text-align:right"><div>۱. این صفحه باید در <b>Safari</b> باز باشد.</div><div>۲. دکمهٔ <b>اشتراک‌گذاری</b> را بزن (مربع با فلش رو به بالا، پایین صفحه).</div><div>۳. کمی پایین برو و <b>Add to Home Screen</b> را بزن.</div><div>۴. بالا سمت راست <b>Add</b> را بزن.</div></div>
-    <div class="notice soft small">از این به بعد آیکن «زبان دوم» روی صفحهٔ گوشی است و مثل یک اپ بدون نوار آدرس باز می‌شود.</div><button class="btn" onclick="this.closest('.sheet-bg').remove()">فهمیدم</button></div>`);
+    <div class="notice soft small">از این به بعد آیکن «زبان رستا» روی صفحهٔ گوشی است و مثل یک اپ بدون نوار آدرس باز می‌شود.</div><button class="btn" onclick="this.closest('.sheet-bg').remove()">فهمیدم</button></div>`);
   });
 }
 
 /* ───────── مسیریاب ───────── */
 const routes = {};
+let routeGen = 0;
 function router() {
   if (/access_token|error_description|[?&]code=/.test(location.hash + location.search) && window.handleAuthRedirect) { if (!G.active && G.users[0]) loadUser(G.users[0].id); return handleAuthRedirect(); }
-  stopSpeak(); window.scrollTo(0, 0); view().onclick = null; $('nav.bottom').hidden = false;
+  stopSpeak(); window.scrollTo(0, 0); view().onclick = null; $('nav.bottom').hidden = false; $$('.sheet-bg').forEach(x => x.remove()); document.body.classList.toggle('session', /^#(cards|quiz|exam|guide)\b/.test(location.hash));
   if (!G.users.length || !G.active || !G.users.some(u => u.id === G.active)) { if (!G.users.length) return viewWelcome(); loadUser(G.users[0].id); }
   if (!U) loadUser(G.active);
-  const [r, ...args] = (location.hash.slice(1) || 'home').split('/');
-  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', theater: 'library', practice: 'home', vision: 'home', rooms: 'chat', u: 'home', admin: 'me', dm: 'chat', grammar: 'tools', gclass: 'tools', verbs: 'tools', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat' }[r] || r)));
+  routeGen++; const [r, ...args] = (location.hash.slice(1) || 'home').split('/');
+  if (['unit', 'lesson', 'cards', 'quiz', 'teach', 'talk', 'dialog', 'exam', 'practice', 'sleep', 'myradio'].includes(r) && args[0]) { const gu = unitById(decodeURIComponent(args[0])); if (!gu) { location.hash = 'home'; return; } if (gu.idx < 1000 && !isOpen(gu)) { toast(`این درس هنوز قفل است؛ اول درس قبلی را با نمرهٔ ${faNum(G.settings.passScore)} قبول شو.`); location.hash = 'home'; return; } }
+  if (['role', 'gclass'].includes(r) && !args[0]) { location.hash = r === 'role' ? 'chat' : 'grammar'; return; }
+  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', theater: 'library', practice: 'home', vision: 'home', rooms: 'chat', path: 'home', u: 'home', admin: 'me', dm: 'chat', grammar: 'tools', gclass: 'tools', verbs: 'tools', leitner: 'tools', lesson: 'home', listen: 'tools', news: 'tools', sleep: 'home', myradio: 'chat', music: 'tools', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat' }[r] || r)));
   (routes[r] || routes.home)(...args.map(decodeURIComponent));
 }
 addEventListener('hashchange', router);
 
 /* ───────── خوش‌آمد و کاربران ───────── */
-const avHTML = u => u?.photo ? `<img src="${u.photo}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">` : esc(u?.avatar || '🙂');
+const safeImg = s => /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/.test(s || '') && s.length < 200000 ? s : '';
+const avHTML = u => safeImg(u?.photo) ? `<img src="${safeImg(u.photo)}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">` : esc(u?.avatar || '🙂');
 const AVATARS = ['🦊', '🐼', '🦁', '🐯', '🐨', '🦉', '🐬', '🦄', '🐙', '🐝', '🌵', '🚀'];
-function viewWelcome(tab = 'up') {
+/* ───── معرفی کوتاه امکانات (با «رد شدن») و بعد ورود / ثبت‌نام ───── */
+const INTRO = [
+  ['👩‍🏫', 'معلم هوشمندی که فارسی حرف می‌زند', 'رستا مثل یک معلم واقعی با صدای گرم فارسی درس می‌دهد، اشتباه‌هایت را یادش می‌ماند، تشویقت می‌کند و درس‌های قبلی را هم مرور می‌کند.'],
+  ['🎯', 'از صفر تا مکالمهٔ روان (A1 تا B1)', 'چهار سطح: مقدماتی (A1)، سطح ۱ (A2)، سطح ۲ (A2+/B1) و سطح ۳ (B1) + مسیر واژگان موضوعی. هر درس یک موضوع زندگی واقعی است: خانواده، خرید، سفر، کار، سلامت…'],
+  ['📚', 'هر درس دقیقاً چه یادت می‌دهد', 'بانک کامل واژه‌ها و فعل‌ها با تصویر و تلفظ، یک مکالمهٔ واقعی، گرامر همان درس، صحبت با معلم و آزمون پایانی. درس بعد وقتی باز می‌شود که ۹۵ بگیری.'],
+  ['🎧', 'شنیدن هر روز؛ حتی ناخودآگاه', 'رادیوی زندهٔ آمریکایی و بریتانیایی، خبر واقعی امروز به زبان ساده، رادیوی شخصی تعاملی، مرور قبل از خواب و موسیقی با زیرنویس؛ با صدای سه‌بعدی.'],
+  ['🗓️', 'برنامهٔ شخصی روی تقویم شمسی', 'می‌گویی تا کی و روزی چند دقیقه؛ برنامه روزبه‌روز چیده می‌شود، یادآوری می‌کند و اگر عقب بیفتی برنامهٔ جبرانی می‌سازد.'],
+  ['🏆', 'رقابت، انجمن و دوستان', 'جدول رقابت هفتگی، چت‌روم هر موضوع با معلمی که نقش می‌دهد و اصلاح می‌کند، پیام خصوصی و صفحهٔ اختصاصی هر کاربر.'],
+];
+function viewIntro(i = 0) {
+  $('#top').innerHTML = ''; $('nav.bottom').hidden = true; const [ic, t, d] = INTRO[i];
+  view().innerHTML = `<div class="auth intro"><div class="hero2" style="min-height:380px;justify-content:center"><img class="logo" src="icon-192.png" alt=""><div style="font-weight:800;font-size:15px;opacity:.9">آموزش زبان رستا</div>
+    <div style="font-size:54px;line-height:1">${ic}</div><h2>${t}</h2><span style="opacity:.88;line-height:1.9">${d}</span>
+    <div class="row" style="gap:6px;justify-content:center">${INTRO.map((_, k) => `<span style="width:${k === i ? 22 : 8}px;height:8px;border-radius:9px;background:${k === i ? 'var(--mark)' : 'color-mix(in srgb,var(--hero-ink) 35%,transparent)'}"></span>`).join('')}</div></div>
+    <div class="form"><button class="btn wide" id="nx">${i < INTRO.length - 1 ? 'بعدی' : 'شروع کنیم'}</button><button class="btn line wide" id="sk">رد شدن و ورود</button></div></div>`;
+  const end = () => { lsSet('zd:introSeen', 1); viewWelcome('in'); };
+  $('#nx').onclick = () => i < INTRO.length - 1 ? viewIntro(i + 1) : end(); $('#sk').onclick = end;
+}
+function viewWelcome(tab = 'in') {
+  if (!G.users.length && !lsGet('zd:introSeen', 0)) return viewIntro(0);
   $('#top').innerHTML = ''; $('nav.bottom').hidden = true;
+  const up = tab === 'up';
   view().innerHTML = `<div class="auth">
-  <div class="hero2"><img class="logo" src="icon-192.png" alt=""><h2>انگلیسی را مثل یک گفتگوی واقعی یاد بگیر</h2>
-  <span style="opacity:.85">معلم هوشمندی که با تو فارسی حرف می‌زند و قدم‌به‌قدم تا مکالمهٔ روان همراهت است.</span>
-  <ul><li>معلم صوتی با لهجهٔ آمریکایی یا بریتانیایی</li><li>فلش‌کارت هوشمند؛ هیچ واژه‌ای فراموش نمی‌شود</li><li>تقویم شمسی و برنامهٔ شخصی تا رسیدن به هدف</li><li>انجمن، رقابت و داستان‌های صوتی</li></ul></div>
-  <div class="form"><div class="tabs"><button data-t="up" class="${tab === 'up' ? 'on' : ''}">ثبت‌نام</button><button data-t="in" class="${tab === 'in' ? 'on' : ''}">ورود</button></div>
-  ${tab === 'up' ? `<label class="f">نام<input id="nm" class="in" placeholder="مثلاً رستا" maxlength="24" autocomplete="given-name"></label>` : ''}
-  <label class="f">ایمیل<input id="em0" class="in" dir="ltr" type="email" autocomplete="email" placeholder="you@gmail.com"></label>
-  ${tab === 'up' ? `<div class="small muted">تصویر پروفایل</div><div class="row" id="av">${AVATARS.map((a, i) => `<button class="icon-btn${i ? '' : ' on'}" data-a="${a}" style="font-size:20px">${a}</button>`).join('')}</div>` : '<span class="small muted">لینک ورود به ایمیلت فرستاده می‌شود؛ رمز لازم نیست.</span>'}
-  <details><summary class="small">کد اتصال هوش مصنوعی دارم</summary><input id="cd" class="in" dir="ltr" placeholder="ZD1…" style="margin-top:6px"></details>
-  <button class="btn wide" id="go">${tab === 'up' ? 'ساخت حساب' : 'فرستادن لینک ورود'}</button>
-  ${tab === 'up' ? '<button class="btn line wide" id="go2">فعلاً بدون حساب امتحان می‌کنم</button>' : ''}
-  <span class="tiny muted" style="text-align:center">با ثبت‌نام، یوزرنیم و صفحهٔ اختصاصی می‌گیری و پیشرفتت در جدول رقابت دیده می‌شود.</span></div></div>`;
-  $$('.tabs button').forEach(b => b.onclick = () => viewWelcome(b.dataset.t));
+  <div class="hero2"><img class="logo" src="icon-192.png" alt=""><div style="font-weight:800;font-size:15px;opacity:.9">آموزش زبان رستا</div><h2>انگلیسی را مثل یک گفتگوی واقعی یاد بگیر</h2>
+  <span style="opacity:.85">معلم هوشمندی که با تو فارسی حرف می‌زند و قدم‌به‌قدم تا مکالمهٔ روان همراهت است.</span><button class="btn line sm" id="tourb" style="align-self:flex-start">امکانات برنامه را ببین ›</button></div>
+  <div class="form"><div class="tabs"><button data-t="in" class="${up ? '' : 'on'}">ورود</button><button data-t="up" class="${up ? 'on' : ''}">ثبت‌نام</button></div>
+  ${up ? `<label class="f">نام<input id="nm" class="in" placeholder="مثلاً رستا" maxlength="24" autocomplete="given-name"></label>
+  <label class="f">نام کاربری (حروف انگلیسی کوچک، عدد و _)<input id="un" class="in" dir="ltr" maxlength="20" autocomplete="username" placeholder="rasta_eng"></label><span class="tiny muted" id="unh"></span>
+  <label class="f">ایمیل (برای تأیید حساب)<input id="em" class="in" dir="ltr" type="email" autocomplete="email" placeholder="you@gmail.com"></label>` :
+  `<label class="f">نام کاربری یا ایمیل<input id="un" class="in" dir="ltr" autocomplete="username" placeholder="rasta_eng"></label>`}
+  <label class="f">رمز عبور${up ? ' (حداقل ۸ حرف)' : ''}<input id="pw" class="in" dir="ltr" type="password" autocomplete="${up ? 'new-password' : 'current-password'}"></label>
+  ${up ? `<div class="small muted">تصویر پروفایل</div><div class="row" id="av">${AVATARS.map((a, i) => `<button class="icon-btn${i ? '' : ' on'}" data-a="${a}" style="font-size:20px">${a}</button>`).join('')}</div>` : ''}
+  <details><summary class="small">کد اتصال هوش مصنوعی دارم</summary><input id="cd" class="in" dir="ltr" placeholder="ZD1…" style="margin-top:6px"><span class="tiny muted">کد را از مدیر برنامه بگیر و اینجا بچسبان.</span></details>
+  <button class="btn wide" id="go">${up ? 'ساخت حساب' : 'ورود'}</button>
+  ${up ? '' : '<div class="row small" style="justify-content:space-between"><a href="javascript:void 0" id="fg">رمز را فراموش کرده‌ام</a><a href="javascript:void 0" id="ml">ورود با لینک ایمیل</a></div>'}
+  <button class="btn line wide" id="go2">فعلاً بدون حساب امتحان می‌کنم</button>
+  <span class="tiny muted" style="text-align:center">${up ? 'بعد از ساخت حساب، یک ایمیل تأیید می‌آید؛ روی لینکش بزن تا حسابت فعال شود.' : 'حساب نداری؟ از برگهٔ «ثبت‌نام» بساز.'}</span></div></div>`;
+  $$('.tabs button').forEach(b => b.onclick = () => viewWelcome(b.dataset.t)); $('#tourb').onclick = () => viewIntro(0);
   let av = AVATARS[0]; $$('#av button').forEach(b => b.onclick = () => { $$('#av button').forEach(x => x.classList.remove('on')); b.classList.add('on'); av = b.dataset.a; });
-  const start = (withEmail) => {
-    const n = tab === 'in' ? 'کاربر' : $('#nm').value.trim(); if (!n) return toast('نامت را بنویس.');
-    const email = $('#em0').value.trim(); if (withEmail && !/^\S+@\S+\.\S+$/.test(email)) return toast('ایمیلت را درست بنویس.');
-    const c = $('#cd').value.trim(); if (c) { try { useCode(c); toast('هوش مصنوعی وصل شد ✓'); } catch { return toast('کد اتصال درست نیست؛ دوباره کپی کن.'); } }
-    addUser(n, av); $('nav.bottom').hidden = false; go(tab === 'in' ? 'home' : 'guide'); router();
-    if (withEmail && window.loginSheet) setTimeout(() => { loginSheet(async p => { if (tab === 'in' && p?.display_name) { me().name = p.display_name; if (p.avatar) me().avatar = p.avatar; if (p.photo) me().photo = p.photo; saveG('users'); router(); } }); window._loginSheetEmail && _loginSheetEmail(email); }, 300);
+  const code = () => { const c = $('#cd').value.trim(); if (!c) return true; try { useCode(c); toast('هوش مصنوعی وصل شد ✓'); return true; } catch { toast('کد اتصال درست نیست؛ دوباره کپی کن.'); return false; } };
+  const enter = (n, a, h = 'guide') => { addUser(n, a); $('nav.bottom').hidden = false; go(h); router(); };
+  $('#go2').onclick = () => { if (!code()) return; enter('کاربر', AVATARS[0], 'guide'); };
+  $('#ml') && ($('#ml').onclick = () => { if (!code()) return; enter('کاربر', AVATARS[0], 'home'); setTimeout(() => window.loginSheet && loginSheet(p => { if (p?.display_name) { me().name = p.display_name; if (p.avatar) me().avatar = p.avatar; saveG('users'); router(); } }), 300); });
+  $('#fg') && ($('#fg').onclick = () => window.forgotPassword && forgotPassword($('#un').value.trim()));
+  $('#go').onclick = async () => {
+    if (!window.authSignUp) return toast('بخش آنلاین بارگذاری نشد؛ اینترنت را بررسی کن.');
+    const b = $('#go'); const pw = $('#pw').value;
+    if (up) {
+      const n = $('#nm').value.trim(), un = $('#un').value.trim().toLowerCase(), em = $('#em').value.trim().toLowerCase();
+      if (!n) return toast('نامت را بنویس.'); if (!/^[a-z0-9_]{3,20}$/.test(un)) return $('#unh').textContent = 'نام کاربری: فقط حروف انگلیسی کوچک، عدد و _ ؛ ۳ تا ۲۰ حرف.';
+      if (!/^\S+@\S+\.\S+$/.test(em)) return toast('ایمیلت را درست بنویس.'); if (pw.length < 8) return toast('رمز عبور باید حداقل ۸ حرف باشد.'); if (!code()) return;
+      b.disabled = true; b.textContent = 'در حال ساخت حساب…'; const r = await authSignUp({ name: n, un, email: em, pw, avatar: av }); b.disabled = false; b.textContent = 'ساخت حساب';
+      if (r === 'taken') return $('#unh').textContent = 'این نام کاربری گرفته شده؛ یکی دیگر بنویس.';
+    } else {
+      const id = $('#un').value.trim(); if (!id || !pw) return toast('نام کاربری و رمز را بنویس.'); if (!code()) return;
+      b.disabled = true; b.textContent = 'در حال ورود…'; await authSignIn(id, pw); b.disabled = false; b.textContent = 'ورود';
+    }
   };
-  $('#go').onclick = () => start(true); $('#go2') && ($('#go2').onclick = () => start(false));
 }
 function addUser(name, avatar) { const u = { id: uid(), name, avatar, created: isoDay() }; G.users.push(u); saveG('users'); loadUser(u.id); saveU(); return u; }
 routes.users = () => {
@@ -594,34 +660,38 @@ function planGap() { // چند درس عقب‌تر از برنامه
 function catchUpPlan() { const P = U.plan; const end = addDays(P.start, P.dayCount - 1); const left = Math.max(7, Math.round((parseDay(end) - parseDay(isoDay())) / DAY) + 1); const gap = planGap();
   U.plan = buildPlan({ ...P, start: isoDay(), days: left, minutes: clamp(P.minutes + gap * 10, P.minutes, 180) }); U.plan.dayCount = left; U.plan.catchUp = (U.plan.catchUp || 0) + 1; saveU(); }
 function todayPlan() { const p = U.plan; if (!p) return null; return p.days?.[isoDay()] || null; }
+routes.path = () => {
+  setTop('همهٔ درس‌ها', true);
+  view().innerHTML = `<div class="stack">${LEVELS.map(Lv => `<div class="sec">${esc(Lv.fa)} <small class="en">${esc(Lv.en)} · CEFR ${CEFR_OF[Lv.id] || ''}</small></div><div class="units">${ALL_UNITS.filter(u => u.level === Lv.id).map(unitCard).join('')}</div>`).join('')}
+  ${WORD_TRACK.map(Lv => `<div class="sec">${esc(Lv.fa)} <small class="en">${esc(Lv.en)}</small></div><div class="units">${WS_UNITS.filter(u => u.level === Lv.id).map(unitCard).join('')}</div>`).join('')}
+  ${U.custom.length ? `<div class="sec">درس‌های خودم</div><div class="units">${U.custom.map(c => unitCard({ ...c, idx: 1000, baseWords: c.words })).join('')}</div>` : ''}<a class="btn line wide" href="#tool/import">+ افزودن درس از کتاب خودم یا ساخت درس تازه</a></div>`;
+};
 routes.home = () => {
-  setTop('زبان دوم');
+  setTop('زبان رستا');
   const cur = currentUnit(); const due = dueIds().length; const p = paceInfo(); const tp = todayPlan(); const L = U.log[isoDay()] || { xp: 0, min: 0 };
   const board = G.users.map(u => ({ u, d: userData(u.id) })).map(x => ({ ...x, w: weekXP(x.d) })).sort((a, b) => b.w - a.w);
-  const tasks = tp ? tp.tasks : [{ k: 'cards', t: `مرور ${faNum(due)} فلش‌کارت موعددار` }, { k: 'unit', t: `ادامهٔ درس «${cur.fa}»` }];
+  const tasks = (tp ? tp.tasks : [{ k: 'cards', t: `مرور ${faNum(due)} فلش‌کارت موعددار` }, { k: 'unit', t: `ادامهٔ درس «${cur.fa}»` }]).filter(t => !(t.k === 'cards' && !due)).concat(listenTasks());
   view().innerHTML = `<div class="stack">
   <div class="today">
     <div class="row"><span class="grow small muted">${jLabel(isoDay(), true)} · ${faNum(Math.round(L.min))} دقیقه مطالعهٔ امروز</span><span class="pill mark">🔥 ${faNum(streakOf(U))} روز</span></div>
     <b style="font-size:19px">درس ${faNum(cur.idx + 1)}: ${esc(cur.fa)} <span class="en" style="opacity:.7;font-size:14px">${esc(cur.en)}</span></b>
     <ul class="tasks">${tasks.map(t => `<li class="${taskDone(t) ? 'done' : ''}"><span class="chk">${taskDone(t) ? '✓' : ''}</span>${esc(t.t)}</li>`).join('')}</ul>
-    <div class="row"><a class="btn" href="#unit/${cur.id}">ادامهٔ یادگیری</a>${due ? `<a class="btn ghost" style="background:transparent;color:inherit;box-shadow:inset 0 0 0 1.5px currentColor" href="#cards/due">مرور ${faNum(due)} واژه</a>` : ''}</div>
+    <div class="row"><a class="btn" href="#unit/${cur.id}">ادامهٔ یادگیری</a><a class="btn ghost" style="background:transparent;color:inherit;box-shadow:inset 0 0 0 1.5px currentColor" href="#leitner">🗃️ لایتنر${due ? ' · ' + faNum(due) + ' امروز' : ''}</a></div>
   </div>
   <div id="install-box">${installHTML()}</div>
   <div id="online-home"></div>
   ${planGap() > 0 ? `<div class="notice stack"><b>⚠ ${faNum(planGap())} درس از برنامه‌ات عقبی</b><span class="small">هدفت عقب نمی‌افتد: برنامهٔ جبرانی همان تاریخ پایان را نگه می‌دارد و وقت روزانه را کمی بیشتر می‌کند.</span><button class="btn sm" id="cu" style="align-self:flex-start">ساخت برنامهٔ جبرانی</button></div>` : ''}
   ${!hasAI() && !firstKeyed() ? `<div class="notice">برای فعال شدن معلم صوتی و گفتگو، در <a href="#settings">تنظیمات</a> یک کلید رایگان Gemini بگذار.</div>` : ''}
-  <div class="sec">رقابت این هفته <small>امتیاز هفت روز اخیر</small></div>
+  ${G.users.length > 1 ? `<div class="sec">رقابت این هفته <small>کاربران این دستگاه</small></div>
   <div class="users">${board.map((x, i) => `<button class="ucard${x.u.id === G.active ? ' on' : ''}" data-u="${x.u.id}"><div class="row"><span style="font-weight:900;width:20px">${['🥇', '🥈', '🥉'][i] || faNum(i + 1)}</span><span class="avatar">${avHTML(x.u)}</span><b class="grow">${esc(x.u.name)}</b><span class="pill acc num">${faNum(x.w)}</span></div>
     <div class="small muted">درس ${faNum((ALL_UNITS.find(u => !x.d.units[u.id]?.mastered)?.idx ?? 0) + 1)} از ${faNum(ALL_UNITS.length)} · ${faNum(Object.values(x.d.srs).filter(s => s.box >= 4).length)} واژهٔ تثبیت‌شده · ${rankOf(x.d.xp)}</div>
-    <div class="bar"><i style="width:${Math.round(masteredCount(x.d) / ALL_UNITS.length * 100)}%"></i></div></button>`).join('')}</div>
+    <div class="bar"><i style="width:${Math.round(masteredCount(x.d) / ALL_UNITS.length * 100)}%"></i></div></button>`).join('')}</div>` : ''}
   <div class="card stack"><div class="row"><b class="grow">پیشرفت من</b><span class="pill">${rankOf(U.xp)} · ${faNum(U.xp)} امتیاز</span></div>
     <div class="grid2 small"><span>درس‌های قبول‌شده: <b class="num">${faNum(p.mastered)}</b> از ${faNum(ALL_UNITS.length)}</span><span>واژه‌های تثبیت‌شده: <b>${faNum(learnedCount())}</b></span>
     <span>سرعت: <b>${faNum(p.perWeek)}</b> درس در هفته</span><span>${p.eta ? `پیش‌بینی پایان سطح متوسط: <b>${jLabel(p.eta, true)}</b>` : 'پیش‌بینی بعد از اولین درس'}</span></div>
     ${U.badges.length ? `<div class="row">${U.badges.map(b => { const x = BADGES.find(y => y.id === b); return x ? `<span class="pill mark" title="${x.fa}">${x.ic} ${x.fa}</span>` : ''; }).join('')}</div>` : ''}</div>
   ${(() => { const f = forecast(); const m = f.milestones.find(x => !x.done); return m ? `<a class="card row" href="#vision" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span style="font-size:30px">🔭</span><div class="grow"><b>چشم‌انداز تو</b><div class="small">با همین سرعت، تا <b>${jLabel(m.date, true)}</b> می‌توانی ${esc(m.t)}.</div></div><span class="muted">›</span></a>` : ''; })()}
-  ${LEVELS.map(Lv => `<div class="sec">${esc(Lv.fa)} <small class="en">${esc(Lv.en)}</small></div><div class="units">${ALL_UNITS.filter(u => u.level === Lv.id).map(unitCard).join('')}</div>`).join('')}
-  ${WORD_TRACK.map(Lv => `<div class="sec">${esc(Lv.fa)} <small class="en">${esc(Lv.en)}</small></div><div class="units">${WS_UNITS.filter(u => u.level === Lv.id).map(unitCard).join('')}</div>`).join('')}
-  ${U.custom.length ? `<div class="sec">درس‌های خودم</div><div class="units">${U.custom.map(c => unitCard({ ...c, idx: 1000, baseWords: c.words })).join('')}</div>` : ''}
+  <div class="sec">درس‌های پیش رو <small><a href="#path">همهٔ درس‌ها ›</a></small></div><div class="units">${ALL_UNITS.slice(cur.idx, cur.idx + 4).map(unitCard).join('')}${unitCard(currentWS())}</div>
   <a class="btn line wide" href="#tool/import">+ افزودن درس از کتاب خودم یا ساخت درس تازه با هوش مصنوعی</a>
   ${!U.placement ? `<a class="btn ghost wide" href="#placement">تعیین سطح با هوش مصنوعی</a>` : ''}
   </div>`;
@@ -635,11 +705,12 @@ function unitCard(u) {
   const words = unitWords(u); const learned = words.filter(w => (U.srs[wid(u, w)]?.box || 0) >= 4).length;
   return `<a class="unit${open ? '' : ' locked'}${cur ? ' current' : ''}" href="${open ? '#unit/' + u.id : 'javascript:void 0'}" ${open ? '' : `onclick="toast('این درس بعد از قبولی در درس قبل (نمرهٔ ${faNum(G.settings.passScore)} به بالا) باز می‌شود.')"`}>
     <span class="badge">${m ? '<span class="pill ok">قبول ✓</span>' : open ? (cur ? '<span class="pill acc">درس فعلی</span>' : '') : '🔒'}</span>
-    <span class="tile" style="--h:${u.hue}">${esc(u.icon)}</span><b>${u.track === 'ws' ? faNum(u.wsi + 1) + '. ' : u.idx < 1000 ? faNum(u.idx + 1) + '. ' : ''}${esc(u.fa)}</b><span class="en">${esc(u.en)}</span>
+    <span class="tile" style="--h:${u.hue}">${esc(u.icon)}</span>${u.track === 'ws' ? `<span class="tiny muted">سرفصل ${faNum(u.wsi + 1)}</span>` : u.idx < 1000 ? `<span class="tiny muted" style="font-weight:700">درس ${faNum(u.n)}</span>` : ''}<b>${esc(u.fa)}</b><span class="en">${esc(u.en)}</span>
     <div class="bar mark"><i style="width:${words.length ? Math.round(learned / words.length * 100) : 0}%"></i></div></a>`;
 }
 function taskDone(t) {
   const cur = currentUnit(); const st = unitState(cur);
+  if (t.k === 'news' || t.k === 'radio') return listenDone(t);
   if (t.k === 'cards') return dueIds().length === 0;
   if (t.k === 'min') return (U.log[isoDay()]?.min || 0) >= (U.plan?.minutes || 30);
   if (t.k?.startsWith('step:')) { const [, uidp, s] = t.k.split(':'); return !!U.units[uidp]?.steps?.[s]; }
@@ -649,6 +720,7 @@ function taskDone(t) {
 
 /* ───────── صفحهٔ درس ───────── */
 const STEPS = [
+  { k: 'lesson', ic: '📖', fa: 'کلاس درس (مثل کتاب)', d: 'متن، مکالمه، گرامر با توضیح معلم، تمرین و جمع‌بندی' },
   { k: 'words', ic: '👂', fa: 'شنیدن و دیدن واژه‌ها', d: 'همهٔ واژه‌ها را با تصویر و تلفظ ببین و بشنو' },
   { k: 'cards', ic: '🃏', fa: 'فلش‌کارت هوشمند', d: 'یادآوری فعال؛ همراه واژه‌های درس‌های قبل' },
   { k: 'dialog', ic: '🎭', fa: 'مکالمهٔ درس', d: 'گوش بده و پشت سرش تکرار کن (سایه‌خوانی)' },
@@ -661,11 +733,13 @@ routes.unit = (id, sub) => {
   const u = unitById(id); if (!u) return go('home'); if (!isOpen(u)) { toast('این درس هنوز قفل است.'); return go('home'); }
   setTop(u.fa, true); const st = unitState(u); const words = unitWords(u);
   view().innerHTML = `<div class="stack">
-  <div class="hero"><span class="tile" style="--h:${u.hue}">${esc(u.icon)}</span><div class="grow"><div class="small muted">${esc(u.levelFa || 'درس من')} ${u.track === 'ws' ? '· سرفصل ' + faNum(u.wsi + 1) : u.idx < 1000 ? '· درس ' + faNum(u.idx + 1) : ''}</div><b style="font-size:20px">${esc(u.fa)}</b> <span class="en muted">${esc(u.en)}</span>
+  <div class="hero"><span class="tile" style="--h:${u.hue}">${esc(u.icon)}</span><div class="grow"><div class="small muted">${esc(u.levelFa || 'درس من')} ${u.track === 'ws' ? '· سرفصل ' + faNum(u.wsi + 1) : u.idx < 1000 ? '· درس ' + faNum(u.n) : ''}</div><b style="font-size:20px">${esc(u.fa)}</b> <span class="en muted">${esc(u.en)}</span>
   <div class="row small"><span class="pill">${faNum(words.length)} واژه</span>${st.mastered ? `<span class="pill ok">قبول با نمرهٔ ${faNum(st.best.exam)}</span>` : st.best.exam ? `<span class="pill bad">بهترین نمره: ${faNum(st.best.exam)}</span>` : ''}</div></div></div>
-  <div class="card stack"><div class="small"><b>گرامر این درس:</b> ${esc(u.gram || '—')}</div><div class="small"><b>هدف گفتاری:</b> ${esc(u.talk || '—')}</div>
+  <div class="card stack"><div class="row" style="justify-content:space-between"><b>در این درس یاد می‌گیری</b><span class="pill acc">سطح ${esc(u.cefr || 'A2')} · ${esc(u.levelFa || 'درس من')}</span></div>
+  <ul class="small" style="margin:0;padding-inline-start:18px;line-height:2"><li>${faNum(unitWords(u).length || 20)}+ واژه، فعل و عبارت دربارهٔ «${esc(u.fa)}» با تصویر و تلفظ</li><li><b>گرامر:</b> ${bidi(u.gram || '—')}</li><li><b>در پایان می‌توانی:</b> ${bidi(u.talk || '—')}</li><li>یک مکالمهٔ واقعی این موقعیت، شنیدن و تکرار، و صحبت با معلم</li></ul>
+  <span class="tiny muted">قبولی: نمرهٔ ${faNum(G.settings.passScore)} در آزمون پایانی؛ بعد درس بعدی باز می‌شود.</span>
   <div id="why">${G.cache['why:' + u.id] ? `<div class="notice soft small">${esc(G.cache['why:' + u.id])}</div>` : `<button class="btn ghost sm" id="whyb">این درس به چه دردم می‌خورد؟</button>`}</div>
-  <div id="ua"></div><div class="stack" id="ub"><button class="btn ghost sm" id="mkaudio">🎧 صوت کامل درس (واژه‌ها + مکالمه) برای گوش دادن آفلاین و دانلود</button></div></div>
+  <div id="ua"></div><div class="stack" id="ub"><div class="row" style="gap:6px"><a class="btn ghost sm" href="#sleep/${u.id}">🌙 مرور قبل از خواب (سه‌بعدی)</a><a class="btn ghost sm" href="#myradio/${u.id}">📻 رادیوی این درس</a></div><button class="btn ghost sm" id="dlv">⬇ دانلود همهٔ صداهای این درس (برای آفلاین و سرعت)</button><button class="btn ghost sm" id="mkaudio">🎧 صوت کامل درس (واژه‌ها + مکالمه) برای گوش دادن آفلاین و دانلود</button></div></div>
   ${!words.length ? `<div class="notice">لغات این سرفصل هنوز ساخته نشده. با یک دکمه هوش مصنوعی همهٔ واژه‌ها و افعال کاربردی‌اش را می‌سازد.</div>` : ''}
   <ul class="steps">${STEPS.map((s, i) => `<li><a class="step${st.steps[s.k] || (s.k === 'exam' && st.mastered) ? ' done' : ''}" href="#${s.k === 'words' ? 'unit/' + u.id + '/w' : s.k + '/' + u.id}"><span class="n">${st.steps[s.k] || (s.k === 'exam' && st.mastered) ? '✓' : faNum(i + 1)}</span><span class="grow"><b>${s.ic} ${s.fa}</b><br><span class="small muted">${s.d}</span></span></a></li>`).join('')}</ul>
   <div class="grid2"><a class="btn ghost" href="#grammar">📐 گرامر کامل</a><a class="btn ghost" href="#verbs">🔁 افعال کاربردی</a><a class="btn ghost" href="#practice/${u.id}">✍️ تمرین‌ها (آفلاین و هوشمند)</a><a class="btn ghost" href="#theater">🎬 داستان صوتی با این واژه‌ها</a></div>
@@ -673,12 +747,13 @@ routes.unit = (id, sub) => {
   <div class="row"><button class="btn sm" id="playall">${I.spk} پخش همه</button><span class="small muted">رنگ نقطه: نارنجی = تازه، فیروزه‌ای = در حال تثبیت، سبز = تثبیت‌شده</span></div>
   <div class="stack" id="wl">${(() => { const groups = {}; words.forEach(w => (groups[w.g || 'واژه‌های اصلی درس'] = groups[w.g || 'واژه‌های اصلی درس'] || []).push(w)); return Object.entries(groups).map(([g, ws]) => `<details class="card" ${Object.keys(groups).length < 3 ? 'open' : ''}><summary>${esc(g)} <span class="pill">${faNum(ws.length)}</span></summary><div class="words" style="margin-top:8px">${ws.map(w => wordRow(u, w)).join('')}</div></details>`).join(''); })()}</div></div>`;
   bindWordRows(u); autoImages(view());
-  $('#whyb') && ($('#whyb').onclick = async () => { if (needAI($('#why'))) return; $('#why').innerHTML = loading(); try { const r = await ai({ system: 'You are a motivating Persian-speaking English teacher.', messages: [{ role: 'user', content: `${learnerContext(u)}\n\nIn Persian, in 3 short sentences, tell this learner why the unit "${u.en}" (grammar: ${u.gram}) is useful for their real life in Oman and how it moves them toward fluent speaking. JSON {"why":"..."}` }] }); G.cache['why:' + u.id] = r.why; saveG('cache'); $('#why').innerHTML = `<div class="notice soft small">${esc(r.why)}</div>`; say(r.why, 'fa', 'encouraging'); } catch (e) { aiErr(e); $('#why').innerHTML = ''; } });
+  $('#whyb') && ($('#whyb').onclick = async () => { if (needAI($('#why'))) return; $('#why').innerHTML = loading(); try { const r = await ai({ system: 'You are a motivating Persian-speaking English teacher.', messages: [{ role: 'user', content: `${learnerContext(u)}\n\nIn Persian, in 3 short sentences, tell this learner why the unit "${u.en}" (grammar: ${u.gram}) is useful for their real real life and how it moves them toward fluent speaking. JSON {"why":"..."}` }] }); G.cache['why:' + u.id] = r.why; saveG('cache'); $('#why').innerHTML = `<div class="notice soft small">${esc(r.why)}</div>`; say(r.why, 'fa', 'encouraging'); } catch (e) { aiErr(e); $('#why').innerHTML = ''; } });
   $('#more').onclick = () => expandWords(u);
   idb.get('unitwav:' + u.id).then(b => { if (b) audioBox($('#ub'), b, 'zaban-' + u.id); });
+  $('#dlv') && (lsGet('zd:voiceDl:' + u.id + ':' + voiceSig(), 0) && ($('#dlv').textContent = '✓ صداهای این درس روی دستگاه ذخیره شده'), $('#dlv').onclick = () => preloadUnitVoice(u, $('#dlv')));
   $('#mkaudio') && ($('#mkaudio').onclick = async () => { if (!unitWords(u).length) return toast('اول لغات این درس را بساز.'); const box = $('#ub'); try { const b = await buildAudio('unitwav:' + u.id, unitAudioChunks(u), (i, n) => box.innerHTML = loading(`در حال ساخت صوت درس… ${faNum(i + 1)} از ${faNum(n)}`)); audioBox(box, b, 'zaban-' + u.id); } catch (e) { box.innerHTML = ''; aiErr(e); } });
-  $('#playall').onclick = async e => { const tok = speakToken + 1; for (const w of words) { await say(w.w, 'en', 'calm'); if (speakToken !== tok) break; await sleep(350); } };
-  idb.get('unitaudio:' + u.id).then(b => { $('#ua').innerHTML = `${b ? `<audio controls src="${URL.createObjectURL(b)}" style="width:100%"></audio>` : ''}<label class="btn line sm" style="margin-top:6px">${b ? 'جایگزینی' : 'افزودن'} فایل صوتی درس (مثلاً از NotebookLM)<input type="file" accept="audio/*" hidden id="uaf"></label>`; $('#uaf').onchange = async e => { const f = e.target.files[0]; if (f) { await idb.set('unitaudio:' + u.id, f); routes.unit(id); } }; });
+  $('#playall').onclick = async e => { for (const w of words) { if (!(await say(w.w, 'en', 'calm'))) break; await sleep(350); } };
+  idb.get('unitaudio:' + u.id).then(b => { $('#ua').innerHTML = `${b ? `<audio controls src="${URL.createObjectURL(b)}" style="width:100%"></audio>` : ''}<label class="btn line sm" style="margin-top:6px">${b ? 'جایگزینی' : 'افزودن'} فایل صوتی دلخواه برای این درس<input type="file" accept="audio/*" hidden id="uaf"></label>`; $('#uaf').onchange = async e => { const f = e.target.files[0]; if (f) { await idb.set('unitaudio:' + u.id, f); routes.unit(id); } }; });
   if (sub === 'w') { markStep(u, 'words'); setTimeout(() => $('#wl')?.scrollIntoView({ behavior: 'smooth' }), 100); }
 };
 function wordRow(u, w) {
@@ -699,7 +774,7 @@ async function expandWords(u) {
   const bg = sheet(loading('در حال طراحی سرفصل‌های بانک لغات…'));
   const SYS = 'You are an expert ESL vocabulary-book author for Persian speakers (original content). Accuracy is critical: correct IPA (General American), natural Persian meanings, natural examples.';
   try {
-    const plan = await ai({ heavy: true, temp: 0.3, system: SYS, messages: [{ role: 'user', content: `Topic "${u.en}" (${u.fa}), level ${u.levelFa || 'A2'}, grammar ${u.gram}. Design 6-8 sub-topics that together cover EVERYTHING a learner needs to talk about this topic fluently in real life (things/nouns, all relevant verbs and phrasal verbs, describing adjectives, what one person says, what the other says, and a last group of complete ready-to-use sentences). JSON {"groups":[{"fa":"Persian sub-topic name","en":"English focus description","n":8-14}]}` }] });
+    const plan = await ai({ heavy: true, temp: 0.3, system: SYS, messages: [{ role: 'user', content: `Topic "${u.en}" (${u.fa}), CEFR level ${u.cefr || 'A2'}, grammar ${u.gram}. Design 6-8 sub-topics that together cover EVERYTHING a learner needs to talk about this topic fluently in real life (things/nouns, all relevant verbs and phrasal verbs, describing adjectives, what one person says, what the other says, and a last group of complete ready-to-use sentences). JSON {"groups":[{"fa":"Persian sub-topic name","en":"English focus description","n":8-14}]}` }] });
     const ex = G.extra[u.id] || (G.extra[u.id] = { words: [] }); const seen = new Set(have.map(x => x.toLowerCase())); let added = 0, done = 0;
     const box = bg.querySelector('.sheet'); const upd = () => box.innerHTML = '<div class="grab"></div>' + loading(`در حال ساخت بانک لغات: ${faNum(done)} از ${faNum(plan.groups.length)} سرفصل · ${faNum(added)} مورد`);
     upd();
@@ -718,9 +793,9 @@ async function expandWords(u) {
 function imageSheet(u, w) {
   const k = wid(u, w);
   const bg = sheet(`<div class="stack"><b>تصویر «${esc(w.w)}»</b><div class="row" style="justify-content:center">${picHTML(u, w, true).replace('class="pic big"', 'class="pic" style="width:180px;height:180px;font-size:80px;--h:' + u.hue + '"')}</div>
-  <div class="grid2"><button class="btn ghost" id="i1">تصویرسازی تازه با AI</button><button class="btn ghost" id="i2">عکس رایگان واقعی</button><label class="btn ghost">تصویر از گوشی/کامپیوتر<input type="file" accept="image/*" hidden id="i3"></label><button class="btn line" id="i4">فقط ایموجی</button></div><span class="tiny muted">عکس‌های واقعی از Openverse/Pixabay با مجوز آزادند؛ تصویرسازی با Pollinations رایگان است.</span></div>`);
+  <div class="grid2"><button class="btn ghost" id="i1">تصویر سه‌بعدی برنامه</button><button class="btn ghost" id="i2">عکس واقعی از اینترنت</button><label class="btn ghost">تصویر از گوشی/کامپیوتر<input type="file" accept="image/*" hidden id="i3"></label><button class="btn line" id="i4">فقط ایموجی</button></div><span class="tiny muted">تصاویر سه‌بعدی: Microsoft Fluent Emoji (مجوز MIT)؛ همیشه آفلاین.</span></div>`);
   const set = url => { if (url) G.img[k] = url; else delete G.img[k]; saveG('img'); bg.remove(); routes.unit(u.id); };
-  $('#i1', bg).onclick = () => set(aiImageUrl(u, w).replace(/seed=\d+/, 'seed=' + Math.floor(Math.random() * 99999)));
+  $('#i1', bg).onclick = () => set(null);
   $('#i2', bg).onclick = async () => { try { const url = await photoUrl(u, w); url ? set(url) : toast('عکسی پیدا نشد.'); } catch { toast('اتصال به منبع عکس ممکن نشد.'); } };
   $('#i3', bg).onchange = e => { const f = e.target.files[0]; if (!f) return; const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); const s = 256; c.width = c.height = s; const g = c.getContext('2d'); const m = Math.min(img.width, img.height); g.drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, s, s); set(c.toDataURL('image/jpeg', 0.8)); }; img.src = URL.createObjectURL(f); };
   $('#i4', bg).onclick = () => set(null);
@@ -755,7 +830,7 @@ routes.cards = id => {
   if (!deck.length) { view().innerHTML = `<div class="card stack" style="text-align:center"><div class="big-ic">🎉</div><b>امروز چیزی برای مرور نمانده.</b><a class="btn" href="#unit/${currentUnit().id}">ادامهٔ درس</a></div>`; return; }
   let i = 0, right = 0; const modes = ['img', 'fa', 'listen'];
   const draw = () => {
-    if (i >= deck.length) { if (cur) markStep(cur, 'cards'); view().innerHTML = `<div class="card stack" style="text-align:center"><div class="big-ic">${right / deck.length > .8 ? '🌟' : '💪'}</div><b>${faNum(right)} از ${faNum(deck.length)} را به یاد آوردی.</b><span class="muted small">واژه‌هایی که یادت نبود، فردا دوباره می‌آیند؛ آن‌هایی که بلد بودی، با فاصلهٔ بیشتر.</span><div class="row" style="justify-content:center"><a class="btn" href="${cur ? '#unit/' + cur.id : '#home'}">بازگشت</a><button class="btn ghost" onclick="routes.cards('${id}')">یک دور دیگر</button></div></div>`; return; }
+    if (i >= deck.length) { if (cur) markStep(cur, 'cards'); view().innerHTML = `<div class="card stack" style="text-align:center"><div class="big-ic">${right / deck.length > .8 ? '🌟' : '💪'}</div><b>${faNum(right)} از ${faNum(deck.length)} را به یاد آوردی.</b><span class="muted small">واژه‌هایی که یادت نبود، همین امروز دوباره مرور می‌شوند؛ آن‌هایی که بلد بودی، با فاصلهٔ بیشتر.</span><div class="row" style="justify-content:center"><a class="btn" href="${cur ? '#unit/' + cur.id : '#home'}">بازگشت</a><button class="btn ghost" onclick="routes.cards('${id}')">یک دور دیگر</button></div></div>`; return; }
     const { u, w } = deck[i]; const mode = modes[(i + (U.srs[wid(u, w)]?.box || 0)) % 3]; const prev = cur && u.id !== cur.id;
     view().innerHTML = `<div class="stack"><div class="row small"><span class="grow muted">${faNum(i + 1)} از ${faNum(deck.length)}${prev ? ` · <span class="pill acc">مرور از «${esc(u.fa)}»</span>` : ''}</span><span class="pill">${mode === 'img' ? 'از روی تصویر بگو' : mode === 'fa' ? 'انگلیسی‌اش را بگو' : 'گوش بده، معنی را بگو'}</span></div>
     <div class="bar"><i style="width:${i / deck.length * 100}%"></i></div>
@@ -799,7 +874,7 @@ function runQuiz(el, qs, onDone) {
     autoImages(el); if (q.type === 'listen') { setTimeout(() => say(q.w.w, 'en', 'calm'), 200); $('#ql', el).onclick = () => say(q.w.w, 'en', 'calm'); }
     $$('.opt', el).forEach(b => b.onclick = () => {
       const ok = b.textContent === q.ans; $$('.opt', el).forEach(x => { x.disabled = true; if (x.textContent === q.ans) x.classList.add('right'); }); if (!ok) { b.classList.add('wrong'); wrongs.push({ wrong: b.textContent, right: q.ans, why: `${q.w.w} = ${q.w.fa}` }); }
-      if (ok) { score++; addXP(5); } grade(wid(q.u, q.w), ok); say(q.w.w, 'en', 'calm'); setTimeout(() => { i++; draw(); }, ok ? 800 : 1700);
+      if (ok) { score++; addXP(5); } grade(wid(q.u, q.w), ok); say(q.w.w, 'en', 'calm'); const gen = routeGen; setTimeout(() => { if (gen !== routeGen) return; i++; draw(); }, ok ? 800 : 1700);
     });
   };
   draw();
@@ -851,7 +926,7 @@ routes.teach = id => {
   const words = unitWords(u).map(w => `${w.w} (${w.fa})`).join(', ');
   const c = convo(v, {
     key: 'teach:' + u.id, speakLang: 'fa', micLang: 'fa-IR', placeholder: 'به فارسی یا انگلیسی جواب بده…',
-    intro: 'Start the lesson: greet me by name, tell me in one or two sentences why this unit matters for my life in Oman, then begin teaching step 1.',
+    intro: 'Start the lesson: greet me by name, tell me in one or two sentences why this unit matters for my real life, then begin teaching step 1.',
     extraTop: `<div class="notice soft small">معلم به فارسی درس می‌دهد و هر جا لازم باشد از تو سؤال می‌پرسد. با میکروفون جواب بده (فارسی یا انگلیسی). وقتی ۸ نوبت گفتگو کامل شد، این قدم تیک می‌خورد.</div>`,
     system: () => `${TEACHER_STYLE()}
 LESSON: unit "${u.en}" (${u.fa}). Grammar focus: ${u.gram}. Speaking goal: ${u.talk}.
@@ -869,7 +944,7 @@ routes.talk = id => {
   const c = convo(v, {
     key: 'talk:' + u.id, intro: 'Start a friendly conversation about the unit topic with a simple question.',
     extraTop: `<div class="notice soft small">به انگلیسی حرف بزن؛ اشتباه‌هایت همان لحظه با توضیح فارسی زرد می‌شوند. هدف: ${esc(u.talk)}</div>`,
-    system: () => `You are a friendly English conversation partner for a Persian-speaking learner (level ${u.levelFa}). Topic: "${u.en}". Use and recycle these unit words: ${unitWords(u).map(w => w.w).join(', ')}. Use the grammar: ${u.gram}. Speak simple natural English suited to the level, max 45 words, always ask a follow-up question. Be warm, curious and encouraging, react with real emotion to what they say. If they drift off the unit topic, acknowledge it briefly, say it's off-topic in a friendly way, and smoothly steer back to the topic. If the learner writes Persian, help them say it in English.
+    system: () => `You are a friendly English conversation partner for a Persian-speaking learner (CEFR level ${u.cefr || 'A2'}). Topic: "${u.en}". Use and recycle these unit words: ${unitWords(u).map(w => w.w).join(', ')}. Use the grammar: ${u.gram}. Speak simple natural English suited to the level, max 45 words, always ask a follow-up question. Be warm, curious and encouraging, react with real emotion to what they say. If they drift off the unit topic, acknowledge it briefly, say it's off-topic in a friendly way, and smoothly steer back to the topic. If the learner writes Persian, help them say it in English.
 ${learnerContext(u)}
 JSON {"reply":"your English reply","fa":"Persian translation of your reply","fixes":[{"wrong":"exact wrong part from learner","right":"natural correct version","why":"short Persian explanation"}],"emotion":"cheerful|calm|excited|encouraging|empathetic|surprised","memory":"durable fact about learner or empty"}`,
     parse: r => ({ show: r.reply, fa: r.fa, lang: 'en', fixes: r.fixes, after: () => { if (c.hist.filter(m => m.role === 'user').length >= 8) markStep(u, 'talk'); } })
@@ -883,7 +958,7 @@ routes.chat = () => {
     <a class="tool" href="#dm"><span class="ic">💬</span><b>پیام خصوصی</b><span>ببین چه کسی آنلاین است (چراغ سبز) و به هر زبان‌آموز یا مدیر پیام بده.</span></a>
     <a class="tool" href="#rooms"><span class="ic">🗣️</span><b>انجمن و چت‌روم</b><span>با بقیهٔ زبان‌آموزها گپ بزن؛ معلم ناظر نقش می‌دهد و اشتباه‌ها را درست می‌کند.</span></a>
     <a class="tool" href="#talkfree"><span class="ic">💬</span><b>گپ آزاد</b><span>دربارهٔ هر موضوعی حرف بزن؛ اشتباه‌ها همان لحظه به فارسی گفته می‌شوند.</span></a>
-    <a class="tool" href="#role"><span class="ic">🎭</span><b>نقش‌آفرینی در عمان</b><span>تاکسی مسقط، داروخانه، مصاحبه، صاحبخانه… با نمره و جملهٔ بهتر.</span></a>
+    <a class="tool" href="#role"><span class="ic">🎭</span><b>نقش‌آفرینی موقعیت‌های واقعی</b><span>تاکسی، داروخانه، مصاحبه، صاحبخانه… با نمره و جملهٔ بهتر.</span></a>
     <a class="tool" href="#teach/${currentUnit().id}"><span class="ic">👩‍🏫</span><b>کلاس با ${esc(G.settings.teacher)}</b><span>ادامهٔ درس فعلی با معلم صوتی.</span></a>
     <a class="tool" href="#exam/${currentUnit().id}"><span class="ic">🎙️</span><b>آزمون شفاهی درس</b><span>سؤال‌ها یکی‌یکی پرسیده می‌شوند و آخرش نمره می‌گیری.</span></a></div></div>`;
 };
@@ -892,7 +967,7 @@ routes.talkfree = () => {
   convo(v, {
     key: 'free', intro: 'Greet me by name and start a natural conversation about my day or something from my memory profile.',
     extraTop: `<div class="notice soft small">دربارهٔ هر چیزی حرف بزن. اگر جایی گیر کردی، فارسی بنویس تا معادلش را یاد بگیری.</div>`,
-    system: () => `You are a friendly, curious English conversation partner with real personality and emotions, chatting with a Persian-speaking learner who lives in Oman. Adapt your English to their level (current unit: ${currentUnit().en}). Weave in their weak words and words from units they have studied. Max 50 words per reply, end with a question.
+    system: () => `You are a friendly, curious English conversation partner with real personality and emotions, chatting with a Persian-speaking learner. Adapt your English to their level (current unit: ${currentUnit().en}). Weave in their weak words and words from units they have studied. Max 50 words per reply, end with a question.
 ${learnerContext()}
 JSON {"reply":"","fa":"Persian translation","fixes":[{"wrong":"","right":"","why":"Persian"}],"emotion":"cheerful|calm|excited|encouraging|empathetic|surprised","memory":"durable fact or empty"}`,
     parse: r => ({ show: r.reply, fa: r.fa, lang: 'en', fixes: r.fixes })
@@ -901,7 +976,7 @@ JSON {"reply":"","fa":"Persian translation","fixes":[{"wrong":"","right":"","why
 
 /* نقش‌آفرینی */
 routes.role = id => {
-  if (!id) { setTop('نقش‌آفرینی در عمان', true); view().innerHTML = `<div class="tools">${SCENARIOS.map(s => `<a class="tool" href="#role/${s.id}"><span class="ic">${s.icon}</span><b>${esc(s.fa)}</b>${U.convos['roleScore:' + s.id] ? `<span>بهترین نمره: ${faNum(U.convos['roleScore:' + s.id])}</span>` : '<span>شروع</span>'}</a>`).join('')}</div>`; return; }
+  if (!id) { setTop('نقش‌آفرینی موقعیت‌های واقعی', true); view().innerHTML = `<div class="tools">${SCENARIOS.map(s => `<a class="tool" href="#role/${s.id}"><span class="ic">${s.icon}</span><b>${esc(s.fa)}</b>${U.convos['roleScore:' + s.id] ? `<span>بهترین نمره: ${faNum(U.convos['roleScore:' + s.id])}</span>` : '<span>شروع</span>'}</a>`).join('')}</div>`; return; }
   const s = SCENARIOS.find(x => x.id === id); setTop(s.fa, true); const v = view(); if (needAI(v)) return;
   U.convos['role:' + id] = []; // هر بار از نو
   const c = convo(v, {
@@ -938,14 +1013,14 @@ routes.dialog = async id => {
       const l = d.lines[+card.dataset.i]; card.querySelector('[data-nat]').onclick = () => nativeSay(card.querySelector('[data-nv]'), l.en); card.querySelector('[data-p]').onclick = e => say(l.en, 'en', l.emotion || 'cheerful', e.currentTarget);
       card.querySelector('[data-m]').append(micButton(t => { const s = similarity(t, l.en); card.querySelector('[data-r]').innerHTML = `گفتی: <span class="en">${esc(t)}</span> · ${faNum(s)}٪ ${s >= 75 ? '✅' : '🔁'}`; if (s >= 75) { ok.add(card.dataset.i); addXP(3); if (ok.size >= Math.ceil(d.lines.length / 2)) markStep(u, 'dialog'); saveU(); } }));
     });
-    $('#pa', v).onclick = async () => { const tok = speakToken + 1; for (const l of d.lines) { await say(l.en, 'en', l.emotion); if (speakToken !== tok) break; await sleep(300); } };
+    $('#pa', v).onclick = async () => { for (const l of d.lines) { if (!(await say(l.en, 'en', l.emotion))) break; await sleep(300); } };
     $('#nw', v).onclick = () => { delete G.cache[key]; saveG('cache'); routes.dialog(id); };
   };
   if (G.cache[key]) return render(G.cache[key]);
   if (needAI(v)) return; v.innerHTML = loading('در حال نوشتن مکالمهٔ درس…');
   try {
     const prev = ALL_UNITS.filter(x => x.idx < u.idx).slice(-3).flatMap(x => pick(unitWords(x), 3).map(w => w.w));
-    const r = await ai({ system: 'You write natural, realistic ESL dialogues for adults living in Oman. Correct, idiomatic English.', messages: [{ role: 'user', content: `Write a natural dialogue (10-12 lines), using a wide variety of the real everyday expressions natives use in this situation (not just one standard phrase each), for unit "${u.en}", level ${u.levelFa}, practicing grammar "${u.gram}". Use many of these words: ${unitWords(u).map(w => w.w).join(', ')}. Also naturally reuse a few words from earlier units: ${prev.join(', ')}. Setting in everyday life in Oman. JSON {"title":"","setting":"Persian one line","lines":[{"who":"A|B","name":"","en":"","fa":"Persian translation","emotion":"cheerful|calm|surprised|excited|serious"}],"phrases":[{"en":"key useful phrase","fa":""}]}` }] });
+    const r = await ai({ system: 'You write natural, realistic ESL dialogues for adults. Correct, idiomatic English.', messages: [{ role: 'user', content: `Write a natural dialogue (10-12 lines), using a wide variety of the real everyday expressions natives use in this situation (not just one standard phrase each), for unit "${u.en}", CEFR level ${u.cefr || 'A2'}, practicing grammar "${u.gram}". Use many of these words: ${unitWords(u).map(w => w.w).join(', ')}. Also naturally reuse a few words from earlier units: ${prev.join(', ')}. Setting in everyday real life. JSON {"title":"","setting":"Persian one line","lines":[{"who":"A|B","name":"","en":"","fa":"Persian translation","emotion":"cheerful|calm|surprised|excited|serious"}],"phrases":[{"en":"key useful phrase","fa":""}]}` }] });
     if (!Array.isArray(r.lines) || !r.lines.length) throw new Error('مکالمه کامل ساخته نشد؛ دوباره امتحان کن.');
     G.cache[key] = r; saveG('cache'); render(r);
   } catch (e) { v.innerHTML = ''; aiErr(e); }
@@ -964,7 +1039,7 @@ routes.exam = id => {
   };
   const oral = async qScore => {
     v.innerHTML = loading('بخش اول تمام شد (' + faNum(qScore) + '٪). معلم در حال آماده کردن سؤال‌های شفاهی است…');
-    let qs; try { qs = (await ai({ system: 'You are an English speaking examiner for Persian speakers.', messages: [{ role: 'user', content: `Create 6 short spoken exam questions in English for unit "${u.en}" (level ${u.levelFa}) that require the learner to USE the grammar "${u.gram}" and the unit words (${unitWords(u).slice(0, 25).map(w => w.w).join(', ')}). Include 1 question that recycles a previous unit. JSON {"questions":[{"q":"","fa":"Persian translation"}]}` }] })).questions; } catch (e) { aiErr(e); return routes.exam(id); }
+    let qs; try { qs = (await ai({ system: 'You are an English speaking examiner for Persian speakers.', messages: [{ role: 'user', content: `Create 6 short spoken exam questions in English for unit "${u.en}" (CEFR level ${u.cefr || 'A2'}) that require the learner to USE the grammar "${u.gram}" and the unit words (${unitWords(u).slice(0, 25).map(w => w.w).join(', ')}). Include 1 question that recycles a previous unit. JSON {"questions":[{"q":"","fa":"Persian translation"}]}` }] })).questions; } catch (e) { aiErr(e); return routes.exam(id); }
     const ans = []; let i = 0;
     const ask = () => {
       if (i >= qs.length) return grade2();
@@ -978,7 +1053,7 @@ routes.exam = id => {
     const grade2 = async () => {
       v.innerHTML = loading('در حال تصحیح…');
       try {
-        const r = await ai({ temp: 0.2, system: 'You are a strict but fair English speaking examiner (CEFR-aligned) for Persian speakers. Score honestly; 95+ means near-perfect use of the unit grammar and vocabulary for this level.', messages: [{ role: 'user', content: `Unit "${u.en}" level ${u.levelFa}, grammar ${u.gram}.\n${ans.map((x, k) => `Q${k + 1}: ${x.q}\nA: ${x.a}`).join('\n')}\nJSON {"score":0-100,"summary":"Persian, human and emotional (praise or gentle push)","per":[{"q":"","feedback":"Persian","better":"model answer"}],"fixes":[{"wrong":"","right":"","why":"Persian"}],"memory":"durable fact about learner or empty"}` }] });
+        const r = await ai({ temp: 0.2, system: 'You are a strict but fair English speaking examiner (CEFR-aligned) for Persian speakers. Score honestly; 95+ means near-perfect use of the unit grammar and vocabulary for this level.', messages: [{ role: 'user', content: `Unit "${u.en}" CEFR level ${u.cefr || 'A2'}, grammar ${u.gram}.\n${ans.map((x, k) => `Q${k + 1}: ${x.q}\nA: ${x.a}`).join('\n')}\nJSON {"score":0-100,"summary":"Persian, human and emotional (praise or gentle push)","per":[{"q":"","feedback":"Persian","better":"model answer"}],"fixes":[{"wrong":"","right":"","why":"Persian"}],"memory":"durable fact about learner or empty"}` }] });
         const total = Math.round(qScore * 0.4 + r.score * 0.6); const st = unitState(u); st.best.exam = Math.max(st.best.exam || 0, total); st.attempts = (st.attempts || 0) + 1;
         logMistakes(r.fixes, 'exam'); remember(r.memory);
         const passed = total >= pass; if (passed && !st.mastered) { st.mastered = isoDay(); addXP(200); }
@@ -1028,6 +1103,7 @@ routes.placement = () => {
 
 /* ───────── تقویم و برنامهٔ آموزشی (شمسی) ───────── */
 function buildPlan({ start = isoDay(), days = 120, minutes = 60, target = 'l1', reminder = '20:00', review = 6 }) {
+  days = clamp(Math.round(+days || 120), 7, 730); minutes = clamp(Math.round(+minutes || 30), 10, 240); review = clamp(Math.round(+review || 6), 3, 14);
   const from = currentUnit().idx; const lastIdx = target === 'l1' ? ALL_UNITS.findLastIndex(u => u.level === 'l1') : ALL_UNITS.length - 1;
   const units = ALL_UNITS.slice(from, lastIdx + 1);
   const studyDays = []; for (let i = 0; i < days; i++) { const d = addDays(start, i); if (weekdayIdx(d) !== review) studyDays.push(d); }
@@ -1037,10 +1113,10 @@ function buildPlan({ start = isoDay(), days = 120, minutes = 60, target = 'l1', 
   const wsPer = Math.max(2, Math.floor(studyDays.length / Math.max(1, wsList.length)));
   units.forEach((u, ui) => {
     for (let j = 0; j < per && k < studyDays.length; j++, k++) {
-      const d = studyDays[k]; const phase = j / per; const t = [{ k: 'cards', t: 'مرور فلش‌کارت‌های موعددار (همراه درس‌های قبل)' }];
+      const d = studyDays[k]; const phase = j / per; const t = k === 0 ? [] : [{ k: 'cards', t: 'مرور فلش‌کارت‌های موعددار (همراه درس‌های قبل)' }];
       if (j === 0) t.push({ k: `step:${u.id}:words`, t: `واژه‌های «${u.fa}»: دیدن و شنیدن` }, { k: `step:${u.id}:cards`, t: 'فلش‌کارت واژه‌های تازه' });
       else if (phase < .4) t.push({ k: `step:${u.id}:dialog`, t: 'مکالمهٔ درس و سایه‌خوانی' }, { k: `step:${u.id}:teach`, t: `کلاس گرامر با ${G.settings.teacher}` });
-      else if (j < per - 1) t.push({ k: `step:${u.id}:talk`, t: 'صحبت دربارهٔ موضوع درس' }, { k: `step:${u.id}:quiz`, t: 'کوییز تمرینی' }, { k: 'role', t: 'یک نقش‌آفرینی عمان' });
+      else if (j < per - 1) t.push({ k: `step:${u.id}:talk`, t: 'صحبت دربارهٔ موضوع درس' }, { k: `step:${u.id}:quiz`, t: 'کوییز تمرینی' }, { k: 'role', t: 'یک نقش‌آفرینی موقعیت‌های واقعی' });
       else t.push({ k: `exam:${u.id}`, t: `آزمون نهایی «${u.fa}» (حد قبولی ${faNum(G.settings.passScore)})` });
       const ws = wsList[Math.floor(k / wsPer)];
       if (ws) { const wj = k % wsPer; t.push(wj === wsPer - 1 ? { k: `exam:${ws.id}`, t: `آزمون واژگان «${ws.fa}»` } : { k: `step:${ws.id}:${wj === 0 ? 'cards' : 'talk'}`, t: `واژگان موضوعی «${ws.fa}» — ${wj === 0 ? 'یادگیری و فلش‌کارت' : 'تمرین و صحبت'} (۱۵ دقیقه)` }); }
@@ -1066,7 +1142,7 @@ routes.plan = (mOffset = '0') => {
   }
   // نمای ماه شمسی
   const off = +mOffset; let anchor = isoDay(); const jt = toJ(anchor);
-  let first = addDays(anchor, -(jt.d - 1)); for (let i = 0; i < Math.abs(off); i++) first = off > 0 ? addDays(first, 32 - toJ(addDays(first, 31)).d + (toJ(addDays(first, 31)).d === 1 ? 0 : 0)) : addDays(first, -1);
+  let first = addDays(anchor, -(jt.d - 1)); for (let i = 0; i < Math.abs(off); i++) { first = off > 0 ? addDays(first, 32 - toJ(addDays(first, 31)).d) : addDays(first, -1); first = addDays(first, -(toJ(first).d - 1)); }
   first = addDays(first, -(toJ(first).d - 1)); const jm = toJ(first); const cells = []; let d = first; while (toJ(d).m === jm.m) { cells.push(d); d = addDays(d, 1); }
   const status = day => { const p = P.days[day]; if (!p) return ''; if (day > isoDay()) return p.review ? 'rev' : ''; const L = U.log[day]; return L && L.min >= P.minutes * 0.5 ? 'done' : day < isoDay() ? 'miss' : ''; };
   const behind = Object.keys(P.days).filter(x => x < isoDay() && status(x) === 'miss').length;
@@ -1100,7 +1176,7 @@ function downloadICS(P) {
   Object.entries(P.days).filter(([d]) => d >= isoDay()).forEach(([d, p]) => {
     const ds = d.replace(/-/g, ''); const u = p.unit && unitById(p.unit);
     const desc = p.tasks.map(t => '• ' + t.t).join('\\n');
-    lines.push('BEGIN:VEVENT', `UID:${ds}-${G.active}@zabandovom`, `DTSTAMP:${ds}T000000`, `DTSTART:${ds}T${hh}${mm}00`, `DURATION:PT${P.minutes}M`, `SUMMARY:زبان دوم — ${u ? 'درس ' + u.fa : 'روز مرور'}`, `DESCRIPTION:${desc}`, 'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:وقت انگلیسی!', 'TRIGGER:-PT0M', 'END:VALARM', 'END:VEVENT');
+    lines.push('BEGIN:VEVENT', `UID:${ds}-${G.active}@zabandovom`, `DTSTAMP:${ds}T000000`, `DTSTART:${ds}T${hh}${mm}00`, `DURATION:PT${P.minutes}M`, `SUMMARY:زبان رستا — ${u ? 'درس ' + u.fa : 'روز مرور'}`, `DESCRIPTION:${desc}`, 'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:وقت انگلیسی!', 'TRIGGER:-PT0M', 'END:VALARM', 'END:VEVENT');
   });
   lines.push('END:VCALENDAR');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/calendar' })); a.download = 'zaban-dovom-plan.ics'; document.body.append(a); a.click(); a.remove();
@@ -1118,6 +1194,8 @@ setInterval(() => { // یادآور درون‌برنامه‌ای
 /* ───────── ابزارها ───────── */
 routes.tools = () => {
   setTop('ابزارها'); const T = [
+    ['listen', '🎧', 'شنیدن روزانه: رادیو و خبر', 'رادیوی زندهٔ آمریکایی یا بریتانیایی، خبر واقعی امروز به زبان ساده و برنامهٔ شنیداری روزانه.'],
+    ['leitner', '🗃️', 'جعبهٔ لایتنر', 'کارت‌های امروز، تازه و آموخته‌شده؛ دسته‌ها و افزودن کارت دستی.'],
     ['grammar', '📐', 'گرامر کامل', 'همهٔ زمان‌ها و مباحث از مقدماتی تا متوسط با توضیح فارسی، مثال صوتی و تمرین.'],
     ['verbs', '🔁', 'افعال کاربردی', 'فعل‌های پرکاربرد دسته‌بندی‌شده با سه شکل فعل، معنی، مثال و آزمون.'],
     ['theater', '🎬', 'تئاتر داستان صوتی', 'داستان با سناریو، صحنه‌های تصویری، صداپیشه و موسیقی متن، با واژه‌های خودت.'],
@@ -1131,9 +1209,9 @@ routes.tools = () => {
     ['photo', '📷', 'عکس بگیر، یاد بگیر', 'از هر چیزی دور و برت عکس بگیر؛ نامش را به انگلیسی یاد بگیر و به فلش‌کارت‌ها اضافه کن.'],
     ['shadow', '🎯', 'مربی تلفظ و لهجه', 'صدایت را ضبط کن؛ می‌گوید کدام صدا را اشتباه گفتی، چرا (تأثیر فارسی) و زبان و لب را چطور بگذاری.'],
     ['import', '📥', 'درس از کتاب خودم', 'لغت‌های هر درس کتابت را وارد کن یا با AI درس تازه بساز.'],
-    ['role', '🎭', 'نقش‌آفرینی عمان', 'موقعیت‌های واقعی زندگی در عمان.']
+    ['role', '🎭', 'نقش‌آفرینی موقعیت‌های واقعی', 'موقعیت‌های واقعی زندگی روزمره.']
   ];
-  view().innerHTML = `<div class="tools">${T.map(([k, ic, t, d]) => `<a class="tool" href="#${['role', 'dict', 'theater', 'vision', 'grammar', 'verbs'].includes(k) ? k : k === 'practice' ? 'practice/' + currentUnit().id : 'tool/' + k}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>`;
+  view().innerHTML = `<div class="tools">${T.map(([k, ic, t, d]) => `<a class="tool" href="#${['role', 'dict', 'theater', 'vision', 'grammar', 'verbs', 'leitner', 'listen'].includes(k) ? k : k === 'practice' ? 'practice/' + currentUnit().id : 'tool/' + k}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>`;
 };
 routes.tool = k => (TOOLS[k] || routes.tools)();
 const TOOLS = {
@@ -1143,7 +1221,7 @@ const TOOLS = {
     $('#mc').append(micButton(t => $('#q').value = t, 'fa-IR'));
     $('#go').onclick = async () => {
       const q = $('#q').value.trim(); if (!q) return; if (needAI($('#out'))) return; $('#out').innerHTML = loading();
-      try { const r = await ai({ system: 'You are a native English speaker and expert translator for Persian speakers. Give natural, idiomatic English (not literal).', messages: [{ role: 'user', content: `Persian (may be colloquial street Persian): "${q}"\nSituation: ${$('#sit').value.trim() || 'everyday life in Oman'}.\nAccent/variety: ${G.settings.accent === 'UK' ? 'British' : 'American'}.\nGive what a native speaker would ACTUALLY say in that situation (not a literal translation). JSON {"formal":"","informal":"","alternatives":["",""],"notes":"Persian: why natives say it this way in this situation, key words/grammar, and what NOT to say (literal translation mistakes)"}` }] });
+      try { const r = await ai({ system: 'You are a native English speaker and expert translator for Persian speakers. Give natural, idiomatic English (not literal).', messages: [{ role: 'user', content: `Persian (may be colloquial street Persian): "${q}"\nSituation: ${$('#sit').value.trim() || 'everyday real life'}.\nAccent/variety: ${G.settings.accent === 'UK' ? 'British' : 'American'}.\nGive what a native speaker would ACTUALLY say in that situation (not a literal translation). JSON {"formal":"","informal":"","alternatives":["",""],"notes":"Persian: why natives say it this way in this situation, key words/grammar, and what NOT to say (literal translation mistakes)"}` }] });
         $('#out').innerHTML = `<div class="stack">${[['رسمی', r.formal], ['خودمانی', r.informal], ...(r.alternatives || []).map(a => ['جایگزین', a])].map(([l, t]) => `<div class="card row"><span class="pill">${l}</span><b class="en grow">${esc(t)}</b><button class="icon-btn" data-t="${esc(t)}">${I.spk}</button></div>`).join('')}<div class="notice soft small">${esc(r.notes)}</div></div>`;
         $$('[data-t]', v).forEach(b => b.onclick = () => say(b.dataset.t, 'en', 'cheerful', b)); addXP(3); saveU();
       } catch (e) { $('#out').innerHTML = ''; aiErr(e); }
@@ -1166,7 +1244,7 @@ const TOOLS = {
     const weak = weakWords(10); const cur = currentUnit(); const prev = ALL_UNITS.filter(x => x.idx < cur.idx).flatMap(x => pick(unitWords(x), 1)).slice(-6);
     const words = [...weak.map(x => x.w.w), ...pick(unitWords(cur), weak.length ? 4 : 8).map(w => w.w), ...prev.map(w => w.w)];
     v.innerHTML = loading('در حال نوشتن داستان با: ' + words.slice(0, 8).join('، ') + '…');
-    try { const r = await ai({ system: 'You write short, funny, memorable graded-reader stories for adult Persian-speaking learners living in Oman.', messages: [{ role: 'user', content: `${learnerContext(cur)}\nWrite a vivid 150-220 word story at the learner's level using ALL these words (bold them with **): ${words.join(', ')}. Make it personal using their memory profile if possible. JSON {"title":"","story":"","translation":"Persian translation","questions":[{"q":"comprehension question in English","a":"answer"}],"used":[""]}` }] });
+    try { const r = await ai({ system: 'You write short, funny, memorable graded-reader stories for adult Persian-speaking learners.', messages: [{ role: 'user', content: `${learnerContext(cur)}\nWrite a vivid 150-220 word story at the learner's level using ALL these words (bold them with **): ${words.join(', ')}. Make it personal using their memory profile if possible. JSON {"title":"","story":"","translation":"Persian translation","questions":[{"q":"comprehension question in English","a":"answer"}],"used":[""]}` }] });
       addXP(10); saveU();
       const html = esc(r.story).replace(/\*\*(.+?)\*\*/g, '<mark style="background:var(--mark);color:var(--mark-ink);border-radius:4px;padding:0 3px">$1</mark>');
       v.innerHTML = `<div class="stack"><div class="card stack"><div class="row"><b class="grow en">${esc(r.title)}</b><button class="icon-btn" id="sp">${I.spk}</button></div><div class="en" style="line-height:1.9;font-size:16px">${html}</div></div><details class="card"><summary>ترجمهٔ فارسی</summary><div style="margin-top:8px">${esc(r.translation)}</div></details>${(r.questions || []).length ? `<div class="card stack"><b>سؤال‌های درک مطلب</b>${r.questions.map(q => `<details><summary class="en">${esc(q.q)}</summary><div class="en muted">${esc(q.a)}</div></details>`).join('')}</div>` : ''}<button class="btn ghost" onclick="TOOLS.story()">داستان تازه</button></div>`;
@@ -1191,7 +1269,7 @@ const TOOLS = {
       const f = e.target.files[0]; if (!f) return; if (needAI($('#out'))) return;
       const img = new Image(); img.src = URL.createObjectURL(f); await img.decode(); const c = document.createElement('canvas'); const s = Math.min(1, 768 / Math.max(img.width, img.height)); c.width = img.width * s; c.height = img.height * s; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
       const url = c.toDataURL('image/jpeg', 0.8); $('#out').innerHTML = `<img src="${url}" style="border-radius:14px">` + loading('در حال دیدن عکس…');
-      try { const r = await ai({ images: [{ mime: 'image/jpeg', b64: url.split(',')[1] }], system: 'You are an English vocabulary teacher for Persian speakers.', messages: [{ role: 'user', content: `Identify 6-10 useful, clearly visible things/actions in this photo for an English learner at level ${currentUnit().levelFa}. JSON {"scene":"one Persian sentence","items":[{"w":"","ipa":"","fa":"","img":"emoji","pos":"n|v|adj|phr","ex":"example sentence about this photo"}]}` }] });
+      try { const r = await ai({ images: [{ mime: 'image/jpeg', b64: url.split(',')[1] }], system: 'You are an English vocabulary teacher for Persian speakers.', messages: [{ role: 'user', content: `Identify 6-10 useful, clearly visible things/actions in this photo for an English learner at CEFR level ${currentUnit().cefr || 'A2'}. JSON {"scene":"one Persian sentence","items":[{"w":"","ipa":"","fa":"","img":"emoji","pos":"n|v|adj|phr","ex":"example sentence about this photo"}]}` }] });
         const cu = U.custom.find(x => x.id === 'myphotos') || (U.custom.push({ id: 'myphotos', en: 'My Photos', fa: 'واژه‌های عکس‌هایم', icon: '📷', hue: 45, gram: '—', talk: 'دربارهٔ چیزهایی که در عکس‌ها دیدی حرف بزن.', words: [] }), U.custom[U.custom.length - 1]);
         $('#out').innerHTML = `<img src="${url}" style="border-radius:14px"><div class="notice soft small" style="margin-top:8px">${esc(r.scene)}</div><div class="words" style="margin-top:8px">${r.items.map(w => `<div class="word"><div class="pic">${esc(w.img)}</div><div class="t"><b>${esc(w.w)}</b><span class="ipa">/${esc(w.ipa)}/</span><span>${esc(w.fa)}</span><span class="en small muted">${esc(w.ex)}</span></div><button class="icon-btn" data-t="${esc(w.w)}">${I.spk}</button></div>`).join('')}</div><button class="btn wide" id="add" style="margin-top:8px">افزودن همه به فلش‌کارت‌ها</button>`;
         $$('[data-t]').forEach(b => b.onclick = () => say(b.dataset.t, 'en', 'calm', b));
@@ -1224,7 +1302,7 @@ const TOOLS = {
     };
     $('#gen').onclick = async () => {
       const t = $('#tp').value.trim(); if (!t) return; if (needAI(v)) return; const bg = sheet(loading('در حال ساخت درس…'));
-      try { const r = await ai({ heavy: true, max: 12000, temp: 0.4, system: 'You are an expert ESL syllabus designer for Persian speakers. Accuracy is critical.', messages: [{ role: 'user', content: `Create a complete unit for the topic "${t}" for a learner at ${currentUnit().levelFa} level living in Oman: 25-35 most useful words, verbs and phrases. JSON {"en":"","fa":"","icon":"emoji","grammar":"suitable grammar focus in Persian","talk":"speaking goal in Persian","words":[{"w":"","ipa":"","fa":"","img":"emoji","pos":"n|v|adj|adv|prep|phr","ex":""}]}` }] }); bg.remove(); save(r.fa || t, r.en || t, r.words, r.grammar, r.talk, r.icon); }
+      try { const r = await ai({ heavy: true, max: 12000, temp: 0.4, system: 'You are an expert ESL syllabus designer for Persian speakers. Accuracy is critical.', messages: [{ role: 'user', content: `Create a complete unit for the topic "${t}" for a learner at CEFR ${currentUnit().cefr || 'A2'} level: 25-35 most useful words, verbs and phrases. JSON {"en":"","fa":"","icon":"emoji","grammar":"suitable grammar focus in Persian","talk":"speaking goal in Persian","words":[{"w":"","ipa":"","fa":"","img":"emoji","pos":"n|v|adj|adv|prep|phr","ex":""}]}` }] }); bg.remove(); save(r.fa || t, r.en || t, r.words, r.grammar, r.talk, r.icon); }
       catch (e) { bg.remove(); aiErr(e); }
     };
   }
@@ -1238,6 +1316,9 @@ routes.me = () => {
   <div class="grid2 small"><span>درس‌های قبول: <b>${faNum(p.mastered)}</b></span><span>واژهٔ تثبیت‌شده: <b>${faNum(learnedCount())}</b></span><span>کل مطالعه: <b>${faNum(p.minutes)}</b> دقیقه</span><span>روزهای پیاپی: <b>${faNum(streakOf(U))}</b></span></div>
   <div><div class="small muted">دقیقه‌های مطالعه در ۱۴ روز اخیر</div><div style="display:flex;align-items:flex-end;gap:4px;height:70px">${last.map(d => `<div title="${jLabel(d)}: ${Math.round(U.log[d]?.min || 0)}" style="flex:1;background:${d === isoDay() ? 'var(--mark)' : 'var(--accent)'};opacity:${U.log[d]?.min ? 1 : .2};height:${Math.max(4, (U.log[d]?.min || 0) / mx * 100)}%;border-radius:4px 4px 0 0"></div>`).join('')}</div></div>
   <button class="btn ghost" id="coach">نظر معلم دربارهٔ پیشرفتم</button><div id="co"></div></div>
+  ${(() => { const b = aiBudget(); return `<div class="card stack" style="gap:8px"><div class="row" style="justify-content:space-between"><b>اعتبار هوش مصنوعی</b>${b.unlimited ? '<span class="pill ok">مدیر · نامحدود</span>' : `<span class="pill acc">${faNum(Math.max(0, Math.round(b.left / (b.daily + b.bank || 1) * 100)))}٪ مانده</span>`}</div>
+  ${b.unlimited ? `<span class="small muted">مصرف امروز حدود ${b.spent.toFixed(3)} دلار</span>` : `<div class="bar"><i style="width:${Math.min(100, Math.round(b.spent / (b.daily + b.bank || 1) * 100))}%"></i></div><span class="small muted">سهم روزانه ${b.daily} دلار · مصرف امروز ${b.spent.toFixed(3)} دلار · ذخیره از روزهای قبل ${b.bank.toFixed(2)} دلار</span><span class="tiny muted">هر روز که کمتر استفاده کنی، باقی‌مانده برای روزهای بعد ذخیره می‌شود (تا سقف ۳۰ روز).</span>`}</div>`; })()}
+  ${isAdminHere() ? '<a class="card row" href="#admin" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span style="font-size:26px">🛠</span><div class="grow"><b>پنل مدیریت</b><div class="small muted">کاربران، مصرف هوش مصنوعی، زمان مطالعه، پیام به کاربران و مدیریت انجمن</div></div><span>›</span></a>' : ''}
   <div id="online-me"></div>
   <div class="card stack"><b>نشان‌ها</b><div class="row">${BADGES.map(b => `<span class="pill ${U.badges.includes(b.id) ? 'mark' : ''}" style="${U.badges.includes(b.id) ? '' : 'opacity:.5'}">${b.ic} ${b.fa}</span>`).join('')}</div></div>
   <div class="card stack"><b>حافظهٔ معلم دربارهٔ من</b><span class="small muted">هوش مصنوعی این‌ها را از گفتگوها یاد گرفته و در همهٔ درس‌ها به کار می‌برد.</span>${U.mem.length ? U.mem.slice().reverse().map((m, i) => `<div class="row small"><span class="grow">• ${esc(m.t)}</span><button class="btn line sm" data-dm="${U.mem.length - 1 - i}">حذف</button></div>`).join('') : '<span class="small muted">هنوز چیزی ثبت نشده.</span>'}
@@ -1249,7 +1330,7 @@ routes.me = () => {
   $('#am').onclick = () => { const t = $('#nm').value.trim(); if (t) { remember(t); routes.me(); } };
   $('#coach').onclick = async () => { if (needAI($('#co'))) return; $('#co').innerHTML = loading(); try { const r = await ai({ system: TEACHER_STYLE(), messages: [{ role: 'user', content: `${learnerContext()}\nGive me an honest, human progress review in Persian (5-7 sentences): what I mastered, what I keep forgetting, my learning speed, a realistic predicted date (Persian calendar wording is fine) for fluent everyday conversation at this pace, and one concrete challenge for this week. JSON {"say":"","emotion":"proud|encouraging|empathetic|excited"}` }] }); $('#co').innerHTML = `<div class="notice soft">${esc(r.say)}</div>`; say(r.say, 'fa', r.emotion); } catch (e) { $('#co').innerHTML = ''; aiErr(e); } };
   $('#bk').onclick = () => { const data = { v: 1, users: G.users, settings: { ...G.settings, prov: Object.fromEntries(Object.entries(G.settings.prov).map(([k, x]) => [k, { ...x, key: '' }])) }, extra: G.extra, cache: G.cache, img: G.img, u: Object.fromEntries(G.users.map(u => [u.id, userData(u.id)])) }; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' })); a.download = `zaban-dovom-backup-${isoDay()}.json`; document.body.append(a); a.click(); a.remove(); toast('پشتیبان ساخته شد (کلیدهای API داخلش نیست).'); };
-  $('#rs').onchange = async e => { try { const d = JSON.parse(await e.target.files[0].text()); for (const [id, ud] of Object.entries(d.u || {})) lsSet('zd:u:' + id, ud); const ids = new Set(G.users.map(u => u.id)); (d.users || []).forEach(u => { if (!ids.has(u.id)) G.users.push(u); }); Object.assign(G.extra, d.extra || {}); Object.assign(G.cache, d.cache || {}); Object.assign(G.img, d.img || {}); ['users', 'extra', 'cache', 'img'].forEach(saveG); loadUser(G.active || G.users[0].id); toast('بازیابی شد.'); go('home'); } catch { toast('فایل پشتیبان معتبر نیست.'); } };
+  $('#rs').onchange = async e => { try { const d = JSON.parse(await e.target.files[0].text()); const mine = Object.entries(d.u || {}).find(([id]) => id === G.active); if (mine && (mine[1].xp || 0) < (U.xp || 0) && !confirm(`این پشتیبان ${faNum(mine[1].xp || 0)} امتیاز دارد ولی الان ${faNum(U.xp || 0)} امتیاز داری. پیشرفت فعلی‌ات با نسخهٔ قدیمی‌تر جایگزین شود؟`)) { e.target.value = ''; return; } for (const [id, ud] of Object.entries(d.u || {})) lsSet('zd:u:' + id, ud); const ids = new Set(G.users.map(u => u.id)); (d.users || []).forEach(u => { if (!ids.has(u.id)) G.users.push(u); }); Object.assign(G.extra, d.extra || {}); Object.assign(G.cache, d.cache || {}); Object.assign(G.img, d.img || {}); ['users', 'extra', 'cache', 'img'].forEach(saveG); loadUser(G.active || G.users[0].id); toast('بازیابی شد.'); go('home'); } catch { toast('فایل پشتیبان معتبر نیست.'); } };
 };
 
 /* ───────── راهنمای امکانات ───────── */
@@ -1261,7 +1342,7 @@ routes.guide = () => {
     ['🗓️', 'تقویم شمسی شخصی', 'هدف و وقت روزانه‌ات را می‌گیرد، برنامه می‌چیند، یادآوری می‌کند و اگر عقب بیفتی برنامهٔ جبرانی می‌دهد تا از هدف دور نشوی.', '#plan'],
     ['🎯', 'مربی تلفظ و لهجه', 'صدایت را گوش می‌دهد، می‌گوید کدام صدا را اشتباه گفتی، چرا (تأثیر فارسی) و زبان و لب را چطور بگذاری؛ آمریکایی یا بریتانیایی.', '#tool/shadow'],
     ['🗣', 'مثل نیتیوها حرف بزن', 'نشان می‌دهد نیتیوها در مکالمهٔ واقعی جمله‌ها را چطور به هم می‌چسبانند (مثلاً Nice to meet you ← «نایس تِ میچو»).', '#tool/shadow'],
-    ['💬', 'گپ آزاد و نقش‌آفرینی عمان', 'دربارهٔ هر چیزی حرف بزن یا در تاکسی مسقط، داروخانه، مصاحبهٔ کاری و… تمرین کن؛ آخرش نمره و جمله‌های بهتر می‌گیری.', '#chat'],
+    ['💬', 'گپ آزاد و نقش‌آفرینی موقعیت‌های واقعی', 'دربارهٔ هر چیزی حرف بزن یا در تاکسی، داروخانه، مصاحبهٔ کاری و… تمرین کن؛ آخرش نمره و جمله‌های بهتر می‌گیری.', '#chat'],
     ['📐', 'گرامر کامل و افعال کاربردی', 'همهٔ زمان‌ها و ساختارها با توضیح فارسی و تمرین؛ و فعل‌های پرکاربرد دسته‌بندی‌شده با سه شکل فعل.', '#grammar'],
     ['💬', 'پیام خصوصی و چراغ آنلاین', 'ببین چه کسی الان آنلاین است، آخرین بار کی آمده، و به او یا به مدیر پیام بده.', '#dm'],
     ['🎬', 'تئاتر داستان صوتی', 'داستان‌هایی با سناریو، تصویر هر صحنه، صدای جدا برای هر شخصیت و موسیقی متن — با همان واژه‌هایی که داری یاد می‌گیری.', '#theater'],
@@ -1274,8 +1355,9 @@ routes.guide = () => {
     ['🎧', 'صوت آفلاین', 'صوت کامل هر درس و فصل کتاب را بساز، دانلود کن و همیشه، حتی بدون اینترنت، گوش بده.', '#unit/' + currentUnit().id],
     ['🏆', 'رقابت با دوستان', 'امتیاز، نشان، روزهای پیاپی و جدول رقابت هفتگی بین کاربران.', '#home']
   ];
-  F.unshift(['👋', `سلام ${me().name}!`, '«زبان دوم» قدم‌به‌قدم تو را تا مکالمهٔ روان انگلیسی می‌برد. در چند صفحهٔ کوتاه نشانت می‌دهم هر بخش کجاست و چه می‌کند. اگر آشنایی، «رد کردن» را بزن.', '#home']);
+  F.unshift(['👋', `سلام ${me().name}!`, '«زبان رستا» قدم‌به‌قدم تو را تا مکالمهٔ روان انگلیسی می‌برد. در چند صفحهٔ کوتاه نشانت می‌دهم هر بخش کجاست و چه می‌کند. اگر آشنایی، «رد کردن» را بزن.', '#home']);
   F.push(['🧭', 'هر چیزی کجاست؟', 'پایین صفحه (در کامپیوتر: کنار صفحه): خانه = درس امروز و رقابت · تقویم = برنامهٔ شخصی · کتابخانه = کتاب و داستان صوتی · گفتگو = معلم، گپ و انجمن · ابزارها = دیکشنری، تمرین، تلفظ · من = پیشرفت، حساب آنلاین، تنظیمات و پنل مدیر.', '#home']);
+  const KEEP = ['👋', '👩‍🏫', '🧠', '🗓️', '🎯', '💬', '🧭']; const T = F.filter(f => KEEP.includes(f[0])).slice(0, 7); F.length = 0; F.push(...T);
   let i = 0;
   const draw = () => {
     const [ic, t, d, h] = F[i]; const last = i === F.length - 1;
@@ -1304,6 +1386,8 @@ routes.settings = () => {
 
   <div class="card stack"><b>صدا</b>
   <label class="f">لهجهٔ انگلیسی</label>${seg('accent', [['US', '🇺🇸 آمریکایی'], ['UK', '🇬🇧 بریتانیایی']], S.accent)}
+  ${isAdminHere() ? `<label class="f">سهمیهٔ روزانهٔ هوش مصنوعی هر کاربر (دلار؛ در کد اتصال قرار می‌گیرد)<input class="in" id="dbud" type="number" min="0.05" max="50" step="0.05" dir="ltr" value="${+S.dailyBudget || 1.5}"></label>` : ''}
+  <label class="f">صدای سه‌بعدی (با هدفون)</label>${seg('spatial', [['0', 'خاموش'], ['1', '🎧 سه‌بعدی'], ['2', '🌀 ۸D چرخشی']], S.spatial || '0')}<span class="small muted">«سه‌بعدی»: صدای معلم روبه‌رویت و هر شخصیت داستان جای خودش (چپ، راست، نزدیک). «۸D»: صدا آرام دور سرت می‌چرخد. فقط با هدفون حس می‌شود.</span>
   <label class="f">صدای انگلیسی</label>${seg('voiceEn', [['browser', 'صدای دستگاه (سریع، رایگان)'], ['gemini', 'Gemini'], ['openai', 'OpenAI']], S.voiceEn)}
   <label class="f">صدای فارسی معلم (احساس‌دار)</label>${seg('voiceFa', [['gemini', 'Gemini (پیشنهادی)'], ['openai', 'OpenAI'], ['browser', 'صدای دستگاه']], S.voiceFa)}
   <div class="grid2"><label class="f">صدای Gemini<select class="in" id="gv">${['Kore', 'Aoede', 'Leda', 'Zephyr', 'Callirrhoe', 'Despina', 'Sulafat', 'Achernar', 'Puck', 'Charon', 'Fenrir', 'Orus'].map(x => `<option${S.geminiVoice === x ? ' selected' : ''}>${x}</option>`).join('')}</select></label><label class="f">صدای OpenAI<select class="in" id="ov">${['nova', 'shimmer', 'coral', 'sage', 'alloy', 'ash', 'echo', 'fable', 'onyx'].map(x => `<option${S.openaiVoice === x ? ' selected' : ''}>${x}</option>`).join('')}</select></label></div>
@@ -1313,14 +1397,14 @@ routes.settings = () => {
 
   <div class="card stack"><b>شنیدن صدای من</b>${seg('listen', [['browser', 'مرورگر (رایگان)'], ['groq', 'Groq Whisper (رایگان)'], ['gemini', 'Gemini'], ['openai', 'OpenAI']], S.listen)}<span class="tiny muted">اگر روی آیفون میکروفون کار نکرد، Groq را انتخاب کن.</span></div>
 
-  <div class="card stack"><b>تصاویر واژه‌ها</b>${seg('img', [['ai', 'تصویرسازی AI'], ['photo', 'عکس رایگان واقعی'], ['emoji', 'فقط ایموجی (سریع‌ترین)']], S.img)}
+  <div class="card stack"><b>تصاویر واژه‌ها</b>${seg('img', [['set', 'تصاویر سه‌بعدی برنامه (آفلاین)'], ['photo', 'عکس واقعی از اینترنت']], S.img)}
   <input class="in" dir="ltr" id="pk" placeholder="Pixabay API key (اختیاری، برای عکس بهتر)" value="${esc(S.pixabayKey)}"><button class="btn line sm" id="ci">پاک کردن تصاویر ذخیره‌شده</button></div>
 
   <div class="card stack"><b>آموزش</b><div class="grid2"><label class="f">نام معلم<input class="in" id="tn" value="${esc(S.teacher)}"></label><div class="f">حد قبولی آزمون درس<div class="in" style="display:flex;align-items:center">${faNum(95)} (ثابت)</div></div></div>
   <label class="f">ظاهر</label>${seg('theme', [['auto', 'خودکار'], ['light', 'روشن'], ['dark', 'تیره']], S.theme)}</div>
   <button class="btn" id="sv">ذخیرهٔ تنظیمات</button></div>`;
-  $$('[data-seg]').forEach(g => g.onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('button', g).forEach(x => x.classList.remove('on')); b.classList.add('on'); S[g.dataset.seg] = b.dataset.v; if (g.dataset.seg === 'theme') applyTheme(); saveG('settings'); });
-  const collect = () => { S.brain = $('#brain').value; $$('[data-k]').forEach(i => S.prov[i.dataset.k].key = i.value.trim()); $$('[data-m]').forEach(i => S.prov[i.dataset.m].model = i.value.trim()); $$('[data-b]').forEach(i => S.prov[i.dataset.b].base = i.value.trim()); S.geminiVoice = $('#gv').value; S.openaiVoice = $('#ov').value; S.rate = +$('#rate').value; S.autoSpeak = $('#as').checked; S.pixabayKey = $('#pk').value.trim(); S.teacher = $('#tn').value.trim() || 'رستا'; S.passScore = 95; saveG('settings'); };
+  $$('[data-seg]').forEach(g => g.onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('button', g).forEach(x => x.classList.remove('on')); b.classList.add('on'); S[g.dataset.seg] = b.dataset.v; if (g.dataset.seg === 'theme') applyTheme(); if (g.dataset.seg === 'spatial') { Spatial.prep(); Spatial.route(); if (b.dataset.v === '2') say('Can you hear me moving around your head? This is eight D sound.', 'en'); if (b.dataset.v === '1') { Spatial.at(-1.5, -0.8); say('Hi! I am on your left… and now', 'en').then(() => { Spatial.at(1.5, -0.8); return say('I am on your right!', 'en'); }).then(() => Spatial.at(0, -1.2)); } } saveG('settings'); });
+  const collect = () => { S.brain = $('#brain').value; $$('[data-k]').forEach(i => S.prov[i.dataset.k].key = i.value.trim()); $$('[data-m]').forEach(i => S.prov[i.dataset.m].model = i.value.trim()); $$('[data-b]').forEach(i => S.prov[i.dataset.b].base = i.value.trim()); S.geminiVoice = $('#gv').value; S.openaiVoice = $('#ov').value; S.rate = +$('#rate').value; S.autoSpeak = $('#as').checked; S.pixabayKey = $('#pk').value.trim(); S.teacher = $('#tn').value.trim() || 'رستا'; S.passScore = 95; if ($('#dbud')) { const q = +$('#dbud').value; if (q >= 0.05 && q <= 50) S.dailyBudget = q; } saveG('settings'); };
   $('#rate').oninput = e => $('#rv').textContent = e.target.value;
   $('#mkc').onclick = async () => { collect(); if (!firstKeyed()) return toast('اول یک کلید وارد کن.'); const c = makeCode(); $('#cc').value = c; try { await navigator.clipboard.writeText(c); toast('کد اتصال کپی شد؛ در واتساپ یا تلگرام بفرست.'); } catch { $('#cc').select(); toast('کد را از کادر زیر کپی کن.'); } };
   $('#usc').onclick = () => { try { useCode($('#cc').value); toast('هوش مصنوعی وصل شد ✓'); routes.settings(); } catch { toast('کد اتصال درست نیست.'); } };

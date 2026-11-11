@@ -1,4 +1,4 @@
-/* زبان دوم — دورهٔ کامل گرامر (همهٔ زمان‌ها و مباحث تا سطح متوسط) و بانک افعال کاربردی دسته‌بندی‌شده */
+/* زبان رستا — دورهٔ کامل گرامر (همهٔ زمان‌ها و مباحث تا سطح متوسط) و بانک افعال کاربردی دسته‌بندی‌شده */
 'use strict';
 const GRAMMAR = [
   ['A1', 'be', 'فعل to be (am / is / are)'], ['A1', 'poss', 'ضمایر فاعلی و صفات ملکی (I, my, your…)'], ['A1', 'articles', 'حرف تعریف a / an / the'],
@@ -134,9 +134,11 @@ play|played|played|بازی کردن / نواختن|سرگرمی|Let's play foot
 sing|sang|sung|آواز خواندن|سرگرمی|She sings beautifully.
 swim|swam|swum|شنا کردن|سرگرمی|Can you swim?
 win|won|won|بردن|سرگرمی|We won the match.
-draw|drew|drawn|نقاشی کشیدن|سرگرمی|Draw a picture.
+draw|drew|drawn|کشیدن (طراحی) / نقاشی کردن|سرگرمی|Draw a picture.
 dance|danced|danced|رقصیدن|سرگرمی|They danced all night.`;
-const VERBS = VERBS_RAW.split('\n').map(l => { const [v, past, pp, fa, cat, ex] = l.split('|'); const reg = /^\w+(ed|d)\b/.test(past) && past.startsWith(v.slice(0, Math.max(2, v.length - 1))) && !/[\/(]/.test(past); return { v, past, pp, fa, cat, ex, irr: !reg }; });
+const regPast = b => /e$/.test(b) ? [b + 'd'] : /[^aeiou]y$/.test(b) ? [b.slice(0, -1) + 'ied'] : [b + 'ed', b + b.slice(-1) + 'ed', b + 'ked'];
+const VERBS = VERBS_RAW.split('\n').map(l => { const [v, past, pp, fa, cat, ex] = l.split('|'); const base = v.split(' ')[0], first = s => s.split(/[\s\/(]/)[0];
+  const reg = regPast(base).includes(first(past)) && regPast(base).includes(first(pp)); return { v, past, pp, fa, cat, ex, irr: !reg }; });
 const VCATS = [...new Set(VERBS.map(x => x.cat))];
 
 /* ───── دورهٔ گرامر ───── */

@@ -1,4 +1,4 @@
-/* زبان دوم — بخش آنلاین: حساب با کد تأیید ایمیل، رقابت زنده، صفحهٔ کاربر، انجمن و چت‌روم با معلم ناظر، پنل مدیر */
+/* زبان رستا — بخش آنلاین: حساب با کد تأیید ایمیل، رقابت زنده، صفحهٔ کاربر، انجمن و چت‌روم با معلم ناظر، پنل مدیر */
 'use strict';
 const SB_URL = 'https://xlubjxbpwwmaddpgswik.supabase.co';
 const SB_KEY = 'sb_publishable_MW-qwJWudZu7GVXsY4g8nw_0cqbv7gE'; // کلید عمومی (برای استفاده در برنامهٔ عمومی ساخته شده)
@@ -13,12 +13,12 @@ const ROOMS = [
   { id: 'lobby', ic: '☕', fa: 'گپ عمومی', en: 'Free Talk', topic: 'free everyday small talk' },
   ...[...ALL_UNITS, ...WS_UNITS].map(u => ({ id: u.id, ic: u.icon, fa: u.fa, en: u.en, topic: `${u.en}: ${u.talk || ''} (grammar: ${u.gram})`, level: u.levelFa }))
 ];
-const BAD_WORDS = /\b(f+u+c+k|sh[i1]t|b[i1]tch|d[i1]ck|pussy|porn|sex|n[i1]gg|asshole|bastard|slut|whore)\w*|کیر|کس\s?کش|جنده|کون|سکس|لاشی|حرومزاده|گاییدم/i;
+const BAD_WORDS = { test: t => { const toks = String(t).toLowerCase().split(/[\s.,!?؟،؛:;"'()\[\]{}«»\-_/\\*]+/).filter(Boolean); const en = /^(f+u+c+k\w*|sh[i1]t\w*|b[i1]tch\w*|d[i1]ck|d[i1]cks|pussy|porn\w*|n[i1]gg\w*|asshole\w*|bastards?|sluts?|whores?)$/; const fa = /^(کیر\S*|کسکش\S*|جنده\S*|کون|کونی|سکس\S*|لاشی|حرومزاده\S*|گاییدم|گاییدی)$/; return toks.some(w => en.test(w) || fa.test(w)) || /کس\s+کش/.test(t); } };
 
 let _sb = null, _sbFor = null, OP = null; // OP = پروفایل آنلاین کاربر فعال
 function sb() { if (!window.supabase) return null; if (_sb && _sbFor === G.active) return _sb; _sbFor = G.active; _sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, storageKey: 'zd-sb-' + G.active, autoRefreshToken: true } }); OP = null; return _sb; }
 async function session() { const c = sb(); if (!c) return null; try { const { data } = await c.auth.getSession(); return data.session; } catch { return null; } }
-async function myProfile(force) { if (OP && !force) return OP; const s = await session(); if (!s) return null; const { data } = await sb().from('profiles').select('*').eq('id', s.user.id).maybeSingle(); OP = data || null; return OP; }
+async function myProfile(force) { if (OP && !force) return OP; const s = await session(); if (!s) return null; const { data } = await sb().from('profiles').select('*').eq('id', s.user.id).maybeSingle(); OP = data || null; if (OP && G.active) lsSet('zd:admin:' + G.active, !!OP.is_admin); return OP; }
 
 /* ───── ورود و ثبت‌نام با کد تأیید ایمیل ───── */
 function loginSheet(after) {
@@ -56,11 +56,16 @@ async function requireLogin(after) { const p = await myProfile(); if (p) return 
 
 /* برگشت از لینک ایمیل */
 async function handleAuthRedirect() {
+  if (!G.users.length) addUser('کاربر', '🙂'); else if (!U) loadUser(G.active || G.users[0].id); // قبل از ساخت اتصال، تا نشست در جای درست ذخیره شود
+  const recovery = /type=recovery/.test(location.hash);
   const c = sb(); if (!c) { location.hash = 'home'; return; }
   for (let i = 0; i < 20 && !(await session()); i++) await sleep(150);
+  if (recovery && (await session())) { history.replaceState(null, '', location.pathname + '#home'); router(); return newPasswordSheet(); }
   history.replaceState(null, '', location.pathname + '#home');
   const s = await session(); if (!s) { toast('ورود کامل نشد؛ لینک منقضی شده بود. دوباره کد بخواه.', 5000); return router(); }
-  const p = await myProfile(true); router();
+  let p = await myProfile(true);
+  if (!p) { const md = s.user.user_metadata || {}; if (/^[a-z0-9_]{3,20}$/.test(md.username || '')) { const { error } = await c.from('profiles').insert({ id: s.user.id, username: md.username, display_name: md.display_name || me().name, avatar: md.avatar || me().avatar }); if (!error) { p = await myProfile(true); me().name = md.display_name || me().name; if (md.avatar) me().avatar = md.avatar; saveG('users'); } } }
+  router();
   if (p) { U.online = { uid: p.id, username: p.username }; saveU(); if (['کاربر', ''].includes(me().name)) { me().name = p.display_name; if (p.photo) me().photo = p.photo; if (p.avatar) me().avatar = p.avatar; saveG('users'); router(); } toast('خوش آمدی @' + p.username + ' 🎉'); syncNow(); return; }
   const bg = sheet(`<div class="stack"><b style="font-size:18px">ایمیلت تأیید شد ✓</b><label class="f">یک یوزرنیم انتخاب کن (حروف انگلیسی کوچک، عدد و _ ؛ ۳ تا ۲۰ حرف)<input id="un" class="in" dir="ltr" maxlength="20" value="${esc((s.user.email || '').split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20))}"></label><span class="tiny muted" id="unh"></span><button class="btn" id="mk">ساخت صفحهٔ من</button></div>`);
   $('#mk', bg).onclick = async () => { const un = $('#un', bg).value.trim().toLowerCase(); if (!/^[a-z0-9_]{3,20}$/.test(un)) return $('#unh', bg).textContent = 'یوزرنیم معتبر نیست.';
@@ -72,7 +77,7 @@ async function handleAuthRedirect() {
 /* ───── همگام‌سازی پیشرفت ───── */
 let syncT = 0;
 async function syncNow() {
-  const p = await myProfile(); if (!p || !U) return;
+  const p = await myProfile(); if (!p || !U) return; if (window.backupSafe && !(await backupSafe())) return;
   const sum = (n) => { let s = 0; for (let i = 0; i < n; i++) s += U.log[addDays(isoDay(), -i)]?.min || 0; return Math.round(s); };
   const ai30 = aiUseSum(U, 3650);
   const row = { user_id: p.id, xp: U.xp || 0, week_xp: weekXP(U), streak: streakOf(U), mastered: masteredCount(), learned: learnedCount(), current_unit: currentUnit().fa, minutes_total: Math.round(Object.values(U.log).reduce((a, x) => a + (x.min || 0), 0)), minutes_today: sum(1), minutes_week: sum(7), ai_chat: ai30.chat, ai_voice: ai30.voice, level: U.placement?.level || null, updated_at: new Date().toISOString() };
@@ -84,7 +89,7 @@ addEventListener('visibilitychange', () => { if (document.visibilityState === 'h
 /* ───── رقابت زنده و پیام‌های مدیر روی صفحهٔ اول ───── */
 async function homeOnline() {
   const box = $('#online-home'); if (!box) return;
-  if (!U.online) { box.innerHTML = `<div class="card row" style="flex-wrap:nowrap"><span style="font-size:28px">🌐</span><div class="grow"><b>رقابت با همه</b><div class="small muted">وارد حساب آنلاین شو تا در جدول رقابت همهٔ کاربران باشی و وارد انجمن شوی.</div></div><button class="btn sm" id="lg">ورود</button></div>`; $('#lg').onclick = () => loginSheet(() => routes.home()); return; }
+  if (!U.online) { box.innerHTML = `<div class="card row" style="flex-wrap:nowrap"><span style="font-size:28px">🌐</span><div class="grow"><b>رقابت با همه</b><div class="small muted">با یک کلیک وارد مسابقه شو؛ سطح، درس‌ها، واژه‌ها و زمان مطالعهٔ همه را ببین. ایمیل لازم نیست.</div></div><button class="btn sm" id="lg">پیوستن به رقابت</button></div>`; $('#lg').onclick = () => joinCompetition(); return; }
   syncNow();
   try {
     startPresence(); const { data } = await sb().from('progress').select('week_xp,xp,streak,mastered,learned,current_unit,minutes_today,minutes_week,profiles(username,display_name,avatar,photo,last_seen)').order('week_xp', { ascending: false }).limit(10);
@@ -94,7 +99,7 @@ async function homeOnline() {
     box.innerHTML = `${fresh.map(n => `<div class="notice stack"><b>📣 ${esc(n.title)}</b><span class="small">${esc(n.body)}</span></div>`).join('')}${fresh.length ? '<button class="btn line sm" id="nseen">خواندم</button>' : ''}
     <div class="row"><a class="btn ghost sm" href="#dm">💬 پیام‌ها<span id="unr"></span></a><a class="btn ghost sm" href="#rooms">🗣️ انجمن</a></div>
     <div class="sec">🏆 جدول رقابت زنده <small>همهٔ کاربران · امتیاز این هفته</small></div>
-    <div class="card stack">${(data || []).map((r, i) => `<a class="row" href="#u/${esc(r.profiles?.username)}" style="text-decoration:none;color:inherit;flex-wrap:nowrap;${r.profiles?.username === p?.username ? 'background:var(--accent-soft);border-radius:10px;padding:4px' : ''}"><span style="width:24px;font-weight:900">${['🥇', '🥈', '🥉'][i] || faNum(i + 1)}</span><span class="avatar">${r.profiles?.photo ? `<img src="${r.profiles.photo}" alt="" style="width:100%;height:100%;object-fit:cover">` : esc(r.profiles?.avatar || '🙂')}</span>${dot(r.profiles?.username)}<span class="grow" style="min-width:0"><b>${esc(r.profiles?.display_name)}</b> <span class="en tiny muted">@${esc(r.profiles?.username)}</span><br><span class="tiny muted">${esc(r.current_unit || '')} · امروز ${faNum(r.minutes_today)} دقیقه · 🔥${faNum(r.streak)} · ${ONLINE.has(r.profiles?.username) ? '<b style="color:var(--ok)">آنلاین</b>' : lastSeenFa(r.profiles?.last_seen)}</span></span><span class="pill acc">${faNum(r.week_xp)}</span></a>`).join('') || '<span class="small muted">هنوز کسی نیست؛ اولین نفر باش!</span>'}</div>`;
+    <div class="card stack">${(data || []).map((r, i) => `<a class="row" href="#u/${esc(r.profiles?.username)}" style="text-decoration:none;color:inherit;flex-wrap:nowrap;${r.profiles?.username === p?.username ? 'background:var(--accent-soft);border-radius:10px;padding:4px' : ''}"><span style="width:24px;font-weight:900">${['🥇', '🥈', '🥉'][i] || faNum(i + 1)}</span><span class="avatar">${safeImg(r.profiles?.photo) ? `<img src="${safeImg(r.profiles.photo)}" alt="" style="width:100%;height:100%;object-fit:cover">` : esc(r.profiles?.avatar || '🙂')}</span>${dot(r.profiles?.username)}<span class="grow" style="min-width:0"><b>${esc(r.profiles?.display_name)}</b> <span class="en tiny muted">@${esc(r.profiles?.username)}</span><br><span class="tiny muted">${esc(r.current_unit || '')} · امروز ${faNum(r.minutes_today)} دقیقه · 🔥${faNum(r.streak)} · ${ONLINE.has(r.profiles?.username) ? '<b style="color:var(--ok)">آنلاین</b>' : lastSeenFa(r.profiles?.last_seen)}</span></span><span class="pill acc">${faNum(r.week_xp)}</span></a>`).join('') || '<span class="small muted">هنوز کسی نیست؛ اولین نفر باش!</span>'}</div>`;
     unreadCount().then(n => { if (n && $('#unr')) $('#unr').innerHTML = ` <span class="pill bad">${faNum(n)}</span>`; }).catch(() => { });
     $('#nseen') && ($('#nseen').onclick = () => { lsSet('zd:noteSeen:' + G.active, Date.now()); homeOnline(); });
   } catch { box.innerHTML = '<div class="small muted">اتصال به جدول رقابت برقرار نشد (اگر در ایرانی، VPN را روشن کن).</div>'; }
@@ -107,7 +112,7 @@ routes.u = async (username) => {
   const { data: p } = await sb().from('profiles').select('*, progress(*)').eq('username', username).maybeSingle();
   if (!p) { v.innerHTML = '<div class="card">کاربری با این یوزرنیم پیدا نشد.</div>'; return; }
   const g = Array.isArray(p.progress) ? p.progress[0] : p.progress || {};
-  v.innerHTML = `<div class="stack"><div class="card stack" style="align-items:center;text-align:center"><span class="avatar" style="width:96px;height:96px;font-size:48px">${p.photo ? `<img src="${p.photo}" alt="" style="width:100%;height:100%;object-fit:cover">` : esc(p.avatar)}</span><b style="font-size:20px">${esc(p.display_name)} ${dot(p.username)}</b><span class="en muted">@${esc(p.username)}</span><span class="small ${ONLINE.has(p.username) ? '' : 'muted'}">${ONLINE.has(p.username) ? '🟢 الان آنلاین است' : 'آخرین بازدید: ' + lastSeenFa(p.last_seen)}</span><a class="btn sm" href="#dm/${esc(p.username)}">💬 پیام دادن</a><span class="pill">${rankOf(g.xp || 0)} · عضو از ${jLabel(p.created_at.slice(0, 10), true)}</span></div>
+  v.innerHTML = `<div class="stack"><div class="card stack" style="align-items:center;text-align:center"><span class="avatar" style="width:96px;height:96px;font-size:48px">${safeImg(p.photo) ? `<img src="${safeImg(p.photo)}" alt="" style="width:100%;height:100%;object-fit:cover">` : esc(p.avatar)}</span><b style="font-size:20px">${esc(p.display_name)} ${dot(p.username)}</b><span class="en muted">@${esc(p.username)}</span><span class="small ${ONLINE.has(p.username) ? '' : 'muted'}">${ONLINE.has(p.username) ? '🟢 الان آنلاین است' : 'آخرین بازدید: ' + lastSeenFa(p.last_seen)}</span><a class="btn sm" href="#dm/${esc(p.username)}">💬 پیام دادن</a><span class="pill">${rankOf(g.xp || 0)} · عضو از ${jLabel(p.created_at.slice(0, 10), true)}</span></div>
   <div class="grid2">${[['⭐', 'امتیاز کل', g.xp], ['🔥', 'روز پیاپی', g.streak], ['🎓', 'درس قبول‌شده', g.mastered], ['🧠', 'واژهٔ تثبیت‌شده', g.learned], ['⏱️', 'دقیقه امروز', g.minutes_today], ['📅', 'دقیقه این هفته', g.minutes_week]].map(([ic, l, n]) => `<div class="card" style="text-align:center"><div style="font-size:22px">${ic}</div><b class="num" style="font-size:22px">${faNum(n || 0)}</b><div class="small muted">${l}</div></div>`).join('')}</div>
   <div class="card small">درس فعلی: <b>${esc(g.current_unit || '—')}</b></div></div>`;
 };
@@ -116,7 +121,7 @@ routes.u = async (username) => {
 routes.rooms = async (id) => {
   if (!id) {
     setTop('انجمن', true); const v = view();
-    v.innerHTML = `<div class="stack"><div class="today"><b style="font-size:18px">🗣️ انجمن «زبان دوم»</b><span class="muted">با بقیهٔ زبان‌آموزها انگلیسی گپ بزن. ${esc(G.settings.teacher)}، معلم ناظر، موضوع و نقش می‌دهد و اشتباه‌ها را همان لحظه درست می‌کند.</span></div>
+    v.innerHTML = `<div class="stack"><div class="today"><b style="font-size:18px">🗣️ انجمن «زبان رستا»</b><span class="muted">با بقیهٔ زبان‌آموزها انگلیسی گپ بزن. ${esc(G.settings.teacher)}، معلم ناظر، موضوع و نقش می‌دهد و اشتباه‌ها را همان لحظه درست می‌کند.</span></div>
     <input id="rq" class="in" placeholder="جستجوی موضوع…"><div class="tools" id="rl">${ROOMS.map(r => `<a class="tool" data-q="${esc(r.fa + ' ' + r.en)}" href="#rooms/${r.id}"><span class="ic">${r.ic}</span><b>${esc(r.fa)}</b><span class="en">${esc(r.en)}</span>${r.level ? `<span>${esc(r.level)}</span>` : ''}</a>`).join('')}</div>
     <details class="card"><summary>قوانین انجمن</summary><ul class="list small">${FORUM_RULES.map(r => `<li>${esc(r)}</li>`).join('')}</ul></details></div>`;
     $('#rq').oninput = e => { const q = e.target.value.trim().toLowerCase(); $$('#rl .tool').forEach(a => a.hidden = q && !a.dataset.q.toLowerCase().includes(q)); };
@@ -148,10 +153,10 @@ routes.rooms = async (id) => {
   const recent = () => list.slice(-10).map(m => `${m.kind === 'teacher' ? 'TEACHER' : '@' + m.username}: ${m.body}`).join('\n');
   const send = async (text) => {
     text = text.trim(); if (!text) return; $('#tx').value = '';
-    if (BAD_WORDS.test(text)) return warn('این پیام کلمهٔ نامناسب داشت و فرستاده نشد.');
+    if (BAD_WORDS.test(text)) { const { data: w } = await sb().rpc('add_warning'); p.warnings = w ?? (p.warnings || 0) + 1; return warn('این پیام کلمهٔ نامناسب داشت و فرستاده نشد.'); }
     let mod = { action: 'ok' };
     if (hasAI() || firstKeyed()) { try { mod = await ai({ temp: 0.2, system: `You are ${G.settings.teacher}, the warm moderator-teacher of an English-practice chat room for Persian speakers. Room topic: ${topic}.`, messages: [{ role: 'user', content: `Recent chat:\n${recent()}\n\nNew message from @${p.username}: "${text}"\nDecide: "block" if sexual, vulgar, insulting, harassing, hateful or sharing personal contact data; "offtopic" if clearly unrelated to the room topic or current scenario; otherwise "ok". Also correct the English (grammar, word choice, naturalness). JSON {"action":"ok|offtopic|block","reason":"Persian, short","fixes":[{"wrong":"","right":"","why":"Persian"}],"better":"most natural way to say it, or empty if already natural","note":"short warm Persian teacher comment to this learner (praise, correction, or bringing them back to the topic with a question in English); empty if nothing useful"}` }] }); } catch { } }
-    if (mod.action === 'block') { await sb().from('profiles').update({ warnings: (p.warnings || 0) + 1 }).eq('id', p.id); p.warnings = (p.warnings || 0) + 1; return warn(mod.reason || 'این پیام با قوانین انجمن سازگار نبود.'); }
+    if (mod.action === 'block') { const { data: w } = await sb().rpc('add_warning'); p.warnings = w ?? (p.warnings || 0) + 1; return warn(mod.reason || 'این پیام با قوانین انجمن سازگار نبود.'); }
     const { error } = await post(text); if (error) return toast('فرستاده نشد: ' + error.message);
     addXP(4); saveU();
     if (mod.note || mod.fixes?.length || mod.action === 'offtopic') await post(mod.note || (mod.action === 'offtopic' ? 'Let\'s get back to our topic 😊' : 'Nice try!'), 'teacher', { to: p.username, fixes: mod.fixes || [], better: mod.better || '' });
@@ -162,7 +167,7 @@ routes.rooms = async (id) => {
   $('#sc').onclick = async () => {
     if (needAI($('#msgs'))) return; const names = Object.keys(ch.presenceState());
     try { const r = await ai({ temp: 0.9, system: `You are ${G.settings.teacher}, a lively English teacher running a group role-play in a chat room.`, messages: [{ role: 'user', content: `Room topic: ${topic}. Online learners: ${names.map(n => '@' + n).join(', ') || '@' + p.username}. Create a short realistic everyday scenario about this topic and give each learner a role and a first task. Write in English with a short Persian explanation. JSON {"text":"scenario + roles (one line per learner) + who starts"}` }] });
-      await post(r.text, 'teacher', { scenario: true });
+      await post(r.text, 'teacher', { scenario: 'true' });
     } catch (e) { aiErr(e); }
   };
 };
@@ -175,20 +180,25 @@ routes.admin = async () => {
   const users = rows || []; const today = isoDay(); const g = u => (Array.isArray(u.progress) ? u.progress[0] : u.progress) || {};
   startPresence(); const activeToday = users.filter(u => isoDay(new Date(u.last_seen)) === today).length; const week = users.filter(u => Date.now() - new Date(u.last_seen) < 7 * DAY).length;
   const totalMin = users.reduce((s, u) => s + (g(u).minutes_total || 0), 0); const totalAI = users.reduce((s, u) => s + (g(u).ai_chat || 0), 0);
-  v.innerHTML = `<div class="stack"><div class="grid2">${[['👥', 'کل کاربران', users.length], ['🟢', 'الان آنلاین', ONLINE.size], ['☀️', 'فعال امروز', activeToday], ['📅', 'فعال این هفته', week], ['⏱️', 'کل دقیقهٔ مطالعه', totalMin], ['🤖', 'درخواست‌های هوش مصنوعی', totalAI], ['⚠️', 'کاربران با اخطار', users.filter(u => u.warnings).length]].map(([ic, l, n]) => `<div class="card" style="text-align:center"><div style="font-size:22px">${ic}</div><b class="num" style="font-size:24px">${faNum(n)}</b><div class="small muted">${l}</div></div>`).join('')}</div>
+  v.innerHTML = `<div class="stack"><div class="card stack"><b>📚 درس‌های آماده برای همه</b><span class="small muted">هر درس یک بار با هوش مصنوعیِ خودت ساخته و روی سرور منتشر می‌شود؛ بعد همهٔ کاربران بدون هوش مصنوعی و آفلاین می‌خوانند.</span><button class="btn" id="bal">ساخت و انتشار همهٔ درس‌ها</button><div id="balo"></div></div><div class="grid2">${[['👥', 'کل کاربران', users.length], ['🟢', 'الان آنلاین', ONLINE.size], ['☀️', 'فعال امروز', activeToday], ['📅', 'فعال این هفته', week], ['⏱️', 'کل دقیقهٔ مطالعه', totalMin], ['🤖', 'درخواست‌های هوش مصنوعی', totalAI], ['⚠️', 'کاربران با اخطار', users.filter(u => u.warnings).length]].map(([ic, l, n]) => `<div class="card" style="text-align:center"><div style="font-size:22px">${ic}</div><b class="num" style="font-size:24px">${faNum(n)}</b><div class="small muted">${l}</div></div>`).join('')}</div>
   <div class="card stack"><b>📣 پیام به کاربران</b><select id="to" class="in"><option value="">همهٔ کاربران</option>${users.map(u => `<option value="${u.id}">${esc(u.display_name)} @${esc(u.username)}</option>`).join('')}</select><input id="tt" class="in" placeholder="عنوان"><textarea id="bd" class="in" placeholder="متن پیام"></textarea><button class="btn" id="sn">فرستادن</button></div>
   <div class="sec">کاربران <small>${faNum(users.length)} نفر</small></div>
   <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:640px"><thead><tr style="text-align:right;color:var(--muted)"><th>کاربر</th><th>درس فعلی</th><th>امروز</th><th>هفته</th><th>کل</th><th>قبول</th><th>🔥</th><th>AI</th><th>آخرین حضور</th><th></th></tr></thead><tbody>
   ${users.map(u => { const x = g(u); return `<tr style="border-top:1px solid var(--line)"><td><a href="#u/${esc(u.username)}">${esc(u.display_name)}</a><br><span class="en tiny muted">@${esc(u.username)}</span>${u.warnings ? ` <span class="pill bad">${faNum(u.warnings)} اخطار</span>` : ''}</td><td>${esc(x.current_unit || '—')}</td><td class="num">${faNum(x.minutes_today || 0)}′</td><td class="num">${faNum(x.minutes_week || 0)}′</td><td class="num">${faNum(x.minutes_total || 0)}′</td><td class="num">${faNum(x.mastered || 0)}</td><td class="num">${faNum(x.streak || 0)}</td><td class="num">${faNum(x.ai_chat || 0)}</td><td>${dot(u.username)} ${ONLINE.has(u.username) ? 'آنلاین' : lastSeenFa(u.last_seen)}<br><a class="tiny" href="#dm/${esc(u.username)}">پیام</a></td><td>${u.is_admin ? '<span class="pill acc">مدیر</span>' : `<button class="btn line sm" data-ban="${u.id}" data-b="${u.banned ? 0 : 1}">${u.banned ? 'رفع محرومیت' : 'محروم از انجمن'}</button>`}</td></tr>`; }).join('')}</tbody></table></div></div>`;
   $('#sn').onclick = async () => { const title = $('#tt').value.trim(), body = $('#bd').value.trim(); if (!title || !body) return toast('عنوان و متن را بنویس.'); const { error } = await sb().from('notices').insert({ to_user: $('#to').value || null, title, body }); toast(error ? 'خطا: ' + error.message : 'پیام فرستاده شد ✓'); if (!error) { $('#tt').value = ''; $('#bd').value = ''; } };
   $$('[data-ban]').forEach(b => b.onclick = async () => { await sb().from('profiles').update({ banned: b.dataset.b === '1' }).eq('id', b.dataset.ban); routes.admin(); });
+  $('#bal') && ($('#bal').onclick = () => { if (needAI($('#balo'))) return; buildAllLessons($('#balo')); });
 };
 
 /* ───── کارت حساب در صفحهٔ «من» ───── */
 async function meOnline() {
   const box = $('#online-me'); if (!box) return; const p = await myProfile();
   if (!p) { box.innerHTML = `<div class="card stack"><b>🌐 حساب آنلاین</b><span class="small muted">با ایمیل و کد تأیید وارد شو تا یوزرنیم و صفحهٔ اختصاصی داشته باشی، در رقابت همه باشی و وارد انجمن شوی.</span><button class="btn" id="lg">ورود / ثبت‌نام با ایمیل</button></div>`; $('#lg').onclick = () => loginSheet(() => routes.me()); return; }
-  box.innerHTML = `<div class="card stack"><div class="row"><b class="grow">🌐 حساب آنلاین: <span class="en">@${esc(p.username)}</span></b>${p.is_admin ? '<a class="btn sm" href="#admin">پنل مدیر</a>' : ''}</div><div class="row"><a class="btn ghost sm" href="#u/${esc(p.username)}">صفحهٔ من</a><a class="btn ghost sm" href="#rooms">انجمن</a><a class="btn ghost sm" href="#dm">پیام‌ها</a><button class="btn line sm" id="lo">خروج از حساب</button></div></div>`;
+  box.innerHTML = `<div class="card stack"><div class="row"><b class="grow">🌐 حساب آنلاین: <span class="en">@${esc(p.username)}</span></b>${p.is_admin ? '<a class="btn sm" href="#admin">پنل مدیر</a>' : ''}</div><div class="row"><a class="btn ghost sm" href="#u/${esc(p.username)}">صفحهٔ من</a><a class="btn ghost sm" href="#rooms">انجمن</a><a class="btn ghost sm" href="#dm">پیام‌ها</a><button class="btn ghost sm" id="pwb">🔑 رمز عبور</button><button class="btn line sm" id="lo">خروج از حساب</button></div></div>`;
+  box.insertAdjacentHTML('beforeend', `<div class="card stack"><b>☁️ پشتیبان ابری</b><span class="small muted">همهٔ پیشرفت، جعبهٔ لایتنر، کتاب‌ها و حافظهٔ معلم روی سرور ذخیره می‌شود تا روی هر گوشی یا کامپیوتری با همین حساب برگردد. آخرین پشتیبان: ${lsGet('zd:lastBackup:' + G.active, 0) ? lastSeenFa(lsGet('zd:lastBackup:' + G.active, 0)) : 'هنوز نه'}</span><label class="row small"><input type="checkbox" id="ab"${lsGet('zd:autoBackup:' + G.active, true) ? ' checked' : ''}> پشتیبان‌گیری خودکار (هر ۳۰ دقیقه)</label><div class="row"><button class="btn ghost sm" id="bk1">ذخیرهٔ الان</button><button class="btn ghost sm" id="rs1">بازگرداندن از سرور</button></div><div id="rsc"></div></div>`);
+  $('#ab').onchange = e => lsSet('zd:autoBackup:' + G.active, e.target.checked); $('#bk1').onclick = () => cloudBackup(false);
+  $('#rs1').onclick = () => { $('#rsc').innerHTML = '<div class="notice row small"><span class="grow">پیشرفت فعلی این دستگاه با نسخهٔ سرور جایگزین می‌شود. مطمئنی؟</span><button class="btn sm" id="rsy">بله</button></div>'; $('#rsy').onclick = cloudRestore; };
+  $('#pwb') && ($('#pwb').onclick = newPasswordSheet);
   $('#lo').onclick = async () => { await sb().auth.signOut(); OP = null; delete U.online; saveU(); routes.me(); };
 }
 
@@ -219,7 +229,7 @@ routes.dm = async (username) => {
     const ids = [...new Set((data || []).map(m => m.from_user === me_.id ? m.to_user : m.from_user))];
     const { data: ps } = ids.length ? await sb().from('profiles').select('id,username,display_name,avatar,photo,last_seen').in('id', ids) : { data: [] };
     const { data: everyone } = await sb().from('profiles').select('id,username,display_name,avatar,photo,last_seen,is_admin').order('last_seen', { ascending: false }).limit(200);
-    const row = (u, extra = '') => `<a class="card row" style="text-decoration:none;color:inherit;flex-wrap:nowrap" href="#dm/${esc(u.username)}"><span class="avatar" style="position:relative">${u.photo ? `<img src="${u.photo}" alt="">` : esc(u.avatar || '🙂')}</span>${dot(u.username)}<span class="grow" style="min-width:0"><b>${esc(u.display_name)}</b>${u.is_admin ? ' <span class="pill acc">مدیر</span>' : ''} <span class="en tiny muted">@${esc(u.username)}</span><br><span class="tiny muted">${ONLINE.has(u.username) ? 'آنلاین' : 'آخرین بازدید: ' + lastSeenFa(u.last_seen)}</span>${extra}</span></a>`;
+    const row = (u, extra = '') => `<a class="card row" style="text-decoration:none;color:inherit;flex-wrap:nowrap" href="#dm/${esc(u.username)}"><span class="avatar" style="position:relative">${safeImg(u.photo) ? `<img src="${safeImg(u.photo)}" alt="">` : esc(u.avatar || '🙂')}</span>${dot(u.username)}<span class="grow" style="min-width:0"><b>${esc(u.display_name)}</b>${u.is_admin ? ' <span class="pill acc">مدیر</span>' : ''} <span class="en tiny muted">@${esc(u.username)}</span><br><span class="tiny muted">${ONLINE.has(u.username) ? 'آنلاین' : 'آخرین بازدید: ' + lastSeenFa(u.last_seen)}</span>${extra}</span></a>`;
     v.innerHTML = `<div class="stack">${ids.length ? '<div class="sec">گفتگوهای من</div>' + ids.map(id => { const u = (ps || []).find(x => x.id === id); if (!u) return ''; const last = data.find(m => m.from_user === id || m.to_user === id); const unread = data.filter(m => m.from_user === id && !m.read).length; return row(u, `<br><span class="small">${esc(last.body.slice(0, 60))}</span>${unread ? ` <span class="pill bad">${faNum(unread)} تازه</span>` : ''}`); }).join('') : ''}
     <div class="sec">همهٔ زبان‌آموزها <small>برای شروع گفتگو بزن</small></div><input id="fq" class="in" placeholder="جستجوی نام یا یوزرنیم…"><div class="stack" id="ev">${(everyone || []).filter(u => u.id !== me_.id).map(u => `<div data-q="${esc(u.display_name + ' ' + u.username)}">${row(u)}</div>`).join('')}</div></div>`;
     $('#fq').oninput = e => { const q = e.target.value.trim().toLowerCase(); $$('#ev [data-q]').forEach(d => d.hidden = q && !d.dataset.q.toLowerCase().includes(q)); };
@@ -227,7 +237,7 @@ routes.dm = async (username) => {
   }
   const { data: other } = await sb().from('profiles').select('*').eq('username', username).maybeSingle(); if (!other) { setTop('پیام', true); v.innerHTML = '<div class="card">کاربر پیدا نشد.</div>'; return; }
   setTop(other.display_name, true);
-  v.innerHTML = `<div class="convo"><a class="card row" href="#u/${esc(other.username)}" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span class="avatar">${other.photo ? `<img src="${other.photo}" alt="">` : esc(other.avatar)}</span>${dot(other.username)}<span class="grow"><b>${esc(other.display_name)}</b> <span class="en tiny muted">@${esc(other.username)}</span><br><span class="tiny muted" id="ls">${ONLINE.has(other.username) ? 'آنلاین' : 'آخرین بازدید: ' + lastSeenFa(other.last_seen)}</span></span></a>
+  v.innerHTML = `<div class="convo"><a class="card row" href="#u/${esc(other.username)}" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span class="avatar">${safeImg(other.photo) ? `<img src="${safeImg(other.photo)}" alt="">` : esc(other.avatar)}</span>${dot(other.username)}<span class="grow"><b>${esc(other.display_name)}</b> <span class="en tiny muted">@${esc(other.username)}</span><br><span class="tiny muted" id="ls">${ONLINE.has(other.username) ? 'آنلاین' : 'آخرین بازدید: ' + lastSeenFa(other.last_seen)}</span></span></a>
   <div class="notice soft small">پیام‌ها خصوصی‌اند. سعی کن انگلیسی بنویسی؛ دکمهٔ ✨ متنت را قبل از فرستادن اصلاح می‌کند.</div><div class="msgs" id="msgs">${loading()}</div>
   <div class="composer"><textarea id="tx" rows="1" placeholder="پیام…"></textarea><button class="icon-btn" id="fix" title="اصلاح انگلیسی">✨</button><button class="icon-btn on" id="snd">${I.send}</button></div></div>`;
   const msgs = $('#msgs'); const pair = `and(from_user.eq.${me_.id},to_user.eq.${other.id}),and(from_user.eq.${other.id},to_user.eq.${me_.id})`;
@@ -244,3 +254,76 @@ routes.dm = async (username) => {
   $('#fix').onclick = async () => { const t = $('#tx').value.trim(); if (!t) return; if (needAI(msgs)) return; try { const r = await ai({ temp: 0.2, system: 'English writing helper for Persian speakers.', messages: [{ role: 'user', content: `Make this chat message natural English (keep meaning, casual tone). If it is Persian, translate it. JSON {"text":"","note":"short Persian note on what changed"}\n${t}` }] }); $('#tx').value = r.text; if (r.note) toast(r.note, 4500); } catch (e) { aiErr(e); } };
 };
 async function unreadCount() { const p = await myProfile(); if (!p) return 0; const { count } = await sb().from('dms').select('id', { count: 'exact', head: true }).eq('to_user', p.id).eq('read', false); return count || 0; }
+
+
+/* ───── ثبت‌نام و ورود با نام کاربری و رمز ───── */
+const authErrFa = m => /already registered|already exists/i.test(m) ? 'با این ایمیل قبلاً حساب ساخته شده؛ از برگهٔ «ورود» وارد شو.' : /rate|seconds|limit/i.test(m) ? 'درخواست زیاد بود؛ یک دقیقه بعد دوباره امتحان کن.' : /invalid login|credentials/i.test(m) ? 'نام کاربری یا رمز درست نیست.' : /not confirmed/i.test(m) ? 'ایمیلت هنوز تأیید نشده؛ روی لینک داخل ایمیل بزن (پوشهٔ اسپم را هم ببین).' : /password/i.test(m) ? 'رمز قابل قبول نیست؛ رمز قوی‌تر (حداقل ۸ حرف) بنویس.' : 'خطا: ' + m;
+async function authSignUp({ name, un, email, pw, avatar }) {
+  if (!window.supabase) { toast('اتصال آنلاین در دسترس نیست.'); return; }
+  const tmp = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false } });
+  try { const { data, error } = await tmp.rpc('username_free', { uname: un }); if (!error && data === false) return 'taken'; } catch { }
+  addUser(name, avatar); $('nav.bottom').hidden = false;
+  const { data, error } = await sb().auth.signUp({ email, password: pw, options: { emailRedirectTo: location.origin + location.pathname, data: { username: un, display_name: name, avatar } } });
+  if (error) { toast(authErrFa(error.message), 6000); go('guide'); router(); return; }
+  if (data.session) { await sb().from('profiles').insert({ id: data.user.id, username: un, display_name: name, avatar }); const p = await myProfile(true); if (p) { U.online = { uid: p.id, username: p.username }; saveU(); syncNow(); } go('guide'); router(); toast('حسابت ساخته شد @' + un + ' 🎉'); return; }
+  go('guide'); router();
+  setTimeout(() => sheet(`<div class="stack"><b style="font-size:18px">📧 ایمیلت را تأیید کن</b><span>یک ایمیل به <b class="en">${esc(email)}</b> فرستادیم. روی لینک داخلش بزن تا حسابت با نام کاربری <b class="en">@${esc(un)}</b> فعال شود (پوشهٔ اسپم را هم ببین).</span><span class="small muted">تا آن موقع می‌توانی راهنما را ببینی و درس را شروع کنی؛ پیشرفتت حفظ می‌شود.</span><button class="btn" onclick="this.closest('.sheet-bg').remove()">باشه</button></div>`), 400);
+}
+async function authSignIn(id, pw) {
+  if (!window.supabase) return toast('اتصال آنلاین در دسترس نیست.');
+  const tmp = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false } });
+  let email = id.toLowerCase();
+  if (!email.includes('@')) {
+    const { data, error } = await tmp.rpc('login_email', { uname: email, pw });
+    if (error) return toast(/function|not find|schema/i.test(error.message) ? 'ورود با نام کاربری هنوز فعال نشده (مدیر باید فایل SQL دوم را اجرا کند)؛ فعلاً با ایمیلت وارد شو.' : authErrFa(error.message), 6000);
+    if (!data) return toast('نام کاربری یا رمز درست نیست.'); email = data;
+  }
+  const { data, error } = await tmp.auth.signInWithPassword({ email, password: pw });
+  if (error) return toast(authErrFa(error.message), 6000);
+  const { data: prof } = await tmp.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
+  const md = data.user.user_metadata || {};
+  addUser(prof?.display_name || md.display_name || 'کاربر', prof?.avatar || md.avatar || '🙂'); if (prof?.photo) { me().photo = safeImg(prof.photo); saveG('users'); }
+  await sb().auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token });
+  let p = await myProfile(true);
+  if (!p && /^[a-z0-9_]{3,20}$/.test(md.username || '')) { await sb().from('profiles').insert({ id: data.user.id, username: md.username, display_name: md.display_name || me().name, avatar: md.avatar || '🙂' }); p = await myProfile(true); }
+  $('nav.bottom').hidden = false; go('home');
+  if (p) {
+    U.online = { uid: p.id, username: p.username }; saveU();
+    const { data: bk } = await sb().from('backups').select('updated_at').eq('user_id', p.id).maybeSingle();
+    if (bk && window.cloudRestore) { await cloudRestore(); } else { lsSet('zd:bkOk:' + G.active, true); router(); }
+    toast('خوش برگشتی @' + p.username + ' 🎉'); syncNow();
+  } else { router(); loginSheet(); }
+}
+async function forgotPassword(id) {
+  const email = id && id.includes('@') ? id : prompt('ایمیل حسابت را بنویس:'); if (!email || !/^\S+@\S+\.\S+$/.test(email)) return;
+  const tmp = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false } });
+  const { error } = await tmp.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: location.origin + location.pathname });
+  toast(error ? authErrFa(error.message) : 'لینک تغییر رمز به ایمیلت فرستاده شد.', 6000);
+}
+function newPasswordSheet() {
+  const bg = sheet(`<div class="stack"><b style="font-size:18px">رمز تازه</b><label class="f">رمز عبور تازه (حداقل ۸ حرف)<input id="np" class="in" dir="ltr" type="password" autocomplete="new-password"></label><button class="btn" id="sv">ذخیره</button></div>`);
+  $('#sv', bg).onclick = async () => { const pw = $('#np', bg).value; if (pw.length < 8) return toast('حداقل ۸ حرف.'); const { error } = await sb().auth.updateUser({ password: pw }); if (error) return toast(authErrFa(error.message)); bg.remove(); toast('رمزت عوض شد ✓'); };
+}
+
+/* ───── پیوستن به رقابت با یک کلیک (بدون ایمیل؛ ورود ناشناس Supabase) ───── */
+async function joinCompetition() {
+  const c = sb(); if (!c) return toast('اتصال آنلاین در دسترس نیست.');
+  const bg = sheet(`<div class="stack"><b style="font-size:18px">🏆 پیوستن به رقابت</b><span class="small muted">یک نام کاربری انتخاب کن؛ همین! بقیه پیشرفت تو را در جدول می‌بینند (سطح، درس‌ها، واژه‌ها، زمان مطالعه).</span>
+    <label class="f">نام کاربری (حروف انگلیسی کوچک، عدد و _)<input id="un" class="in" dir="ltr" maxlength="20" value="${esc((me().name || '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20))}" placeholder="rasta_eng"></label><span class="tiny muted" id="unh"></span>
+    <button class="btn" id="jn">ورود به مسابقه</button><span class="tiny muted">بعداً اگر خواستی، از «من» برای حسابت ایمیل و رمز بگذار تا روی گوشی دیگر هم برگردد.</span></div>`);
+  $('#jn', bg).onclick = async () => {
+    const un = $('#un', bg).value.trim().toLowerCase(); if (!/^[a-z0-9_]{3,20}$/.test(un)) return $('#unh', bg).textContent = 'فقط حروف انگلیسی کوچک، عدد و _ ؛ ۳ تا ۲۰ حرف.';
+    const b = $('#jn', bg); b.disabled = true; b.textContent = 'لحظه‌ای صبر کن…';
+    try {
+      let s = await session();
+      if (!s) { const { error } = await c.auth.signInAnonymously({ options: { data: { username: un, display_name: me().name } } }); if (error) throw error; s = await session(); }
+      const { error } = await c.from('profiles').insert({ id: s.user.id, username: un, display_name: me().name, avatar: me().avatar, photo: me().photo || null });
+      if (error && !/duplicate key.*pkey/i.test(error.message)) { b.disabled = false; b.textContent = 'ورود به مسابقه'; return $('#unh', bg).textContent = /duplicate|unique/i.test(error.message) ? 'این نام کاربری گرفته شده؛ یکی دیگر بنویس.' : 'خطا: ' + error.message; }
+      const p = await myProfile(true); U.online = { uid: p.id, username: p.username, anon: true }; saveU(); bg.remove(); toast('به مسابقه خوش آمدی @' + p.username + ' 🏆'); syncNow(); routes.home();
+    } catch (e) {
+      b.disabled = false; b.textContent = 'ورود به مسابقه';
+      if (/anonymous/i.test(e.message || '')) { bg.remove(); toast('پیوستن بدون ایمیل هنوز روی سرور روشن نشده؛ فعلاً با ایمیل وارد شو.', 6000); loginSheet(() => routes.home()); }
+      else toast(authErrFa(e.message || ''), 6000);
+    }
+  };
+}

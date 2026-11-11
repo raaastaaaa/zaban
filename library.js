@@ -1,8 +1,8 @@
-/* زبان دوم — کتابخانه: کتاب‌های درجه‌بندی‌شدهٔ دوزبانه با پخش صوتی
+/* زبان رستا — کتابخانه: کتاب‌های درجه‌بندی‌شدهٔ دوزبانه با پخش صوتی
    همهٔ کتاب‌ها یا بازنویسی ساده‌شدهٔ آثار آزاد از حق نشر هستند یا داستان‌های اختصاصی برنامه. */
 'use strict';
 const BOOKS = [
-  { id: 'muscat', lvl: 'easy', t: 'A New Life in Muscat', fa: 'زندگی تازه در مسقط', by: 'داستان اختصاصی زبان دوم', hue: 190, ic: '🕌', ch: 8, about: 'a young Iranian family that moves to Muscat: finding a flat, the first day at work, the souq, new friends' },
+  { id: 'muscat', lvl: 'easy', t: 'A New Life Abroad', fa: 'زندگی تازه در یک کشور دیگر', by: 'داستان اختصاصی زبان رستا', hue: 190, ic: '✈️', ch: 8, about: 'a young Iranian family that moves to a new country: finding an apartment, the first day at work, the market, new friends' },
   { id: 'sinbad', lvl: 'easy', t: 'Sinbad the Sailor', fa: 'سندباد بحری', by: 'هزار و یک شب', hue: 205, ic: '⛵', ch: 7, about: 'the seven voyages of Sinbad the sailor from the Arabian Nights' },
   { id: 'aladdin', lvl: 'easy', t: 'Aladdin', fa: 'علاءالدین', by: 'هزار و یک شب', hue: 40, ic: '🪔', ch: 6, about: 'Aladdin and the magic lamp from the Arabian Nights' },
   { id: 'magi', lvl: 'easy', t: 'The Gift of the Magi', fa: 'هدیهٔ کریسمس', by: 'اُ. هنری', hue: 0, ic: '🎁', ch: 3, about: "O. Henry's short story The Gift of the Magi" },
@@ -24,7 +24,7 @@ const bookState = id => (U.books || (U.books = {}))[id] || (U.books[id] = { read
 const bookPct = b => { const s = U.books?.[b.id]; return s ? Math.round(s.read.length / b.ch * 100) : 0; };
 const hms = s => [Math.floor(s / 3600), Math.floor(s / 60) % 60, Math.floor(s % 60)].map(x => String(x).padStart(2, '0')).join(':');
 function ring(p, label, col = 'var(--accent)') { return `<div style="width:62px;height:62px;border-radius:50%;background:conic-gradient(${col} ${p * 3.6}deg,var(--sunk) 0);display:grid;place-items:center"><div style="width:50px;height:50px;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-size:11px;font-weight:800;text-align:center;line-height:1.2">${label}</div></div>`; }
-function coverHTML(b, w = 96) { return `<div style="width:${w}px;aspect-ratio:2/3;border-radius:10px;overflow:hidden;position:relative;background:hsl(${b.hue} var(--tile-s) var(--tile-l));display:grid;place-items:center;font-size:${w / 2.6}px;flex:none">${b.ic}${G.settings.img !== 'emoji' ? `<img src="${coverUrl(b)}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()">` : ''}</div>`; }
+function coverHTML(b, w = 96) { return `<div style="width:${w}px;aspect-ratio:2/3;border-radius:10px;overflow:hidden;position:relative;background:hsl(${b.hue} var(--tile-s) var(--tile-l));display:grid;place-items:center;font-size:${w / 2.6}px;flex:none"><span style="position:relative">${b.ic}</span><img src="em/${emCode(b.ic)}.webp" alt="" loading="lazy" style="position:absolute;inset:18% 12%;width:76%;height:64%;object-fit:contain;filter:drop-shadow(0 4px 6px rgb(0 0 0 / .25))" onload="this.previousElementSibling.style.visibility='hidden'" onerror="this.remove()"><span style="position:absolute;inset:auto 0 0 0;height:30%;background:linear-gradient(transparent,rgb(0 0 0 / .18))"></span></div>`; }
 
 routes.library = (tab = 'mine') => {
   setTop('کتابخانه'); const v = view(); const mine = BOOKS.filter(b => U.books?.[b.id]);
@@ -38,7 +38,7 @@ routes.library = (tab = 'mine') => {
   } else {
     v.innerHTML = `<div class="stack">${tabs}<div class="card stack" style="align-items:center;text-align:center"><div style="font-size:60px">🧑‍🤝‍🧑</div><b>مکالمه‌های درس‌ها</b><span class="small muted">هر درس یک مکالمهٔ واقعی با صدا و ترجمه دارد؛ گوش بده و پشت سرش تکرار کن.</span></div>
     <div class="units">${ALL_UNITS.filter(isOpen).map(u => `<a class="unit" href="#dialog/${u.id}"><span class="tile" style="--h:${u.hue}">${esc(u.icon)}</span><b>${esc(u.fa)}</b><span class="en">${esc(u.en)}</span>${unitState(u).steps.dialog ? '<span class="pill ok">تمرین شد</span>' : ''}</a>`).join('')}</div>
-    <a class="btn ghost" href="#role">نقش‌آفرینی موقعیت‌های عمان</a></div>`;
+    <a class="btn ghost" href="#role">نقش‌آفرینی موقعیت‌های واقعی</a></div>`;
   }
   autoImages(v);
 };
@@ -80,7 +80,7 @@ routes.read = async (id, idx) => {
   const para = p => esc(p).replace(/\*\*(.+?)\*\*/g, '<span class="kw" style="color:var(--accent);font-weight:700">$1</span>').replace(/(<span[^>]*>.*?<\/span>)|([A-Za-z][A-Za-z'’-]*)/g, (m, kw, w) => kw || `<span class="tw">${w}</span>`);
   v.innerHTML = `<div class="stack" style="padding-bottom:70px">
   <div class="row" style="position:sticky;top:calc(58px + env(safe-area-inset-top,0px));z-index:5;background:var(--bg);padding-block:4px"><span class="small muted grow">فصل ${faNum(idx + 1)} از ${faNum(b.ch)}</span><button class="icon-btn" id="tr" title="ترجمه">آ</button><button class="icon-btn" id="wl" title="واژه‌ها" style="font-family:var(--en);font-weight:800">W</button></div>
-  ${G.settings.img !== 'emoji' ? `<img alt="" style="border-radius:14px;aspect-ratio:16/10;object-fit:cover;width:100%;background:var(--sunk)" src="https://image.pollinations.ai/prompt/${encodeURIComponent(`illustration, ${b.about}, scene: ${c.beats}, painterly, no text`)}?width=640&height=400&nologo=true&seed=${idx + 7}" onerror="this.remove()">` : ''}
+  ${G.settings.img === 'ai' ? `<img alt="" style="border-radius:14px;aspect-ratio:16/10;object-fit:cover;width:100%;background:var(--sunk)" src="https://image.pollinations.ai/prompt/${encodeURIComponent(`illustration, ${b.about}, scene: ${c.beats}, painterly, no text`)}?width=640&height=400&nologo=true&seed=${idx + 7}" onerror="this.remove()">` : ''}
   ${ch.paragraphs.map((p, i) => `<div class="pp" data-i="${i}" style="border-radius:12px;padding:6px 8px;transition:background .2s"><p class="en" style="font-size:17px;line-height:1.9;margin:0">${para(p.en)}</p><p class="fa small muted" style="margin:4px 0 0;text-align:justify"${showFa ? '' : ' hidden'}>${esc(p.fa)}</p></div>`).join('')}
   <div class="card stack" id="cb"><button class="btn ghost sm" id="mkca">🎧 صوت کامل این فصل برای آفلاین و دانلود</button></div>
   <div class="row">${idx > 0 ? `<a class="btn ghost" href="#read/${id}/${idx - 1}">فصل قبل</a>` : ''}<span class="grow"></span>${idx < meta.chapters.length - 1 ? `<a class="btn" href="#read/${id}/${idx + 1}" id="nx">فصل بعد</a>` : `<a class="btn" href="#book/${id}" id="nx">پایان کتاب 🎉</a>`}</div></div>
@@ -91,11 +91,11 @@ routes.read = async (id, idx) => {
   $('#mkca').onclick = async () => { const box = $('#cb'); const chunks = []; for (let i = 0; i < ch.paragraphs.length; i += 3) chunks.push({ lang: 'en', emo: 'calm', text: ch.paragraphs.slice(i, i + 3).map(p => p.en.replace(/\*\*/g, '')).join('\n\n') }); try { const bl = await buildAudio(ck, chunks, (i, n) => box.innerHTML = loading(`ساخت صوت… ${faNum(i + 1)} از ${faNum(n)}`)); audioBox(box, bl, `${id}-ch${idx + 1}`); } catch (e) { box.innerHTML = ''; aiErr(e); } };
   const hi = i => { pps.forEach((p, k) => p.style.background = k === i ? 'var(--accent-soft)' : ''); $('#pb').style.width = ((i + 1) / pps.length * 100) + '%'; pps[i]?.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
   const play = async () => {
-    playing = true; $('#pl').textContent = '⏸'; const tok = speakToken + 1;
+    playing = true; $('#pl').textContent = '⏸';
     while (playing && cur < pps.length) {
       hi(cur); const r = G.settings.rate; G.settings.rate = +$('#sp').value;
-      await say(ch.paragraphs[cur].en.replace(/\*\*/g, ''), 'en', 'calm'); G.settings.rate = r;
-      if (speakToken !== tok) return; if ($('#rf').checked) { await say(ch.paragraphs[cur].fa, 'fa', 'calm'); if (speakToken !== tok) return; }
+      const okEn = await say(ch.paragraphs[cur].en.replace(/\*\*/g, ''), 'en', 'calm'); G.settings.rate = r;
+      if (!okEn || !playing) { playing = false; $('#pl') && ($('#pl').textContent = '▶'); return; } if ($('#rf').checked) { if (!(await say(ch.paragraphs[cur].fa, 'fa', 'calm'))) { playing = false; $('#pl') && ($('#pl').textContent = '▶'); return; } }
       cur++;
     }
     playing = false; $('#pl') && ($('#pl').textContent = '▶'); if (cur >= pps.length) finish();
@@ -107,10 +107,11 @@ routes.read = async (id, idx) => {
   pps.forEach((p, i) => p.ondblclick = () => { pause(); cur = i; play(); });
   $('#tr').onclick = () => { showFa = !showFa; lsSet('zd:showFa', showFa); $$('.pp .fa', v).forEach(x => x.hidden = !showFa); $('#tr').classList.toggle('on', showFa); }; $('#tr').classList.toggle('on', showFa);
   $('#wl').onclick = () => { const bg = sheet(`<div class="stack"><b>واژه‌های این فصل</b>${ch.words.map(w => `<div class="row small" style="flex-wrap:nowrap"><button class="icon-btn" data-s="${esc(w.w)}">${I.spk}</button><span class="grow"><b class="en">${esc(w.w)}</b> <span class="en muted">/${esc(w.ipa)}/</span><br>${esc(w.fa)}</span></div>`).join('')}<button class="btn" id="addall">افزودن همه به فلش‌کارت‌ها</button></div>`); $$('[data-s]', bg).forEach(x => x.onclick = () => say(x.dataset.s, 'en', 'calm', x)); $('#addall', bg).onclick = () => { ch.words.forEach(w => addBookWord(w, b)); toast('به فلش‌کارت‌ها اضافه شد.'); bg.remove(); }; };
-  v.onclick = e => { const t = e.target.closest('.tw,.kw'); if (!t) return; wordPop(t.textContent, ch, b); };
+  v.onclick = e => { const t = e.target.closest('.tw,.kw'); if (!t) return; $$('.tw,.kw', v).forEach(x => x.style.background = ''); t.style.background = 'var(--mark)'; t.style.borderRadius = '4px'; wordPanel(t.textContent, t.closest('p')?.textContent?.slice(0, 200)); };
+  highlightLeitner(v);
   const finish = () => { if (!st.read.includes(idx)) { st.read.push(idx); addXP(25); toast('فصل تمام شد ✓ +۲۵ امتیاز'); } saveU(); };
   $('#nx').addEventListener('click', finish);
-  const timer = setInterval(() => { if (!location.hash.startsWith('#read/')) return clearInterval(timer); if (document.visibilityState === 'visible') { st.sec += 5; saveU(); } }, 5000);
+  clearInterval(window._readTimer); const myHash = location.hash; window._readTimer = setInterval(() => { if (location.hash !== myHash) return clearInterval(window._readTimer); if (document.visibilityState === 'visible') { st.sec += 5; saveU(); } }, 5000);
 };
 function addBookWord(w, b) {
   let cu = U.custom.find(x => x.id === 'mybooks'); if (!cu) { cu = { id: 'mybooks', en: 'From My Books', fa: 'واژه‌های کتاب‌هایم', icon: '📖', hue: 45, gram: '—', talk: 'دربارهٔ کتاب‌هایی که خواندی صحبت کن.', words: [] }; U.custom.push(cu); }

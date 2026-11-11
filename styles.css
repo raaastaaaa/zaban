@@ -6,8 +6,9 @@
 @font-face{font-family:'Vazirmatn';font-weight:800;font-display:swap;src:url(vazir-latin-800.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
 @font-face{font-family:'Lexend';font-weight:400;font-display:swap;src:url(lexend-400.woff2) format('woff2')}
 @font-face{font-family:'Lexend';font-weight:600;font-display:swap;src:url(lexend-600.woff2) format('woff2')}
-/* زبان دوم — ستونی تک‌ستونه با ناوبری پایین؛ جوهر سرمه‌ای، فیروزه‌ای برای کنش، زرد ماژیکی برای «یادگرفته» */
+/* زبان رستا — ستونی تک‌ستونه با ناوبری پایین؛ جوهر سرمه‌ای، فیروزه‌ای برای کنش، زرد ماژیکی برای «یادگرفته» */
 :root{
+  --hero:#152036; --hero-ink:#F2F5F9;
   --bg:#F2F5F9; --surface:#FFFFFF; --sunk:#E8EDF4; --ink:#152036; --muted:#5B6980; --line:#D9E0EA;
   --accent:#0C7A78; --accent-ink:#FFFFFF; --accent-soft:#D7EFEE; --mark:#FFD23F; --mark-ink:#3A2E00;
   --ok:#1C8F52; --ok-soft:#DDF3E6; --bad:#C93C3C; --bad-soft:#FBE3E3; --warn:#B9770E;
@@ -21,12 +22,12 @@
   --bg:#0C1220; --surface:#141C2D; --sunk:#1B2539; --ink:#E6EBF4; --muted:#93A0B7; --line:#26314A;
   --accent:#3EC2BC; --accent-ink:#06201F; --accent-soft:#163A3B; --mark:#E8C443; --mark-ink:#241C00;
   --ok:#45C982; --ok-soft:#153526; --bad:#F07474; --bad-soft:#3A1C1F; --warn:#E6B04A;
-  --tile-l:26%; --tile-s:45%; color-scheme:dark }}
+  --tile-l:26%; --tile-s:45%; --hero:#16324A; --hero-ink:#E6EBF4; color-scheme:dark }}
 :root[data-theme="dark"]{
   --bg:#0C1220; --surface:#141C2D; --sunk:#1B2539; --ink:#E6EBF4; --muted:#93A0B7; --line:#26314A;
   --accent:#3EC2BC; --accent-ink:#06201F; --accent-soft:#163A3B; --mark:#E8C443; --mark-ink:#241C00;
   --ok:#45C982; --ok-soft:#153526; --bad:#F07474; --bad-soft:#3A1C1F; --warn:#E6B04A;
-  --tile-l:26%; --tile-s:45%; color-scheme:dark }
+  --tile-l:26%; --tile-s:45%; --hero:#16324A; --hero-ink:#E6EBF4; color-scheme:dark }
 
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink)}
@@ -95,8 +96,8 @@ nav.bottom a.on{color:var(--accent)}
 .ucard .row{flex-wrap:nowrap}
 
 /* today */
-.today{background:var(--ink);color:var(--bg);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px}
-.today .muted{color:color-mix(in srgb,var(--bg) 70%,transparent)}
+.today{background:var(--hero);color:var(--hero-ink);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.today .muted{color:color-mix(in srgb,var(--hero-ink) 72%,transparent)}
 .today .btn{background:var(--mark);color:var(--mark-ink)}
 .today .tasks{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
 .today .tasks li{display:flex;gap:8px;align-items:center;font-size:14px}
@@ -240,7 +241,7 @@ nav.bottom .brand{display:none}
 /* ───── صفحهٔ ورود و ثبت‌نام ───── */
 .auth{display:grid;gap:20px;align-items:stretch;padding-block:24px}
 @media (min-width:900px){.auth{grid-template-columns:1.1fr 1fr;min-height:calc(100vh - 140px);align-items:center}}
-.auth .hero2{background:var(--ink);color:var(--bg);border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:14px}
+.auth .hero2{background:var(--hero);color:var(--hero-ink);border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:14px}
 .auth .hero2 h2{margin:0;font-size:28px;line-height:1.4}
 .auth .hero2 ul{margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:6px;opacity:.9}
 .auth .logo{width:64px;height:64px;border-radius:18px}
@@ -249,7 +250,9 @@ nav.bottom .brand{display:none}
 .tabs button{border:0;background:transparent;border-radius:9px;padding:9px;font-weight:800}
 .tabs button.on{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgb(0 0 0 / .1)}
 
-@media (max-width:899px){.auth{padding-block:12px}.auth .form{order:-1;padding:20px}.auth .hero2{padding:20px}.auth .hero2 ul,.auth .hero2 .logo{display:none}.auth .hero2 h2{font-size:20px}}
+@media (max-width:899px){.auth{padding-block:12px;gap:14px}.auth .form{padding:20px}.auth .hero2{padding:20px;gap:10px}.auth .hero2 ul{display:none}.auth .logo{width:48px;height:48px;border-radius:14px}.auth .hero2 h2{font-size:20px}.auth:not(.intro) .hero2>span{display:none}}
+.auth .hero2 .btn.line{background:transparent;color:var(--hero-ink);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--hero-ink) 45%,transparent)}
+.auth.intro .hero2{text-align:center;align-items:center}
 .install{display:flex;gap:10px;align-items:center;background:var(--accent);color:var(--accent-ink);border-radius:14px;padding:10px 14px}
 .install b{flex:1}
 .install button{border:0;border-radius:10px;padding:8px 14px;font-weight:800;background:var(--accent-ink);color:var(--accent)}
@@ -257,3 +260,16 @@ nav.bottom .brand{display:none}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--line);flex:none;vertical-align:middle}
 .dot.live{background:#22c55e;box-shadow:0 0 0 3px color-mix(in srgb,#22c55e 25%,transparent)}
 .avatar img{width:100%;height:100%;object-fit:cover}
+
+a.btn,.btn{text-decoration:none}
+.btn.sm,.icon-btn{white-space:nowrap}
+body.session nav.bottom{display:none}
+body.session .app{padding-bottom:24px}
+body.session .grid2 .btn.bad{background:transparent;color:var(--bad);box-shadow:inset 0 0 0 2px var(--bad)}
+@media (min-width:900px){body.session{padding-right:0}.flash,body.session .grid2{max-width:560px;margin-inline:auto;width:100%}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .notice{background:color-mix(in srgb,var(--mark) 22%,var(--surface));color:var(--ink)}}
+:root[data-theme="dark"] .notice{background:color-mix(in srgb,var(--mark) 22%,var(--surface));color:var(--ink)}
+
+.pic .em3d{position:absolute;inset:8%;width:84%;height:84%;object-fit:contain;filter:drop-shadow(0 3px 4px rgb(0 0 0 / .18))}
+.pic:has(.em3d){color:transparent}
+html,body{overflow-x:clip}
