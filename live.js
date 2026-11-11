@@ -11,7 +11,7 @@ const LIVE_MODES = {
   advisor: ['🧭', 'مشاور برنامه', 'دربارهٔ هدف و برنامه‌ات حرف بزن']
 };
 let LIVE_LESSON = null, LIVE_L = null, LIVE_PLANS = null;
-const liveSel = () => Object.assign({ unit: '', focus: 'full', ws: '', gram: '', custom: '' }, lsGet('zd:livesel:' + G.active, {}));
+const liveSel = () => Object.assign({ unit: '', focus: 'full', ws: '', gram: '', custom: '', topic: null }, lsGet('zd:livesel:' + G.active, {}));
 const LIVE_FOCUS = { full: ['📚', 'کل درس'], conv: ['💬', 'مکالمه'], words: ['🗂️', 'واژه‌ها'], grammar: ['📐', 'گرامر'], pron: ['🗣', 'تلفظ'] };
 async function livePlans() { if (!LIVE_PLANS) LIVE_PLANS = fetch('lessons/plans/all.json').then(r => r.json()).catch(() => (LIVE_PLANS = null, {})); return LIVE_PLANS; }
 const J = a => (Array.isArray(a) ? a : a ? [a] : []).join(' | ');
@@ -34,12 +34,22 @@ async function makeCustomPlan(want) {
     messages: [{ role: 'user', content: `What the learner wants to learn (their words): «${want}»\nLearner level now: ${u.cefr || 'A1'} (lesson "${u.en}").\nReturn JSON exactly: {"title_fa":"short Persian title","title_en":"","goal":"Persian: what they can DO at the end","intro":"Persian: how the teacher opens and motivates","bank":[{"g":"group name","items":["word/phrase = Persian meaning (register; when to use)"]}],"patterns":["key sentence patterns with examples"],"checks":["concept-check questions"],"roleplay":["role-play scenarios, who plays whom"],"personal":["questions linking to the learner's life"],"grammar":{"point":"","examples":[""],"rule":"Persian","drill":["Persian sentence → English"]},"pron":["pronunciation points with Persian-script hints"],"steps":["numbered interactive teaching steps with timing in minutes"],"mistakes":["typical Persian-speaker mistakes with correction"],"quiz":["final quiz questions"]}` }] });
   if (!r || !Array.isArray(r.bank) || !r.bank.length) throw new Error('plan');
   const id = 'c' + Date.now().toString(36); customPlans()[id] = { ...r, want, d: isoDay() }; saveU(); return id; }
+const GPT_ADAPT_TXT = `
+=== YOU ARE RUNNING INSIDE THE ChatGPT APP (voice mode or chat) — NO TOOLS ARE AVAILABLE. Adapt every instruction above: ===
+- Wherever it says to call a tool, do it yourself instead: show_board → write the items as a short clear list in the chat; play_conversation → perform the lesson conversation yourself, reading both characters with clearly different voices and names; guest_say → play Emma (British) and Jake (American) yourself with their accents; call_on / give_points / set_activity / give_homework → simply say it out loud (keep a running score in your head in group classes); ask_brain → think carefully and answer yourself; mark_done → skip.
+- CORRECTING WRITTEN MESSAGES: for EVERY mistake in what the student types, write a correction block exactly like this:
+  ❌ ~~wrong words~~ → ✅ **correct words**
+  💡 short Persian reason why
+  then praise what was right and ask them to write it again correctly.
+- Keep the lesson interactive at all times: short turns, questions, games, role-plays; never lecture for long.
+- Start RIGHT NOW: greet me warmly in Persian by my name, say today's topic and the plan in one or two sentences, and begin step 1.`;
 let LLT_SEQ = 0, LLT_P = null;
 function liveLessonText() { const my = ++LLT_SEQ; const out = { L: null }; const p = _llt(out).then(t => { if (my === LLT_SEQ) { LIVE_L = out.L; LIVE_LESSON = t; return t; } return LLT_P; }); LLT_P = p; return p; }
 async function _llt(out) { try {
   const S = liveSel(); const RG = { f: 'formal', n: 'neutral', i: 'informal', s: 'slang' };
   if (S.ws) { const u = unitById(S.ws); if (u) { await wsLoad(u.level); out.L = null; const W = unitWords(u);
     return `\n=== VOCABULARY TOPIC (Word Skills ${u.levelFa || ''}): "${u.en}" (${u.fa}) — section: ${u.sec || ''} ===\nCOMPLETE WORD BANK (teach ALL of it, in groups of 5-6):\n${W.map(w => `- ${w.w} = ${w.fa}${w.reg ? ` [${RG[w.reg] || w.reg}]` : ''}${w.use ? ` — ${w.use}` : ''}${w.ex ? ` e.g. "${w.ex}" (${w.exFa || ''})` : ''}`).join('\n')}`; } }
+  if (S.topic?.items?.length) { out.L = null; return `\n=== TOPIC the student chose: «${S.topic.title}» ===\nCOMPLETE ITEM BANK (teach ALL of it, in groups of 5-6, with meaning, register, when to use, native pronunciation, example sentences from real life, then practise each group interactively — questions, mini role-plays, quick quizzes — before moving on; recycle earlier groups):\n${S.topic.items.slice(0, 120).map(x => '- ' + x).join('\n')}`; }
   if (S.custom && customPlans()[S.custom]) { const P = customPlans()[S.custom]; out.L = null;
     return `\n=== CUSTOM LESSON the student asked for: «${P.want}» — "${P.title_en || ''}" (${P.title_fa || ''}) ===\nThis plan was designed in advance by the expert planning brain; follow its steps, keep EVERYTHING interactive.\n${fmtPlan(P)}\nTEACHING STEPS: ${J(P.steps)}\nTYPICAL MISTAKES TO WATCH: ${J(P.mistakes)}`; }
   if (S.gram) { const g = (typeof GRAMMAR !== 'undefined' ? GRAMMAR : []).find(x => x.id === S.gram); if (g) { out.L = null; return `\n=== GRAMMAR TOPIC: "${g.fa}" (level ${g.lvl}) ===\nTeach this grammar topic completely (form, uses, contrasts with similar structures and with Persian, common mistakes of Persian speakers), using everyday situations and the student's life.`; } }
@@ -336,12 +346,12 @@ routes.live = (mode = 'lesson') => {
   };
   const saveSel = p => { const S = Object.assign(liveSel(), p); lsSet('zd:livesel:' + G.active, S); LIVE_LESSON = null; liveLessonText(); };
   if (mode === 'lesson') {
-    $('#lsu').onchange = e => saveSel({ unit: e.target.value, ws: '', gram: '', custom: '' }) || ($('#lsw').value = '', $('#lsg').value = '');
+    $('#lsu').onchange = e => saveSel({ unit: e.target.value, ws: '', gram: '', custom: '' , topic: null }) || ($('#lsw').value = '', $('#lsg').value = '');
     const offF = () => $$('#lsf button').forEach(x => x.classList.remove('on'));
-    $('#lsw').onchange = e => { saveSel({ ws: e.target.value, gram: '', custom: '', focus: 'full' }); $('#lsg').value = ''; offF(); };
-    $('#lsg').onchange = e => { saveSel({ gram: e.target.value, ws: '', custom: '', focus: 'full' }); $('#lsw').value = ''; offF(); };
-    $('#lsf').onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('#lsf button').forEach(x => x.classList.toggle('on', x === b)); saveSel({ focus: b.dataset.v, ws: '', gram: '', custom: '' }); $('#lsw').value = ''; $('#lsg').value = ''; };
-    const pickC = k => { saveSel({ custom: k, ws: '', gram: '', focus: 'full' }); $('#lsw').value = ''; $('#lsg').value = ''; offF(); $$('#lcl .pill').forEach(x => x.classList.toggle('acc', x.dataset.cp === k)); };
+    $('#lsw').onchange = e => { saveSel({ ws: e.target.value, gram: '', custom: '', focus: 'full' , topic: null }); $('#lsg').value = ''; offF(); };
+    $('#lsg').onchange = e => { saveSel({ gram: e.target.value, ws: '', custom: '', focus: 'full' , topic: null }); $('#lsw').value = ''; offF(); };
+    $('#lsf').onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('#lsf button').forEach(x => x.classList.toggle('on', x === b)); saveSel({ focus: b.dataset.v, ws: '', gram: '', custom: '' , topic: null }); $('#lsw').value = ''; $('#lsg').value = ''; };
+    const pickC = k => { saveSel({ custom: k, ws: '', gram: '', focus: 'full' , topic: null }); $('#lsw').value = ''; $('#lsg').value = ''; offF(); $$('#lcl .pill').forEach(x => x.classList.toggle('acc', x.dataset.cp === k)); };
     $('#lcl').onclick = e => { const b = e.target.closest('[data-cp]'); if (b) { pickC(b.dataset.cp); toast('✨ درس دلخواه انتخاب شد؛ «شروع کلاس» را بزن.'); } };
     $('#lcb').onclick = async () => { const w = $('#lcw').value.trim(); if (w.length < 3) return toast('بنویس چه چیزی می‌خواهی یاد بگیری.'); const b = $('#lcb'); b.disabled = true; b.textContent = '🧠 در حال طراحی…'; const h0 = location.hash;
       try { const k = await makeCustomPlan(w); if (location.hash !== h0) return; const P = customPlans()[k]; $('#lcl').insertAdjacentHTML('afterbegin', `<button class="pill" data-cp="${k}">✨ ${esc(P.title_fa || w)}</button>`); pickC(k); $('#lcw').value = '';
@@ -415,15 +425,7 @@ routes.live = (mode = 'lesson') => {
   $('#lgo').onclick = () => Live.starting ? null : Live.on ? liveStop(ui) : engine() === 'gpt' ? $('#gpt').click() : liveStart(mode, ui);
   $$('[data-lm]', v).forEach(b => b.onclick = () => { if (Live.on) liveStop(ui, true); go('live/' + b.dataset.lm); });
   liveLessonText();
-  const GPT_ADAPT = `
-=== YOU ARE RUNNING INSIDE THE ChatGPT APP (voice mode or chat) — NO TOOLS ARE AVAILABLE. Adapt every instruction above: ===
-- Wherever it says to call a tool, do it yourself instead: show_board → write the items as a short clear list in the chat; play_conversation → perform the lesson conversation yourself, reading both characters with clearly different voices and names; guest_say → play Emma (British) and Jake (American) yourself with their accents; call_on / give_points / set_activity / give_homework → simply say it out loud (keep a running score in your head in group classes); ask_brain → think carefully and answer yourself; mark_done → skip.
-- CORRECTING WRITTEN MESSAGES: for EVERY mistake in what the student types, write a correction block exactly like this:
-  ❌ ~~wrong words~~ → ✅ **correct words**
-  💡 short Persian reason why
-  then praise what was right and ask them to write it again correctly.
-- Keep the lesson interactive at all times: short turns, questions, games, role-plays; never lecture for long.
-- Start RIGHT NOW: greet me warmly in Persian by my name, say today's topic and the plan in one or two sentences, and begin step 1.`;
+  const GPT_ADAPT = GPT_ADAPT_TXT;
   const gptPrompt = async () => { if (mode === 'lesson' || mode === 'group') { try { await liveLessonText(); } catch { } } return livePrompt(mode) + '\n' + GPT_ADAPT; };
   let GPT_P = ''; const gptRefresh = () => gptPrompt().then(p => GPT_P = p).catch(() => { }); gptRefresh(); setInterval(() => { if ($('#gpt')) gptRefresh(); }, 4000);
   $('#gpt').onclick = () => { const p = GPT_P || (livePrompt(mode) + '\n' + GPT_ADAPT); let ok = true; try { navigator.clipboard.writeText(p).catch(() => { ok = false; }); } catch { ok = false; }
@@ -432,3 +434,16 @@ routes.live = (mode = 'lesson') => {
   $('#gptc').onclick = async () => { try { await navigator.clipboard.writeText(await gptPrompt()); toast('دستور کپی شد؛ در ChatGPT بچسبان و بفرست.'); } catch { toast('کپی نشد.'); } };
   const myHash = location.hash; addEventListener('hashchange', function h() { if (location.hash !== myHash) { if (Live.on && Live.hash === myHash) liveStop(null, true); if (window.VR?.on && !/^#live\/group/.test(location.hash)) vrLeave(); removeEventListener('hashchange', h); } });
 };
+
+/* «یادم بده» از هر صفحه (بانک واژه، افعال، موضوع‌ها): انتخاب درس برای معلم زنده و شروع با Gemini یا ChatGPT */
+function teachThis(sel, title) {
+  const S = Object.assign({ unit: '', focus: 'full', ws: '', gram: '', custom: '', topic: null }, sel); lsSet('zd:livesel:' + G.active, S); LIVE_LESSON = null;
+  let P = ''; const ready = liveLessonText().then(() => P = livePrompt('lesson') + '\n' + GPT_ADAPT_TXT).catch(() => { });
+  const bg = sheet(`<div class="stack"><b>🎓 کلاس زنده: ${esc(title || '')}</b><span class="small muted">طرح کامل این درس (همهٔ موارد، تلفظ، کاربرد، تمرین تعاملی) به معلم داده می‌شود. با کدام معلم؟</span>
+    <button class="btn" id="tt-gem">✨ Gemini — همین‌جا داخل برنامه حرف بزن</button>
+    <button class="btn gpt-go" id="tt-gpt" disabled>⏳ آماده‌سازی دستور ChatGPT…</button>
+    <span class="tiny muted">ChatGPT: دستور کپی می‌شود؛ در ChatGPT «Paste» را بزن، بفرست و بعد دکمهٔ صدا 🎙 را بزن.</span></div>`);
+  ready.then(() => { const b = bg.querySelector('#tt-gpt'); if (b) { b.disabled = false; b.textContent = '🤖 ChatGPT — کپی دستور و باز کردن ChatGPT'; } });
+  bg.querySelector('#tt-gem').onclick = () => { G.settings.liveEngine = 'gemini'; saveG('settings'); bg.remove(); go('live/lesson'); setTimeout(() => toast('درس آماده است؛ «📞 شروع کلاس» را بزن.', 5000), 400); };
+  bg.querySelector('#tt-gpt').onclick = () => { if (!P) return; try { navigator.clipboard.writeText(P); } catch { } const url = P.length < 7000 ? 'https://chatgpt.com/?q=' + encodeURIComponent(P) : 'https://chatgpt.com/'; if (!window.open(url, '_blank')) location.href = url; bg.remove(); toast('✅ دستور کپی شد. در ChatGPT «Paste» را بزن، بفرست و دکمهٔ صدا 🎙 را بزن.', 8000); };
+}

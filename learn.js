@@ -246,7 +246,9 @@ routes.verbs = async (cat = 'همه') => {
         <div class="vb-ai"></div>
         <div class="row" style="gap:6px"><button class="btn ghost sm" data-new="${i}">✨ جملهٔ تازه</button><button class="btn ghost sm" data-lt="${i}">+ لایتنر</button></div></div></div>`;
   };
+  setTimeout(() => { const b = $('#vtl'); if (b) b.onclick = () => teachThis({ topic: { title: (cat === 'همه' ? 'افعال کاربردی' : 'افعال ' + cat.replace('⭐ ', '')), items: list.slice(0, 120).map(x => `${x.v} (${x.past} / ${x.pp}) = ${x.fa}${x.ex ? ' — e.g. ' + x.ex : ''}`) } }, cat === 'همه' ? 'افعال کاربردی' : 'افعال ' + cat.replace('⭐ ', '')); }, 0);
   v.innerHTML = `<div class="stack">
+  <button class="btn wide tlive-btn" id="vtl">🎓 ${cat === 'همه' ? 'این افعال' : 'افعال «' + esc(cat.replace('⭐ ', '')) + '»'} را معلم زنده یادم بدهد (Gemini یا ChatGPT)</button>
   <a class="card row" href="#vclass" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span style="font-size:26px">🎧</span><div class="grow"><b>کلاس صوتی فعل‌ها</b><div class="small muted">معلم موقعیت‌محور یاد می‌ده: «می‌خوای تختتو مرتب کنی…»</div></div><span>›</span></a>
   <div class="card stack" style="gap:10px">
     <div class="vb-cats">${['همه', ...CATS].map(c => `<button class="pill ${c === cat ? 'acc' : ''}" data-c="${esc(c)}">${esc(c)} <small>${faNum(c === 'همه' ? AV.length : AV.filter(x => x.cat === c).length)}</small></button>`).join('')}</div>
@@ -313,9 +315,11 @@ routes.wtopics = async (topic = '') => {
   if (gen0 !== routeGen) return;
   const RG = { formal: ['رسمی', 'acc'], neutral: ['خنثی', ''], informal: ['خودمونی', 'ok'], slang: ['عامیانه', 'bad'] };
   const hid = O.dir !== 'both'; const groups = [...new Set(items.map(x => x.group || ''))];
+  setTimeout(() => { const b = $('#wtl'); if (b) b.onclick = () => teachThis({ topic: { title: topic, items: items.map(x => `${x.en} = ${x.fa}${x.reg ? ' [' + x.reg + ']' : ''}${x.use ? ' — ' + x.use : ''}`) } }, topic); }, 0);
   v.innerHTML = `<div class="stack"><div class="card stack" style="gap:10px">
     <div class="seg" id="wacc">${[['US', '🇺🇸 آمریکایی'], ['UK', '🇬🇧 بریتانیایی']].map(([k, t]) => `<button data-v="${k}" class="${(G.settings.accent === 'UK' ? 'UK' : 'US') === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <div class="seg" id="wdir">${[['both', 'انگلیسی + فارسی'], ['en', 'انگلیسی ← فارسی'], ['fa', 'فارسی ← انگلیسی']].map(([k, t]) => `<button data-v="${k}" class="${O.dir === k ? 'on' : ''}">${t}</button>`).join('')}</div>
+    <button class="btn wide tlive-btn" id="wtl">🎓 این موضوع را معلم زنده یادم بدهد (Gemini یا ChatGPT)</button>
     <div class="row" style="gap:6px"><button class="btn sm" id="wlt">+ همه به لایتنر</button><button class="btn ghost sm" id="wre">ساخت دوباره</button><button class="btn line sm" id="wdel">حذف موضوع</button></div></div>
     ${groups.map(gname => `${gname ? `<div class="sec">${esc(gname)}</div>` : ''}<div class="vb-list">${items.map((x, i) => [x, i]).filter(([x]) => (x.group || '') === gname).map(([x, i]) => `<div class="vb${hid ? ' hid' : ''}" data-i="${i}"><div class="vb-main"><button class="icon-btn" data-e="${esc(x.en)}" aria-label="تلفظ">${I.spk}</button><div class="grow vb-txt">
       ${hid ? `<div>${O.dir === 'fa' ? `<span class="vb-fa">${esc(x.fa)}</span>` : `<b class="en vb-en">${esc(x.en)}</b>`}</div><div class="vb-ans">${O.dir === 'fa' ? `<b class="en vb-en">${esc(x.en)}</b>` : `<span class="vb-fa">${esc(x.fa)}</span>`}</div><span class="vb-ph">👁 بزن تا ببینی</span>` : `<div><b class="en vb-en tw">${esc(x.en)}</b> <span class="muted">—</span> <span class="vb-fa">${esc(x.fa)}</span></div>`}
