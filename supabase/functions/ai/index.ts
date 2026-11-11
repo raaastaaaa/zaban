@@ -35,8 +35,10 @@ Deno.serve(async (req) => {
   if (!models.length || !PATHS.has(path) || JSON.stringify(body.payload ?? {}).length > 600_000) return json({ error: "bad request" }, 400);
 
   // سقف روزانه با ذخیرهٔ باقی‌مانده تا ۳۰ روز؛ مدیر نامحدود
-  const { data: prof } = await admin.from("profiles").select("is_admin, banned").eq("id", user.id).maybeSingle();
+  const { data: prof } = await admin.from("profiles").select("is_admin, banned, ai_daily, ai_off").eq("id", user.id).maybeSingle();
   if (prof?.banned) return json({ error: "banned" }, 403);
+  if (prof?.ai_off && !prof?.is_admin) return json({ error: "AI_OFF" }, 403);
+  const LIMIT = prof?.ai_daily != null ? Number(prof.ai_daily) : DAILY;
   const today = new Date().toISOString().slice(0, 10);
   if (!prof?.is_admin) {
     const since = new Date(Date.now() - BANK_DAYS * 864e5).toISOString().slice(0, 10);
@@ -44,7 +46,7 @@ Deno.serve(async (req) => {
     const first = (rows ?? []).reduce((a, r) => (r.day < a ? r.day : a), today);
     const days = Math.min(BANK_DAYS, Math.round((Date.parse(today) - Date.parse(first)) / 864e5) + 1);
     const spent = (rows ?? []).reduce((a, r) => a + Number(r.usd), 0);
-    if (spent >= DAILY * days) return json({ error: "BUDGET" }, 402);
+    if (spent >= LIMIT * days) return json({ error: "BUDGET" }, 402);
   }
 
   let last = "";

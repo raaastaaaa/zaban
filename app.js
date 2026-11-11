@@ -95,7 +95,7 @@ async function serverGem(models, path, body) {
   let r; try { r = await fetch(SB_URL + '/functions/v1/ai', { method: 'POST', signal: ac.signal, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + s.access_token, apikey: SB_KEY }, body: JSON.stringify({ models: [...new Set(models)], path, payload: body }) }); }
   catch (e) { clearTimeout(tm); if (e.name === 'AbortError') throw new Error('پاسخ دیر شد'); lsSet('zd:noServer', Date.now() + 10 * 60000); throw new Error('NOKEY'); }
   clearTimeout(tm); const d = await r.json().catch(() => ({}));
-  if (r.ok) return d; if (r.status === 402) throw new Error('BUDGET'); if (r.status === 404 || (r.status === 503 && /no server key/.test(d.error || ''))) { lsSet('zd:noServer', Date.now() + 60 * 60000); throw new Error('NOKEY'); }
+  if (r.ok) return d; if (r.status === 402) throw new Error('BUDGET'); if (r.status === 403 && /AI_OFF/.test(d.error || '')) throw new Error('AIOFF'); if (r.status === 404 || (r.status === 503 && /no server key/.test(d.error || ''))) { lsSet('zd:noServer', Date.now() + 60 * 60000); throw new Error('NOKEY'); }
   throw new Error(d.error || r.status);
 }
 async function gemFetch(models, path, body, key) { // اگر مدلی شلوغ یا حذف شده بود، مدل بعدی
@@ -267,6 +267,7 @@ function parseJSON(t) {
   throw new Error('پاسخ هوش مصنوعی قابل خواندن نبود؛ دوباره امتحان کن.');
 }
 function aiErr(e) {
+  if (e.message === 'AIOFF') { toast('دسترسی هوش مصنوعی برای حساب تو فعلاً بسته است؛ با مدیر برنامه تماس بگیر.', 6000); return; }
   if (e.message === 'BUDGET') { toast('سهمیهٔ هوش مصنوعی امروزت تمام شد 🙂 فردا دوباره پر می‌شود؛ تا آن موقع فلش‌کارت، تمرین آفلاین و رادیو در دسترس است.', 6000); return; }
   if (e.message === 'NOKEY') { toast('اول در «تنظیمات» یک کلید هوش مصنوعی بگذار (Gemini رایگان است).'); return; }
   if (/failed to fetch|networkerror|load failed|location is not supported|not available in your country/i.test(e.message)) { toast('اتصال به هوش مصنوعی برقرار نشد. اگر در ایران هستی، VPN را روشن کن و دوباره امتحان کن.', 6000); return; }

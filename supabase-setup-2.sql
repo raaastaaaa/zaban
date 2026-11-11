@@ -117,3 +117,13 @@ create or replace function public.add_ai_usage(uid uuid, d date, amount numeric)
 $$ insert into public.ai_usage(user_id, day, usd, calls) values (uid, d, amount, 1)
    on conflict (user_id, day) do update set usd = public.ai_usage.usd + excluded.usd, calls = public.ai_usage.calls + 1 $$;
 revoke all on function public.add_ai_usage(uuid, date, numeric) from public, anon, authenticated;
+-- کنترل مصرف هوش مصنوعی هر کاربر توسط مدیر
+alter table public.profiles add column if not exists ai_daily numeric;
+alter table public.profiles add column if not exists ai_off boolean not null default false;
+create or replace function public.set_ai_access(uid uuid, daily numeric, off boolean) returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then raise exception 'only admin'; end if;
+  update public.profiles set ai_daily = case when daily is null or daily < 0 then null else daily end, ai_off = coalesce(off, false) where id = uid;
+end $$;
+revoke all on function public.set_ai_access(uuid, numeric, boolean) from public, anon;
+grant execute on function public.set_ai_access(uuid, numeric, boolean) to authenticated;
