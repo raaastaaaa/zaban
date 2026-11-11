@@ -1,5 +1,5 @@
 /* زبان رستا — کار آفلاین و سرعت: پوستهٔ برنامه از حافظه باز می‌شود */
-const V = 'zd-v33';
+const V = 'zd-v34';
 const SHELL = ['./', 'index.html', 'styles.css', 'data.js', 'app.js', 'library.js', 'dict.js', 'extras.js', 'learn.js', 'leitner.js', 'news.js', 'lessons.js', 'book.js', 'supabase.js', 'online.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'vazir-400.woff2', 'vazir-700.woff2', 'vazir-800.woff2', 'vazir-latin-400.woff2', 'vazir-latin-700.woff2', 'vazir-latin-800.woff2', 'lexend-400.woff2', 'lexend-600.woff2'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== V && k !== 'zd-media').map(k => caches.delete(k)))).then(() => self.clients.claim())); });
@@ -10,7 +10,7 @@ self.addEventListener('fetch', e => {
     // سرعت: فوراً از حافظه باز می‌شود و نسخهٔ تازه بی‌صدا در پس‌زمینه گرفته می‌شود (بدون معطلی روی اینترنت کند)
     const net = fetch(e.request, { cache: 'no-cache' }).then(r => { if (r.ok) { const cp = r.clone(); caches.open(V).then(c => c.put(e.request, cp)); } return r; });
     e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(hit => { if (hit) { e.waitUntil(net.catch(() => 0)); return hit; } return net.catch(() => caches.match('index.html')); }));
-  } else if (u.origin === location.origin && /\/audio\/en\//.test(u.pathname)) { // بستهٔ صدای انگلیسی: یک بار دانلود، همیشه آفلاین
+  } else if (u.origin === location.origin && /\/audio\/(en|fa|teach)\//.test(u.pathname)) { // بستهٔ صدای انگلیسی: یک بار دانلود، همیشه آفلاین
     e.respondWith(caches.open('zd-media').then(c => c.match(e.request).then(hit => hit || fetch(e.request).then(r => { if (r.ok) c.put(e.request, r.clone()); return r; }))));
   } else if (u.origin === location.origin) { // فونت و آیکن: اول حافظه
     e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(hit => { const net = fetch(e.request).then(r => { if (r.ok) caches.open(V).then(c => c.put(e.request, r.clone())); return r; }).catch(() => hit); return hit || net; }));

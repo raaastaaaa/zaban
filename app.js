@@ -363,10 +363,13 @@ async function cloudTTS(engine, text, lang, emotion) {
 /* بستهٔ صدای انگلیسی ازپیش‌ساخته (آمریکایی و بریتانیایی) — رایگان، سریع و آفلاین */
 const EN_PACK = {};
 async function enPackIdx(acc) { if (!EN_PACK[acc]) EN_PACK[acc] = fetch(`audio/en/${acc}/index.json`).then(r => r.json()).then(j => ({ j, all: new Set(Object.values(j).flat()) })).catch(() => (delete EN_PACK[acc], null)); return EN_PACK[acc]; }
+const FA_PACK = {};
+async function faPackUrl(text) { const acc = G.settings.accent === 'UK' ? 'UK' : 'US'; if (!FA_PACK[acc]) FA_PACK[acc] = fetch(`audio/fa/${acc}/index.json`).then(r => r.json()).then(j => new Set(Object.values(j).flat())).catch(() => (delete FA_PACK[acc], null)); const ix = await FA_PACK[acc]; const h = hashStr((text || '').trim()); return ix?.has(h) ? `audio/fa/${acc}/${h}.mp3` : null; }
 async function enPackUrl(text) { const acc = G.settings.accent === 'UK' ? 'UK' : 'US'; const ix = await enPackIdx(acc); const h = hashStr((text || '').trim()); return ix?.all.has(h) ? `audio/en/${acc}/${h}.mp3` : null; }
 function playUrl(url, tok) { return new Promise(res => { if (tok !== speakToken) return res(); const done = () => { if (blobRes === done) blobRes = null; res(); }; blobRes = done; player.src = url; player.playbackRate = 1; player.onended = player.onerror = done; player.play().catch(done); }); }
 async function downloadEnPack(unitId, btn) {
   const out = {}; for (const acc of ['US', 'UK']) { const ix = await enPackIdx(acc); out[acc] = (ix?.j[unitId] || []).map(h => `audio/en/${acc}/${h}.mp3`); }
+  for (const acc of ['US', 'UK']) { const j = await fetch(`audio/fa/${acc}/index.json`).then(r => r.json()).catch(() => ({})); out[acc].push(...(j[unitId] || []).map(h => `audio/fa/${acc}/${h}.mp3`)); }
   const all = [...out.US, ...out.UK]; if (!all.length) return toast('برای این درس هنوز بستهٔ صدا ساخته نشده.');
   const c = await caches.open('zd-media'); let i = 0;
   for (const u of all) { if (!(await c.match(u))) { try { const r = await fetch(u); if (r.ok) await c.put(u, r); } catch { toast('اینترنت قطع شد؛ دوباره بزن تا ادامه بدهد.'); return; } } i++; if (btn) btn.textContent = `⬇ در حال دانلود… ${faNum(Math.round(i / all.length * 100))}٪`; }
@@ -380,7 +383,7 @@ async function say(text, lang = 'en', emotion = 'cheerful', btn) {
   if (!text) return; haltAudio(); const tok = ++speakToken; btn?.classList.add('on'); try { Spatial.wake(); } catch { }
   const engine = lang === 'fa' ? G.settings.voiceFa : G.settings.voiceEn;
   try {
-    if (lang === 'en') { const f = await enPackUrl(text); if (f) { await playUrl(f, tok); return; } }
+    { const f = lang === 'en' ? await enPackUrl(text) : await faPackUrl(text); if (f) { await playUrl(f, tok); return; } }
     if (engine !== 'browser') { try { await playBlob(await cloudTTS(engine, text, lang, emotion), tok); return; } catch (e) { if (e.message !== 'NOKEY') console.warn(e); } }
     if (lang === 'en') { await browserSay(text, 'en'); return; }
     // فارسی با صدای مرورگر: بخش‌های انگلیسی با صدای انگلیسی
