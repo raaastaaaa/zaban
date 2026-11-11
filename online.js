@@ -10,11 +10,8 @@ const FORUM_RULES = [
   'سه اخطار = محرومیت از انجمن.'
 ];
 const ROOMS = [
-  { id: 'lobby', ic: '☕', fa: 'گپ عمومی', topic: 'free everyday small talk' },
-  { id: 'daily', ic: '🏠', fa: 'زندگی روزمره در عمان', topic: 'daily life in Oman: shopping, weather, family, routines' },
-  { id: 'work', ic: '💼', fa: 'کار و مصاحبه', topic: 'jobs, workplace and job interviews' },
-  { id: 'travel', ic: '✈️', fa: 'سفر و گردش', topic: 'travel, holidays and places to visit' },
-  { id: 'unit', ic: '📚', fa: 'درس این هفته', topic: '' }
+  { id: 'lobby', ic: '☕', fa: 'گپ عمومی', en: 'Free Talk', topic: 'free everyday small talk' },
+  ...[...ALL_UNITS, ...WS_UNITS].map(u => ({ id: u.id, ic: u.icon, fa: u.fa, en: u.en, topic: `${u.en}: ${u.talk || ''} (grammar: ${u.gram})`, level: u.levelFa }))
 ];
 const BAD_WORDS = /\b(f+u+c+k|sh[i1]t|b[i1]tch|d[i1]ck|pussy|porn|sex|n[i1]gg|asshole|bastard|slut|whore)\w*|کیر|کس\s?کش|جنده|کون|سکس|لاشی|حرومزاده|گاییدم/i;
 
@@ -52,6 +49,7 @@ function loginSheet(after) {
     if (error) return $('#unh', bg).textContent = /duplicate|unique/i.test(error.message) ? 'این یوزرنیم گرفته شده؛ یکی دیگر بنویس.' : 'خطا: ' + error.message;
     done(await myProfile(true));
   };
+  window._loginSheetEmail = (e) => { $('#em', bg).value = e; $('#snd', bg).click(); };
   const done = p => { U.online = { uid: p.id, username: p.username }; saveU(); bg.remove(); toast('خوش آمدی @' + p.username + ' 🎉'); syncNow(); after && after(p); };
 }
 async function requireLogin(after) { const p = await myProfile(); if (p) return after(p); loginSheet(after); }
@@ -117,11 +115,12 @@ routes.rooms = async (id) => {
   if (!id) {
     setTop('انجمن', true); const v = view();
     v.innerHTML = `<div class="stack"><div class="today"><b style="font-size:18px">🗣️ انجمن «زبان دوم»</b><span class="muted">با بقیهٔ زبان‌آموزها انگلیسی گپ بزن. ${esc(G.settings.teacher)}، معلم ناظر، موضوع و نقش می‌دهد و اشتباه‌ها را همان لحظه درست می‌کند.</span></div>
-    <div class="tools">${ROOMS.map(r => `<a class="tool" href="#rooms/${r.id}"><span class="ic">${r.ic}</span><b>${r.fa}</b><span>${r.id === 'unit' ? 'موضوع: ' + esc(currentUnit().fa) : ''}</span></a>`).join('')}</div>
+    <input id="rq" class="in" placeholder="جستجوی موضوع…"><div class="tools" id="rl">${ROOMS.map(r => `<a class="tool" data-q="${esc(r.fa + ' ' + r.en)}" href="#rooms/${r.id}"><span class="ic">${r.ic}</span><b>${esc(r.fa)}</b><span class="en">${esc(r.en)}</span>${r.level ? `<span>${esc(r.level)}</span>` : ''}</a>`).join('')}</div>
     <details class="card"><summary>قوانین انجمن</summary><ul class="list small">${FORUM_RULES.map(r => `<li>${esc(r)}</li>`).join('')}</ul></details></div>`;
+    $('#rq').oninput = e => { const q = e.target.value.trim().toLowerCase(); $$('#rl .tool').forEach(a => a.hidden = q && !a.dataset.q.toLowerCase().includes(q)); };
     return;
   }
-  const room = ROOMS.find(r => r.id === id) || ROOMS[0]; const topic = room.id === 'unit' ? `${currentUnit().en}: ${currentUnit().talk}` : room.topic;
+  const room = ROOMS.find(r => r.id === id) || ROOMS[0]; const topic = room.topic;
   setTop(room.fa, true); const v = view();
   const p = await myProfile(); if (!p) { v.innerHTML = '<div class="card stack"><b>برای ورود به انجمن، اول وارد حساب آنلاین شو.</b><button class="btn" id="lg">ورود با ایمیل</button></div>'; $('#lg').onclick = () => loginSheet(() => routes.rooms(id)); return; }
   if (p.banned) { v.innerHTML = '<div class="card">به‌خاطر رعایت نکردن قوانین، دسترسی‌ات به انجمن بسته شده است.</div>'; return; }
@@ -160,7 +159,7 @@ routes.rooms = async (id) => {
   $('#mic').append(micButton(t => send(t)));
   $('#sc').onclick = async () => {
     if (needAI($('#msgs'))) return; const names = Object.keys(ch.presenceState());
-    try { const r = await ai({ temp: 0.9, system: `You are ${G.settings.teacher}, a lively English teacher running a group role-play in a chat room.`, messages: [{ role: 'user', content: `Room topic: ${topic}. Online learners: ${names.map(n => '@' + n).join(', ') || '@' + p.username}. Create a short realistic scenario in Oman and give each learner a role and a first task. Write in English with a short Persian explanation. JSON {"text":"scenario + roles (one line per learner) + who starts"}` }] });
+    try { const r = await ai({ temp: 0.9, system: `You are ${G.settings.teacher}, a lively English teacher running a group role-play in a chat room.`, messages: [{ role: 'user', content: `Room topic: ${topic}. Online learners: ${names.map(n => '@' + n).join(', ') || '@' + p.username}. Create a short realistic everyday scenario about this topic and give each learner a role and a first task. Write in English with a short Persian explanation. JSON {"text":"scenario + roles (one line per learner) + who starts"}` }] });
       await post(r.text, 'teacher', { scenario: true });
     } catch (e) { aiErr(e); }
   };

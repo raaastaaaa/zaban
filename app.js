@@ -533,12 +533,24 @@ function viewWelcome() {
   $('#top').innerHTML = '<h1>زبان دوم</h1>'; $('nav.bottom').hidden = true;
   view().innerHTML = `<div class="stack">
   <div class="today"><div class="big-ic">👋</div><b style="font-size:20px">به «زبان دوم» خوش آمدی</b><span class="muted">معلم هوشمندی که با تو فارسی حرف می‌زند، انگلیسی را از واژه تا مکالمهٔ روان قدم‌به‌قدم یادت می‌دهد و هیچ درسی را فراموش نمی‌کنی.</span></div>
-  <div class="card stack"><label class="f">اسمت چیست؟<input id="nm" class="in" placeholder="مثلاً رستا" maxlength="24"></label>
+  <div class="card stack"><b style="font-size:17px">ثبت‌نام</b>
+  <label class="f">اسمت چیست؟<input id="nm" class="in" placeholder="مثلاً رستا" maxlength="24"></label>
+  <label class="f">ایمیل (برای ساختن حساب، یوزرنیم، رقابت با بقیه و ورود دوباره)<input id="em0" class="in" dir="ltr" type="email" autocomplete="email" placeholder="you@gmail.com"></label>
+  <div class="small muted">شکلک پروفایل (بعداً می‌توانی عکس خودت را بگذاری):</div>
   <div class="row" id="av">${AVATARS.map((a, i) => `<button class="icon-btn${i ? '' : ' on'}" data-a="${a}" style="font-size:20px">${a}</button>`).join('')}</div>
-  <label class="f">کد اتصال هوش مصنوعی (اگر کسی برایت فرستاده)<input id="cd" class="in" dir="ltr" placeholder="ZD1…"></label>
-  <button class="btn wide" id="go">شروع</button></div></div>`;
+  <details><summary class="small">کد اتصال هوش مصنوعی دارم</summary><input id="cd" class="in" dir="ltr" placeholder="ZD1…" style="margin-top:6px"></details>
+  <button class="btn wide" id="go">ثبت‌نام و شروع</button>
+  <button class="btn line wide" id="go2">بدون حساب امتحان می‌کنم</button>
+  <div class="small muted" style="text-align:center">قبلاً ثبت‌نام کرده‌ای؟ همین‌جا اسم و ایمیلت را بنویس و «ثبت‌نام و شروع» را بزن؛ لینک ورود برایت می‌آید.</div></div></div>`;
   let av = AVATARS[0]; $$('#av button').forEach(b => b.onclick = () => { $$('#av button').forEach(x => x.classList.remove('on')); b.classList.add('on'); av = b.dataset.a; });
-  $('#go').onclick = () => { const n = $('#nm').value.trim(); if (!n) return toast('اسمت را بنویس.'); const c = $('#cd').value.trim(); if (c) { try { useCode(c); toast('هوش مصنوعی وصل شد ✓'); } catch { return toast('کد اتصال درست نیست؛ دوباره کپی کن.'); } } addUser(n, av); $('nav.bottom').hidden = false; go('guide'); router(); };
+  const start = (withEmail) => {
+    const n = $('#nm').value.trim(); if (!n) return toast('اسمت را بنویس.');
+    const email = $('#em0').value.trim(); if (withEmail && !/^\S+@\S+\.\S+$/.test(email)) return toast('ایمیلت را درست بنویس (یا «بدون حساب» را بزن).');
+    const c = $('#cd').value.trim(); if (c) { try { useCode(c); toast('هوش مصنوعی وصل شد ✓'); } catch { return toast('کد اتصال درست نیست؛ دوباره کپی کن.'); } }
+    addUser(n, av); $('nav.bottom').hidden = false; go('guide'); router();
+    if (withEmail && window.loginSheet) setTimeout(() => { loginSheet(() => go('home')); window._loginSheetEmail && _loginSheetEmail(email); }, 300);
+  };
+  $('#go').onclick = () => start(true); $('#go2').onclick = () => start(false);
 }
 function addUser(name, avatar) { const u = { id: uid(), name, avatar, created: isoDay() }; G.users.push(u); saveG('users'); loadUser(u.id); saveU(); return u; }
 routes.users = () => {
