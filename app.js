@@ -516,11 +516,12 @@ function needAI(el) { if (hasAI() || firstKeyed()) return false; el.innerHTML = 
 /* ───────── مسیریاب ───────── */
 const routes = {};
 function router() {
+  if (/access_token|error_description|[?&]code=/.test(location.hash + location.search) && window.handleAuthRedirect) { if (!G.active && G.users[0]) loadUser(G.users[0].id); return handleAuthRedirect(); }
   stopSpeak(); window.scrollTo(0, 0); view().onclick = null; $('nav.bottom').hidden = false;
   if (!G.users.length || !G.active || !G.users.some(u => u.id === G.active)) { if (!G.users.length) return viewWelcome(); loadUser(G.users[0].id); }
   if (!U) loadUser(G.active);
   const [r, ...args] = (location.hash.slice(1) || 'home').split('/');
-  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', theater: 'library', practice: 'home', vision: 'home', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat' }[r] || r)));
+  $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', theater: 'library', practice: 'home', vision: 'home', rooms: 'chat', u: 'home', admin: 'me', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat' }[r] || r)));
   (routes[r] || routes.home)(...args.map(decodeURIComponent));
 }
 addEventListener('hashchange', router);
@@ -573,6 +574,7 @@ routes.home = () => {
     <ul class="tasks">${tasks.map(t => `<li class="${taskDone(t) ? 'done' : ''}"><span class="chk">${taskDone(t) ? '✓' : ''}</span>${esc(t.t)}</li>`).join('')}</ul>
     <div class="row"><a class="btn" href="#unit/${cur.id}">ادامهٔ یادگیری</a>${due ? `<a class="btn ghost" style="background:transparent;color:inherit;box-shadow:inset 0 0 0 1.5px currentColor" href="#cards/due">مرور ${faNum(due)} واژه</a>` : ''}</div>
   </div>
+  <div id="online-home"></div>
   ${planGap() > 0 ? `<div class="notice stack"><b>⚠ ${faNum(planGap())} درس از برنامه‌ات عقبی</b><span class="small">هدفت عقب نمی‌افتد: برنامهٔ جبرانی همان تاریخ پایان را نگه می‌دارد و وقت روزانه را کمی بیشتر می‌کند.</span><button class="btn sm" id="cu" style="align-self:flex-start">ساخت برنامهٔ جبرانی</button></div>` : ''}
   ${!hasAI() && !firstKeyed() ? `<div class="notice">برای فعال شدن معلم صوتی و گفتگو، در <a href="#settings">تنظیمات</a> یک کلید رایگان Gemini بگذار.</div>` : ''}
   <div class="sec">رقابت این هفته <small>امتیاز هفت روز اخیر</small></div>
@@ -591,6 +593,7 @@ routes.home = () => {
   ${!U.placement ? `<a class="btn ghost wide" href="#placement">تعیین سطح با هوش مصنوعی</a>` : ''}
   </div>`;
   $$('[data-u]').forEach(b => b.onclick = () => { loadUser(b.dataset.u); router(); });
+  window.homeOnline && homeOnline();
   $('#cu') && ($('#cu').onclick = () => { catchUpPlan(); toast(`برنامهٔ جبرانی ساخته شد: روزی ${faNum(U.plan.minutes)} دقیقه تا همان تاریخ هدف.`, 5000); go('plan'); });
   if (!U.plan && !lsGet('zd:planAsked:' + G.active, false)) { setTimeout(() => { if (!['', '#home'].includes(location.hash) || $('.sheet-bg')) return; lsSet('zd:planAsked:' + G.active, true); const bg = sheet(`<div class="stack"><div class="big-ic">🗓️</div><b>برنامهٔ شخصی‌ات را بسازیم؟</b><span class="small muted">بگو تا کی می‌خواهی به کجا برسی و روزی چقدر وقت داری؛ برنامه روی تقویم شمسی چیده می‌شود، یادآوری می‌کند و اگر عقب بیفتی برنامهٔ جبرانی می‌دهد.</span><a class="btn" href="#plan" onclick="this.closest('.sheet-bg').remove()">بله، بسازیم</a><button class="btn ghost" onclick="this.closest('.sheet-bg').remove()">بعداً</button></div>`); }, 800); }
 };
@@ -844,6 +847,7 @@ JSON {"reply":"your English reply","fa":"Persian translation of your reply","fix
 routes.chat = () => {
   setTop('گپ آزاد'); const v = view();
   v.innerHTML = `<div class="stack"><div class="tools">
+    <a class="tool" href="#rooms"><span class="ic">🗣️</span><b>انجمن و چت‌روم</b><span>با بقیهٔ زبان‌آموزها گپ بزن؛ معلم ناظر نقش می‌دهد و اشتباه‌ها را درست می‌کند.</span></a>
     <a class="tool" href="#talkfree"><span class="ic">💬</span><b>گپ آزاد</b><span>دربارهٔ هر موضوعی حرف بزن؛ اشتباه‌ها همان لحظه به فارسی گفته می‌شوند.</span></a>
     <a class="tool" href="#role"><span class="ic">🎭</span><b>نقش‌آفرینی در عمان</b><span>تاکسی مسقط، داروخانه، مصاحبه، صاحبخانه… با نمره و جملهٔ بهتر.</span></a>
     <a class="tool" href="#teach/${currentUnit().id}"><span class="ic">👩‍🏫</span><b>کلاس با ${esc(G.settings.teacher)}</b><span>ادامهٔ درس فعلی با معلم صوتی.</span></a>
@@ -1198,11 +1202,13 @@ routes.me = () => {
   <div class="grid2 small"><span>درس‌های قبول: <b>${faNum(p.mastered)}</b></span><span>واژهٔ تثبیت‌شده: <b>${faNum(learnedCount())}</b></span><span>کل مطالعه: <b>${faNum(p.minutes)}</b> دقیقه</span><span>روزهای پیاپی: <b>${faNum(streakOf(U))}</b></span></div>
   <div><div class="small muted">دقیقه‌های مطالعه در ۱۴ روز اخیر</div><div style="display:flex;align-items:flex-end;gap:4px;height:70px">${last.map(d => `<div title="${jLabel(d)}: ${Math.round(U.log[d]?.min || 0)}" style="flex:1;background:${d === isoDay() ? 'var(--mark)' : 'var(--accent)'};opacity:${U.log[d]?.min ? 1 : .2};height:${Math.max(4, (U.log[d]?.min || 0) / mx * 100)}%;border-radius:4px 4px 0 0"></div>`).join('')}</div></div>
   <button class="btn ghost" id="coach">نظر معلم دربارهٔ پیشرفتم</button><div id="co"></div></div>
+  <div id="online-me"></div>
   <div class="card stack"><b>نشان‌ها</b><div class="row">${BADGES.map(b => `<span class="pill ${U.badges.includes(b.id) ? 'mark' : ''}" style="${U.badges.includes(b.id) ? '' : 'opacity:.5'}">${b.ic} ${b.fa}</span>`).join('')}</div></div>
   <div class="card stack"><b>حافظهٔ معلم دربارهٔ من</b><span class="small muted">هوش مصنوعی این‌ها را از گفتگوها یاد گرفته و در همهٔ درس‌ها به کار می‌برد.</span>${U.mem.length ? U.mem.slice().reverse().map((m, i) => `<div class="row small"><span class="grow">• ${esc(m.t)}</span><button class="btn line sm" data-dm="${U.mem.length - 1 - i}">حذف</button></div>`).join('') : '<span class="small muted">هنوز چیزی ثبت نشده.</span>'}
   <div class="row"><input id="nm" class="in grow" placeholder="چیزی که معلم باید بداند (مثلاً: هدفم مصاحبهٔ کاری است)"><button class="btn sm" id="am">افزودن</button></div></div>
   <div class="card stack"><b>آخرین اشتباه‌ها</b>${U.mistakes.slice(-12).reverse().map(m => `<div class="small"><s class="en">${esc(m.wrong)}</s> ← <b class="en">${esc(m.right)}</b> <span class="muted">${esc(m.why)}</span></div>`).join('') || '<span class="small muted">فعلاً اشتباهی ثبت نشده.</span>'}<a class="btn ghost sm" href="#tool/mistakes">تحلیل و تمرین</a></div>
   <div class="card stack"><b>پشتیبان و انتقال</b><span class="small muted">برای بردن پیشرفت به گوشی یا کامپیوتر دیگر: پشتیبان بگیر و در دستگاه دیگر بازیابی کن.</span><div class="row"><button class="btn ghost sm" id="bk">گرفتن پشتیبان</button><label class="btn ghost sm">بازیابی<input type="file" hidden accept=".json" id="rs"></label><a class="btn ghost sm" href="#settings">تنظیمات</a></div></div></div>`;
+  window.meOnline && meOnline();
   $$('[data-dm]').forEach(b => b.onclick = () => { U.mem.splice(+b.dataset.dm, 1); saveU(); routes.me(); });
   $('#am').onclick = () => { const t = $('#nm').value.trim(); if (t) { remember(t); routes.me(); } };
   $('#coach').onclick = async () => { if (needAI($('#co'))) return; $('#co').innerHTML = loading(); try { const r = await ai({ system: TEACHER_STYLE(), messages: [{ role: 'user', content: `${learnerContext()}\nGive me an honest, human progress review in Persian (5-7 sentences): what I mastered, what I keep forgetting, my learning speed, a realistic predicted date (Persian calendar wording is fine) for fluent everyday conversation at this pace, and one concrete challenge for this week. JSON {"say":"","emotion":"proud|encouraging|empathetic|excited"}` }] }); $('#co').innerHTML = `<div class="notice soft">${esc(r.say)}</div>`; say(r.say, 'fa', r.emotion); } catch (e) { $('#co').innerHTML = ''; aiErr(e); } };
