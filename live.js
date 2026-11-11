@@ -40,6 +40,15 @@ async function makeCustomPlan(want) {
   const r = Object.assign({}, m || {}, { bank: b?.bank || [], verbs: v?.verbs || [], sentences: v?.sentences || [], colloquial: c?.colloquial || [], us_uk: c?.us_uk || [], dialogue: c?.dialogue || [] });
   if (!r.bank.length) throw new Error('plan');
   r.v = 2; const id = 'c' + Date.now().toString(36); customPlans()[id] = { ...r, want, d: isoDay() }; saveU(); return id; }
+const GPT_ADAPT_TXT = `
+=== YOU ARE RUNNING INSIDE THE ChatGPT APP (voice mode or chat) — NO TOOLS ARE AVAILABLE. Adapt every instruction above: ===
+- Wherever it says to call a tool, do it yourself instead: show_board → write the items as a short clear list in the chat; play_conversation → perform the lesson conversation yourself, reading both characters with clearly different voices and names; guest_say → play Emma (British) and Jake (American) yourself with their accents; call_on / give_points / set_activity / give_homework → simply say it out loud (keep a running score in your head in group classes); ask_brain → think carefully and answer yourself; mark_done → skip.
+- CORRECTING WRITTEN MESSAGES: for EVERY mistake in what the student types, write a correction block exactly like this:
+  ❌ ~~wrong words~~ → ✅ **correct words**
+  💡 short Persian reason why
+  then praise what was right and ask them to write it again correctly.
+- Keep the lesson interactive at all times: short turns, questions, games, role-plays; never lecture for long.
+- Start RIGHT NOW: greet me warmly in Persian by my name, say today's topic and the plan in one or two sentences, and begin step 1.`;
 let LLT_SEQ = 0, LLT_P = null;
 function liveLessonText() { const my = ++LLT_SEQ; const out = { L: null }; const p = _llt(out).then(t => { if (my === LLT_SEQ) { LIVE_L = out.L; LIVE_LESSON = t; return t; } return LLT_P; }); LLT_P = p; return p; }
 async function _llt(out) { try {
@@ -497,6 +506,8 @@ THE CLASS HAS TWO PHASES:
 PHASE 1 — TEACHING (no waiting, no questions to the student): like a devoted private teacher, teach the COMPLETE material as a flowing explanation, segment by segment. Cover EVERY item of the word/phrase bank, one by one, in a logical order (e.g. family: mother, father, sister, brother… then grandparents, uncles/aunts, in-laws…): the English word, its Persian meaning, a pronunciation tip in Persian script for the chosen accent, when/with whom/how natives use it (register, common mistakes of Persians, difference from similar words), and 2 varied real-life example sentences with Persian translation. Use warm, caring, encouraging language, small memory tricks and a little humour. Teach in this order when the material has these parts: all vocabulary groups → useful verbs → useful sentences → colloquial/everyday expressions → American vs British differences → a short dialogue. For EVERY single item give at least one full example sentence with its Persian translation (never just list words). Each segment: about 150-220 words covering only 2-4 items so each is taught properly, with those items in "board". Do NOT ask the student anything in this phase. When EVERY item has been taught, give a short summary and set "done": true.
 PHASE 2 — PRACTICE & Q&A: now interactive: answer the student's questions fully, then concept-check questions, mini role-plays, a short quiz and a recap — ONE question at a time, short turns (max ~40 words), wait for the answer, correct kindly.
 Add to the JSON: "done": true|false (true only when phase 1 is complete).
+In PHASE 1 never ask "are you ready?" or any question and never wait — just keep teaching.
+NEW TOPIC REQUESTS: if at ANY moment the student asks you to teach a topic (e.g. "کلمات ترید رو یادم بده", "teach me words about the airport", "می‌خوام دربارهٔ خرید یاد بگیرم"), do NOT start teaching it from memory in short turns. Instead reply with "say": one warm sentence like «عالیه! الان یه درس کامل دربارهٔ ... برات آماده می‌کنم، یه لحظه صبر کن» and set "new_topic": "<the topic in the student's words>". Otherwise "new_topic": "".
 If the audio is silent or unclear, kindly ask them to repeat.`;
 const RELAY_TEACH_START = '(PHASE 1 starts now. Greet the student warmly in 1-2 sentences, say today\'s topic, that this is a full class of about ' + (+G.settings.classMin || 60) + ' minutes and that you will first teach everything completely and then practise together, then teach the FIRST segment.)';
 const relayMin = () => +G.settings.classMin || 60;
@@ -533,7 +544,8 @@ async function relayAsk(text) { // یک درخواست متنی به مغز (ب�
   const raw = d.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
   let r; try { r = JSON.parse(raw.replace(/^```json|```$/g, '')); } catch { r = { say: raw.replace(/[{}"]/g, '').slice(0, 1200) }; }
   r.__q = text; return r; }
-const relayPre = r => { if (r?.say && G.settings.voiceFa !== 'browser') cloudTTS(G.settings.voiceFa, r.say, 'fa', 'cheerful').catch(() => { }); return r; };
+const relayNoAsk = r => { if (!r?.say || r.done || Relay.phase !== 'teach') return r; const ps = r.say.split(/(?<=[.!؟?…])\s+/); while (ps.length > 1) { const last = ps[ps.length - 1].trim(); if (/؟\s*$/.test(last) || (/\?\s*$/.test(last) && /[\u0600-\u06FF]/.test(last))) ps.pop(); else break; } r.say = ps.join(' '); return r; };
+const relayPre = r => { relayNoAsk(r); if (r?.say && G.settings.voiceFa !== 'browser') cloudTTS(G.settings.voiceFa, r.say, 'fa', 'cheerful').catch(() => { }); return r; };
 async function relayTeach(first) {
   const ui = Relay.ui; Relay.paused = false; relayMicBtn(true, 'teach'); ui.status('📖 معلم دارد درس را کامل توضیح می‌دهد… (سؤال داشتی «✋ سؤال دارم» را بزن)');
   let next = relayAsk(first).then(relayPre); let n = 0;
@@ -549,6 +561,14 @@ async function relayTeach(first) {
   }
   if (Relay.on && Relay.phase === 'qa' && !Relay.paused) { relayMicBtn(true, 'busy'); relayTurn({ text: RELAY_QA_START }); }
 }
+/* دانش‌آموز وسط کلاس موضوع تازه خواست: درس کامل طراحی می‌شود و تدریس از اول (مرحلهٔ ۱) شروع می‌شود */
+async function relayNewTopic(topic) {
+  const ui = Relay.ui; Relay.busy = true; relayMicBtn(true, 'busy'); ui.status(`🧠 در حال طراحی درس کامل «${topic}» (واژه‌ها، افعال، جمله‌ها، اصطلاحات)…`);
+  try { const k = await makeCustomPlan(topic); if (!Relay.on) return; const S = Object.assign(liveSel(), { custom: k, ws: '', gram: '', topic: null, focus: 'full' }); lsSet('zd:livesel:' + G.active, S);
+    LIVE_LESSON = await liveLessonText(); Relay.sys = livePrompt('lesson') + RELAY_ADAPT; Relay.hist = []; Relay.mode = 'lesson'; Live.started = Date.now();
+    const P = customPlans()[k]; toast(`✨ درس «${P.title_fa || topic}» آماده شد: ${faNum((P.bank || []).reduce((a, g) => a + (g.items || []).length, 0))} واژه، ${faNum((P.verbs || []).length)} فعل، ${faNum((P.sentences || []).length)} جمله، ${faNum((P.colloquial || []).length)} اصطلاح`, 6000);
+    Relay.busy = false; Relay.phase = 'teach'; Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); relayTeach(RELAY_TEACH_START); }
+  catch (e) { console.warn(e); Relay.busy = false; ui.status('طراحی درس انجام نشد؛ دوباره بگو.'); if (Relay.on) relayListen(); } }
 async function relayTurn(input) {
   if (!Relay.on) return; const ui = Relay.ui; Relay.busy = true; relayMicBtn(true, 'busy'); ui.status('🧠 معلم دارد فکر می‌کند…');
   try {
@@ -564,6 +584,7 @@ async function relayTurn(input) {
     if (Relay.hist.length > 30) Relay.hist = Relay.hist.slice(-30);
     if (r.board?.items?.length) ui.board(r.board.title || '', r.board.items);
     if (r.fix?.wrong && r.fix?.right) { ui.fix?.('', r.fix.wrong, r.fix.right, r.fix.why || ''); logMistakes?.([r.fix], 'live'); }
+    if (r.new_topic && String(r.new_topic).trim().length > 1) { if (r.say) { ui.say('t', r.say); ui.say('end'); say(r.say, 'fa', 'cheerful'); } return relayNewTopic(String(r.new_topic).trim()); }
     if (r.say) { ui.say('t', r.say); ui.say('end'); liveLog('T', r.say + ' '); ui.status('🔊 معلم حرف می‌زند… (برای حرف زدن، 🎤 را بزن)'); relayMicBtn(true, 'speak'); Relay.busy = false; const myTurn = Relay.turnId = (Relay.turnId || 0) + 1; await say(r.say, 'fa', 'cheerful'); if (Relay.turnId !== myTurn) return; }
   } catch (e) { console.warn(e); if (Relay.on) { ui.status('اینترنت کند بود؛ دوباره حرف بزن یا بنویس.'); } }
   finally { Relay.busy = false; }
