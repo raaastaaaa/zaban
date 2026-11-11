@@ -177,6 +177,10 @@ const myTopics = () => lsGet('zd:vtopics:' + G.active, {});
 const VCATS = [...new Set(VERBS.map(x => x.cat))];
 const allVerbs = () => VERBS.concat(Object.entries(myTopics()).flatMap(([t, xs]) => xs.map(x => mkVerb([x.v, x.past, x.pp, x.fa, '⭐ ' + t, x.ex, x.exFa]))));
 
+async function grammarBuild(g) {
+  const L = await ai({ heavy: true, max: 7000, temp: 0.3, system: 'You are an expert English grammar teacher for Persian speakers. Explanations in clear, simple Persian; English examples natural and correct; contrast with Persian where it helps.', messages: [{ role: 'user', content: `Complete grammar lesson: "${g.fa}" (level ${g.lvl}). JSON {"intro":"Persian: what it is, in 2-3 sentences","why":"Persian: when you need it in real conversations","form":[{"type":"مثبت|منفی|سؤالی|جواب کوتاه or other label in Persian","pattern":"e.g. Subject + am/is/are + verb-ing","examples":["",""]}],"uses":[{"title":"Persian use title","explain":"Persian","examples":[{"en":"","fa":""}]}],"signals":"time words/signals in English, comma separated, or empty","compare":"Persian: how it differs from similar structures or from Persian","mistakes":[{"wrong":"","right":"","why":"Persian"}],"tip":"Persian memory tip","exercises":[{"type":"blank|fix|translate","q":"","a":"","hint":"Persian"}]} — 3-5 uses, 8 exercises.` }] });
+  if (!L?.form?.length) throw new Error('درس کامل ساخته نشد؛ دوباره امتحان کن.'); return L;
+}
 /* ───── دورهٔ گرامر ───── */
 routes.grammar = async (id) => {
   if (!id) {
@@ -188,9 +192,13 @@ routes.grammar = async (id) => {
   const g = GRAMMAR.find(x => x.id === id); if (!g) return go('grammar'); setTop(g.fa, true); const v = view();
   const key = 'gram:' + id; let L = G.cache[key];
   if (!L) {
+    v.innerHTML = loading('درس گرامر را باز می‌کنم…');
+    try { const r = await fetch('lessons/grammar/' + id + '.json'); if (r.ok) { L = await r.json(); G.cache[key] = L; saveG('cache'); } } catch { } // درس آمادهٔ آفلاین
+  }
+  if (!L) {
     if (needAI(v)) return; v.innerHTML = loading('در حال آماده کردن درس گرامر…');
     try {
-      L = await ai({ heavy: true, max: 7000, temp: 0.3, system: 'You are an expert English grammar teacher for Persian speakers. Explanations in clear, simple Persian; English examples natural and correct; contrast with Persian where it helps.', messages: [{ role: 'user', content: `Complete grammar lesson: "${g.fa}" (level ${g.lvl}). JSON {"intro":"Persian: what it is, in 2-3 sentences","why":"Persian: when you need it in real conversations","form":[{"type":"مثبت|منفی|سؤالی|جواب کوتاه or other label in Persian","pattern":"e.g. Subject + am/is/are + verb-ing","examples":["",""]}],"uses":[{"title":"Persian use title","explain":"Persian","examples":[{"en":"","fa":""}]}],"signals":"time words/signals in English, comma separated, or empty","compare":"Persian: how it differs from similar structures or from Persian","mistakes":[{"wrong":"","right":"","why":"Persian"}],"tip":"Persian memory tip","exercises":[{"type":"blank|fix|translate","q":"","a":"","hint":"Persian"}]} — 3-5 uses, 8 exercises.` }] });
+      L = await grammarBuild(g);
       if (!L.form?.length) throw new Error('درس کامل ساخته نشد؛ دوباره امتحان کن.'); G.cache[key] = L; saveG('cache');
     } catch (e) { v.innerHTML = ''; return aiErr(e); }
   }
