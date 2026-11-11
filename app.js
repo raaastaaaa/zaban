@@ -210,9 +210,12 @@ async function ai({ system, messages, json = true, images = [], max = 1400, temp
     const d = await r.json(); if (!r.ok) throw new Error(d.error?.message || r.status);
     text = d.choices?.[0]?.message?.content || '';
   }
+  trackAI('chat', (sys.length + messages.reduce((n, m) => n + (m.content?.length || 0), 0) + text.length));
   if (!json) return text;
   return parseJSON(text);
 }
+function trackAI(kind, chars) { if (!U) return; const t = isoDay(); const a = U.aiUse || (U.aiUse = {}); const d = a[t] || (a[t] = { chat: 0, voice: 0, chars: 0 }); d[kind]++; d.chars += chars || 0; saveU(); }
+function aiUseSum(d, days = 30) { let chat = 0, voice = 0, chars = 0; for (let i = 0; i < days; i++) { const x = d.aiUse?.[addDays(isoDay(), -i)]; if (x) { chat += x.chat; voice += x.voice; chars += x.chars; } } return { chat, voice, chars }; }
 function parseJSON(t) {
   try { return JSON.parse(t); } catch { }
   const s = t.indexOf('{'), e = t.lastIndexOf('}');
@@ -302,7 +305,7 @@ async function cloudTTS(engine, text, lang, emotion) {
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error?.message || r.status);
       blob = await r.blob();
     }
-    idb.set(key, blob);
+    idb.set(key, blob); trackAI('voice', text.length);
   }
   return blob;
 }
@@ -539,7 +542,7 @@ function viewWelcome() {
 function addUser(name, avatar) { const u = { id: uid(), name, avatar, created: isoDay() }; G.users.push(u); saveG('users'); loadUser(u.id); saveU(); return u; }
 routes.users = () => {
   setTop('کاربران', true);
-  view().innerHTML = `<div class="stack"><div class="users">${G.users.map(u => { const d = userData(u.id); return `<button class="ucard${u.id === G.active ? ' on' : ''}" data-u="${u.id}"><div class="row"><span class="avatar">${avHTML(u)}</span><b class="grow">${esc(u.name)}</b><span class="pill">${faNum(d.xp)} امتیاز</span></div><span class="small muted">${faNum(masteredCount(d))} درس قبول · ${faNum(streakOf(d))} روز پیاپی</span></button>`; }).join('')}</div>
+  view().innerHTML = `<div class="stack"><div class="users">${G.users.map(u => { const d = userData(u.id); return `<button class="ucard${u.id === G.active ? ' on' : ''}" data-u="${u.id}"><div class="row"><span class="avatar">${avHTML(u)}</span><b class="grow">${esc(u.name)}</b><span class="pill">${faNum(d.xp)} امتیاز</span></div><span class="small muted">${faNum(masteredCount(d))} درس قبول · ${faNum(streakOf(d))} روز پیاپی</span><span class="small">🤖 ۳۰ روز اخیر: ${faNum(aiUseSum(d).chat)} گفتگو/درخواست · ${faNum(aiUseSum(d).voice)} صدای ساخته‌شده · ${faNum(Math.round(Object.values(d.log).reduce((a, x) => a + (x.min || 0), 0)))} دقیقه مطالعه</span></button>`; }).join('')}</div>
   <div class="card stack"><b>کاربر تازه</b><div class="row"><input id="nn" class="in grow" placeholder="اسم" maxlength="24"><button class="btn" id="add">افزودن</button></div></div>
   <div class="card stack"><b>ویرایش کاربر فعلی</b><div class="row"><span class="avatar" style="width:56px;height:56px;font-size:28px;overflow:hidden">${avHTML(me())}</span><label class="btn ghost sm">📷 عکس پروفایل<input type="file" accept="image/*" hidden id="ph"></label>${me().photo ? '<button class="btn line sm" id="phx">حذف عکس</button>' : ''}</div><div class="row"><input id="rn" class="in grow" value="${esc(me().name)}"><button class="btn ghost" id="ren">ذخیره</button></div><button class="btn line" id="del">حذف این کاربر و همهٔ پیشرفتش</button><div id="delc"></div></div></div>`;
   $$('[data-u]').forEach(b => b.onclick = () => { loadUser(b.dataset.u); toast('کاربر عوض شد: ' + me().name); go('home'); });
