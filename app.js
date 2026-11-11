@@ -613,6 +613,8 @@ const INTRO = [
   ['🗓️', 'برنامهٔ شخصی روی تقویم شمسی', 'می‌گویی تا کی و روزی چند دقیقه؛ برنامه روزبه‌روز چیده می‌شود، یادآوری می‌کند و اگر عقب بیفتی برنامهٔ جبرانی می‌سازد.'],
   ['🏆', 'رقابت، انجمن و دوستان', 'جدول رقابت هفتگی، چت‌روم هر موضوع با معلمی که نقش می‌دهد و اصلاح می‌کند، پیام خصوصی و صفحهٔ اختصاصی هر کاربر.'],
 ];
+/* ذخیرهٔ رمز در مدیر رمز خودِ مرورگر/گوشی (امن؛ برنامه رمز را جایی نگه نمی‌دارد) */
+function savePw(id, pw) { try { if ($('#rem')?.checked && window.PasswordCredential) navigator.credentials.store(new PasswordCredential({ id, password: pw, name: id })).catch(() => { }); } catch { } }
 function viewIntro(i = 0) {
   $('#top').innerHTML = ''; $('nav.bottom').hidden = true; const [ic, t, d] = INTRO[i];
   view().innerHTML = `<div class="auth intro"><div class="hero2" style="min-height:380px;justify-content:center"><img class="logo" src="icon-192.png" alt=""><div style="font-weight:800;font-size:15px;opacity:.9">آموزش زبان رستا</div>
@@ -635,7 +637,8 @@ function viewWelcome(tab = 'in', returning = false) {
   <label class="f">نام کاربری (حروف انگلیسی کوچک، عدد و _)<input id="un" class="in" dir="ltr" maxlength="20" autocomplete="username" placeholder="rasta_eng"></label><span class="tiny muted" id="unh"></span>
   <label class="f">ایمیل (برای تأیید حساب)<input id="em" class="in" dir="ltr" type="email" autocomplete="email" placeholder="you@gmail.com"></label>` :
   `<label class="f">نام کاربری یا ایمیل<input id="un" class="in" dir="ltr" autocomplete="username" placeholder="rasta_eng"></label>`}
-  <label class="f">رمز عبور${up ? ' (حداقل ۸ حرف)' : ''}<input id="pw" class="in" dir="ltr" type="password" autocomplete="${up ? 'new-password' : 'current-password'}"></label>
+  <label class="f">رمز عبور${up ? ' (حداقل ۸ حرف)' : ''}<span class="row" style="flex-wrap:nowrap;gap:6px"><input id="pw" class="in grow" dir="ltr" type="password" autocomplete="${up ? 'new-password' : 'current-password'}"><button type="button" class="icon-btn" id="eye" aria-label="نمایش رمز" title="نمایش رمز">👁</button></span></label>
+  <label class="row small" style="gap:6px"><input type="checkbox" id="rem" ${lsGet('zd:remember', true) ? 'checked' : ''}> مرا به خاطر بسپار (نام کاربری ذخیره شود و ورودم بماند)</label>
   ${up ? `<div class="small muted">تصویر پروفایل</div><div class="row" id="av">${AVATARS.map((a, i) => `<button class="icon-btn${i ? '' : ' on'}" data-a="${a}" style="font-size:20px">${a}</button>`).join('')}</div>` : ''}
   <details><summary class="small">کد اتصال هوش مصنوعی دارم</summary><input id="cd" class="in" dir="ltr" placeholder="ZD1…" style="margin-top:6px"><span class="tiny muted">کد را از مدیر برنامه بگیر و اینجا بچسبان.</span></details>
   <button class="btn wide" id="go">${up ? 'ساخت حساب' : 'ورود'}</button>
@@ -643,6 +646,10 @@ function viewWelcome(tab = 'in', returning = false) {
   <button class="btn line wide" id="go2">فعلاً بدون حساب امتحان می‌کنم</button>
   <span class="tiny muted" style="text-align:center">${up ? 'بعد از ساخت حساب، یک ایمیل تأیید می‌آید؛ روی لینکش بزن تا حسابت فعال شود.' : 'حساب نداری؟ از برگهٔ «ثبت‌نام» بساز.'}</span></div></div>`;
   $$('.tabs button').forEach(b => b.onclick = () => viewWelcome(b.dataset.t)); $('#tourb').onclick = () => viewIntro(0);
+  $('#eye').onclick = () => { const i = $('#pw'); const show = i.type === 'password'; i.type = show ? 'text' : 'password'; $('#eye').textContent = show ? '🙈' : '👁'; $('#eye').title = show ? 'پنهان کردن رمز' : 'نمایش رمز'; };
+  if (!up && lsGet('zd:remember', true) && lsGet('zd:lastUser', '')) $('#un').value = lsGet('zd:lastUser', '');
+  $('#rem').onchange = e => lsSet('zd:remember', e.target.checked);
+  $$('.form input').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter' && i.type !== 'checkbox') { e.preventDefault(); $('#go').click(); } }));
   let av = AVATARS[0]; $$('#av button').forEach(b => b.onclick = () => { $$('#av button').forEach(x => x.classList.remove('on')); b.classList.add('on'); av = b.dataset.a; });
   const code = () => { const c = $('#cd').value.trim(); if (!c) return true; try { useCode(c); toast('هوش مصنوعی وصل شد ✓'); return true; } catch { toast('کد اتصال درست نیست؛ دوباره کپی کن.'); return false; } };
   const enter = (n, a, h = 'guide') => { addUser(n, a); $('nav.bottom').hidden = false; go(h); router(); };
@@ -658,10 +665,12 @@ function viewWelcome(tab = 'in', returning = false) {
       const n = $('#nm').value.trim(), un = $('#un').value.trim().toLowerCase(), em = $('#em').value.trim().toLowerCase();
       if (!n) return toast('نامت را بنویس.'); if (!/^[a-z0-9_]{3,20}$/.test(un)) return $('#unh').textContent = 'نام کاربری: فقط حروف انگلیسی کوچک، عدد و _ ؛ ۳ تا ۲۰ حرف.';
       if (!/^\S+@\S+\.\S+$/.test(em)) return toast('ایمیلت را درست بنویس.'); if (pw.length < 8) return toast('رمز عبور باید حداقل ۸ حرف باشد.'); if (!code()) return;
+      if ($('#rem').checked) lsSet('zd:lastUser', un); savePw(un, pw);
       b.disabled = true; b.textContent = 'در حال ساخت حساب…'; const r = await authSignUp({ name: n, un, email: em, pw, avatar: av }); b.disabled = false; b.textContent = 'ساخت حساب';
       if (r === 'taken') return $('#unh').textContent = 'این نام کاربری گرفته شده؛ یکی دیگر بنویس.';
     } else {
       const id = $('#un').value.trim(); if (!id || !pw) return toast('نام کاربری و رمز را بنویس.'); if (!code()) return;
+      if ($('#rem').checked) lsSet('zd:lastUser', id); else lsSet('zd:lastUser', ''); savePw(id, pw);
       b.disabled = true; b.textContent = 'در حال ورود…'; await authSignIn(id, pw); b.disabled = false; b.textContent = 'ورود';
     }
   };
