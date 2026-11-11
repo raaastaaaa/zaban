@@ -503,7 +503,7 @@ const I = {
   lock: '🔒'
 };
 function toast(t, ms = 3200) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, ms); }
-function setTop(title, back) { $('#top').innerHTML = `${back ? `<button class="back" aria-label="بازگشت" onclick="history.length>1?history.back():go('home')">${I.back}</button>` : ''}<h1>${esc(title)}</h1>${me() ? `<button class="userchip" onclick="go('users')"><span class="avatar">${esc(me().avatar)}</span>${esc(me().name)}</button>` : ''}`; }
+function setTop(title, back) { $('#top').innerHTML = `${back ? `<button class="back" aria-label="بازگشت" onclick="history.length>1?history.back():go('home')">${I.back}</button>` : ''}<h1>${esc(title)}</h1>${me() ? `<button class="userchip" onclick="go('users')"><span class="avatar">${avHTML(me())}</span>${esc(me().name)}</button>` : ''}`; }
 function go(h) { location.hash = h; }
 const view = () => $('#view');
 function sheet(html) { const bg = document.createElement('div'); bg.className = 'sheet-bg'; bg.innerHTML = `<div class="sheet" role="dialog"><div class="grab"></div>${html}</div>`; bg.onclick = e => { if (e.target === bg) bg.remove(); }; document.body.appendChild(bg); return bg; }
@@ -523,6 +523,7 @@ function router() {
 addEventListener('hashchange', router);
 
 /* ───────── خوش‌آمد و کاربران ───────── */
+const avHTML = u => u?.photo ? `<img src="${u.photo}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">` : esc(u?.avatar || '🙂');
 const AVATARS = ['🦊', '🐼', '🦁', '🐯', '🐨', '🦉', '🐬', '🦄', '🐙', '🐝', '🌵', '🚀'];
 function viewWelcome() {
   $('#top').innerHTML = '<h1>زبان دوم</h1>'; $('nav.bottom').hidden = true;
@@ -538,11 +539,13 @@ function viewWelcome() {
 function addUser(name, avatar) { const u = { id: uid(), name, avatar, created: isoDay() }; G.users.push(u); saveG('users'); loadUser(u.id); saveU(); return u; }
 routes.users = () => {
   setTop('کاربران', true);
-  view().innerHTML = `<div class="stack"><div class="users">${G.users.map(u => { const d = userData(u.id); return `<button class="ucard${u.id === G.active ? ' on' : ''}" data-u="${u.id}"><div class="row"><span class="avatar">${esc(u.avatar)}</span><b class="grow">${esc(u.name)}</b><span class="pill">${faNum(d.xp)} امتیاز</span></div><span class="small muted">${faNum(masteredCount(d))} درس قبول · ${faNum(streakOf(d))} روز پیاپی</span></button>`; }).join('')}</div>
+  view().innerHTML = `<div class="stack"><div class="users">${G.users.map(u => { const d = userData(u.id); return `<button class="ucard${u.id === G.active ? ' on' : ''}" data-u="${u.id}"><div class="row"><span class="avatar">${avHTML(u)}</span><b class="grow">${esc(u.name)}</b><span class="pill">${faNum(d.xp)} امتیاز</span></div><span class="small muted">${faNum(masteredCount(d))} درس قبول · ${faNum(streakOf(d))} روز پیاپی</span></button>`; }).join('')}</div>
   <div class="card stack"><b>کاربر تازه</b><div class="row"><input id="nn" class="in grow" placeholder="اسم" maxlength="24"><button class="btn" id="add">افزودن</button></div></div>
-  <div class="card stack"><b>ویرایش کاربر فعلی</b><div class="row"><input id="rn" class="in grow" value="${esc(me().name)}"><button class="btn ghost" id="ren">ذخیره</button></div><button class="btn line" id="del">حذف این کاربر و همهٔ پیشرفتش</button><div id="delc"></div></div></div>`;
+  <div class="card stack"><b>ویرایش کاربر فعلی</b><div class="row"><span class="avatar" style="width:56px;height:56px;font-size:28px;overflow:hidden">${avHTML(me())}</span><label class="btn ghost sm">📷 عکس پروفایل<input type="file" accept="image/*" hidden id="ph"></label>${me().photo ? '<button class="btn line sm" id="phx">حذف عکس</button>' : ''}</div><div class="row"><input id="rn" class="in grow" value="${esc(me().name)}"><button class="btn ghost" id="ren">ذخیره</button></div><button class="btn line" id="del">حذف این کاربر و همهٔ پیشرفتش</button><div id="delc"></div></div></div>`;
   $$('[data-u]').forEach(b => b.onclick = () => { loadUser(b.dataset.u); toast('کاربر عوض شد: ' + me().name); go('home'); });
   $('#add').onclick = () => { const n = $('#nn').value.trim(); if (!n) return; addUser(n, AVATARS[G.users.length % AVATARS.length]); go('placement'); };
+  $('#ph').onchange = e => { const f = e.target.files[0]; if (!f) return; const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = c.height = 160; const m = Math.min(img.width, img.height); c.getContext('2d').drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, 160, 160); me().photo = c.toDataURL('image/jpeg', 0.82); saveG('users'); routes.users(); toast('عکس پروفایل ذخیره شد.'); }; img.src = URL.createObjectURL(f); };
+  $('#phx') && ($('#phx').onclick = () => { delete me().photo; saveG('users'); routes.users(); });
   $('#ren').onclick = () => { me().name = $('#rn').value.trim() || me().name; saveG('users'); routes.users(); };
   $('#del').onclick = () => { $('#delc').innerHTML = `<div class="notice row"><span class="grow">مطمئنی؟ پیشرفت ${esc(me().name)} برای همیشه پاک می‌شود.</span><button class="btn bad sm" id="yes">بله، حذف کن</button></div>`; $('#yes').onclick = () => { localStorage.removeItem('zd:u:' + G.active); G.users = G.users.filter(u => u.id !== G.active); saveG('users'); G.active = G.users[0]?.id || null; saveG('active'); U = null; if (G.active) loadUser(G.active); go('home'); router(); }; };
 };
@@ -570,7 +573,7 @@ routes.home = () => {
   ${planGap() > 0 ? `<div class="notice stack"><b>⚠ ${faNum(planGap())} درس از برنامه‌ات عقبی</b><span class="small">هدفت عقب نمی‌افتد: برنامهٔ جبرانی همان تاریخ پایان را نگه می‌دارد و وقت روزانه را کمی بیشتر می‌کند.</span><button class="btn sm" id="cu" style="align-self:flex-start">ساخت برنامهٔ جبرانی</button></div>` : ''}
   ${!hasAI() && !firstKeyed() ? `<div class="notice">برای فعال شدن معلم صوتی و گفتگو، در <a href="#settings">تنظیمات</a> یک کلید رایگان Gemini بگذار.</div>` : ''}
   <div class="sec">رقابت این هفته <small>امتیاز هفت روز اخیر</small></div>
-  <div class="users">${board.map((x, i) => `<button class="ucard${x.u.id === G.active ? ' on' : ''}" data-u="${x.u.id}"><div class="row"><span style="font-weight:900;width:20px">${['🥇', '🥈', '🥉'][i] || faNum(i + 1)}</span><span class="avatar">${esc(x.u.avatar)}</span><b class="grow">${esc(x.u.name)}</b><span class="pill acc num">${faNum(x.w)}</span></div>
+  <div class="users">${board.map((x, i) => `<button class="ucard${x.u.id === G.active ? ' on' : ''}" data-u="${x.u.id}"><div class="row"><span style="font-weight:900;width:20px">${['🥇', '🥈', '🥉'][i] || faNum(i + 1)}</span><span class="avatar">${avHTML(x.u)}</span><b class="grow">${esc(x.u.name)}</b><span class="pill acc num">${faNum(x.w)}</span></div>
     <div class="small muted">درس ${faNum((ALL_UNITS.find(u => !x.d.units[u.id]?.mastered)?.idx ?? 0) + 1)} از ${faNum(ALL_UNITS.length)} · ${faNum(Object.values(x.d.srs).filter(s => s.box >= 4).length)} واژهٔ تثبیت‌شده · ${rankOf(x.d.xp)}</div>
     <div class="bar"><i style="width:${Math.round(masteredCount(x.d) / ALL_UNITS.length * 100)}%"></i></div></button>`).join('')}</div>
   <div class="card stack"><div class="row"><b class="grow">پیشرفت من</b><span class="pill">${rankOf(U.xp)} · ${faNum(U.xp)} امتیاز</span></div>
@@ -1188,7 +1191,7 @@ const TOOLS = {
 routes.me = () => {
   setTop('من'); const p = paceInfo(); const last = [...Array(14)].map((_, i) => addDays(isoDay(), -13 + i)); const mx = Math.max(10, ...last.map(d => U.log[d]?.min || 0));
   view().innerHTML = `<div class="stack">
-  <div class="card stack"><div class="row"><span class="avatar" style="width:48px;height:48px;font-size:26px">${esc(me().avatar)}</span><div class="grow"><b style="font-size:18px">${esc(me().name)}</b><div class="small muted">${rankOf(U.xp)} · ${faNum(U.xp)} امتیاز · سطح ورودی: ${esc(U.placement?.level || '—')}</div></div><a class="btn ghost sm" href="#guide">امکانات</a><a class="btn ghost sm" href="#users">کاربران</a></div>
+  <div class="card stack"><div class="row"><span class="avatar" style="width:48px;height:48px;font-size:26px">${avHTML(me())}</span><div class="grow"><b style="font-size:18px">${esc(me().name)}</b><div class="small muted">${rankOf(U.xp)} · ${faNum(U.xp)} امتیاز · سطح ورودی: ${esc(U.placement?.level || '—')}</div></div><a class="btn ghost sm" href="#guide">امکانات</a><a class="btn ghost sm" href="#users">کاربران</a></div>
   <div class="grid2 small"><span>درس‌های قبول: <b>${faNum(p.mastered)}</b></span><span>واژهٔ تثبیت‌شده: <b>${faNum(learnedCount())}</b></span><span>کل مطالعه: <b>${faNum(p.minutes)}</b> دقیقه</span><span>روزهای پیاپی: <b>${faNum(streakOf(U))}</b></span></div>
   <div><div class="small muted">دقیقه‌های مطالعه در ۱۴ روز اخیر</div><div style="display:flex;align-items:flex-end;gap:4px;height:70px">${last.map(d => `<div title="${jLabel(d)}: ${Math.round(U.log[d]?.min || 0)}" style="flex:1;background:${d === isoDay() ? 'var(--mark)' : 'var(--accent)'};opacity:${U.log[d]?.min ? 1 : .2};height:${Math.max(4, (U.log[d]?.min || 0) / mx * 100)}%;border-radius:4px 4px 0 0"></div>`).join('')}</div></div>
   <button class="btn ghost" id="coach">نظر معلم دربارهٔ پیشرفتم</button><div id="co"></div></div>
