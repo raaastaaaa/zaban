@@ -221,7 +221,7 @@ function firstKeyed() { const p = G.settings.prov; return ['gemini', 'groq', 'an
 /* ───── زبان هدف: انگلیسی یا عربی (با لهجه) ───── */
 const TLANGS = {
   ar: { fa: 'عربی', flag: '🇴🇲', def: 'om', v: { om: ['Omani / Gulf Arabic (Khaleeji, as spoken in Oman)', 'عمانی / خلیجی', 'ar-OM'], msa: ['Modern Standard Arabic (Fusha)', 'فصحی (عربی معیار)', 'ar-SA'], eg: ['Egyptian Arabic', 'مصری', 'ar-EG'], lev: ['Levantine Arabic (Syrian/Lebanese)', 'شامی', 'ar-SY'], iq: ['Iraqi Arabic', 'عراقی', 'ar-IQ'] },
-    rules: 'Write Arabic in Arabic script with harakat on new words, ALWAYS add the pronunciation in Persian script, point out the Modern Standard Arabic form when the dialect differs, and point out false friends with Persian (words shared with Persian but different in meaning or pronunciation).' } };
+    rules: 'Write Arabic in Arabic script with harakat on new words, ALWAYS add the pronunciation in PERSIAN SCRIPT (e.g. «السلام عليكم = اَسّلامُ عَلِیکُم») — NEVER Latin transliteration, point out the Modern Standard Arabic form when the dialect differs, and point out false friends with Persian (words shared with Persian but different in meaning or pronunciation).' } };
 const tl = () => (typeof U !== 'undefined' && U?.tl) || 'en';
 const tlInfo = () => TLANGS[tl()];
 const tlDia = () => { const L = tlInfo(); if (!L) return ['English', 'انگلیسی', 'en-US']; const k = (typeof U !== 'undefined' && U?.tlv?.[tl()]) || L.def; return L.v[k] || L.v[L.def]; };
@@ -392,6 +392,9 @@ const EN_PACK = {};
 async function enPackIdx(acc) { if (!EN_PACK[acc]) EN_PACK[acc] = fetch(`audio/en/${acc}/index.json`).then(r => r.json()).then(j => ({ j, all: new Set(Object.values(j).flat()) })).catch(() => (delete EN_PACK[acc], null)); return EN_PACK[acc]; }
 const FA_PACK = {};
 async function faPackUrl(text) { const acc = G.settings.accent === 'UK' ? 'UK' : 'US'; if (!FA_PACK[acc]) FA_PACK[acc] = fetch(`audio/fa/${acc}/index.json`).then(r => r.json()).then(j => new Set(Object.values(j).flat())).catch(() => (delete FA_PACK[acc], null)); const ix = await FA_PACK[acc]; const h = hashStr((text || '').trim()); return ix?.has(h) ? `audio/fa/${acc}/${h}.mp3` : null; }
+const AR_PACK = {}; // صدای آفلاین عمانی (زن و مرد عمانی؛ Edge TTS)
+async function arPackUrl(text) { if (!AR_PACK.ix) AR_PACK.ix = fetch('audio/ar/om/index.json').then(r => r.json()).then(j => new Set(Object.values(j).flat())).catch(() => (delete AR_PACK.ix, null)); const ix = await AR_PACK.ix; if (!ix) return null; const t = arCore(text); const h = hashStr(t); return ix.has(h) ? `audio/ar/om/${h}.mp3` : null; }
+const arCore = t => String(t || '').split(/\s+[=—–-]\s+|\s*\(/)[0].trim();
 async function enPackUrl(text) { const acc = G.settings.accent === 'UK' ? 'UK' : 'US'; const ix = await enPackIdx(acc); if (!ix) return null; for (const t of [(text || '').trim(), (text || '').replace(/\s*\([^)]*\)/g, '').trim()]) { const h = hashStr(t); if (ix.all.has(h)) return `audio/en/${acc}/${h}.mp3`; } return null; }
 function playUrl(url, tok) { return new Promise(res => { if (tok !== speakToken) return res(); const done = () => { if (blobRes === done) blobRes = null; res(); }; blobRes = done; player.src = url; player.playbackRate = 1; player.onended = player.onerror = done; player.play().catch(done); }); }
 async function downloadEnPack(unitId, btn) {
@@ -411,6 +414,7 @@ async function say(text, lang = 'en', emotion = 'cheerful', btn) {
   const engine = lang === 'fa' ? G.settings.voiceFa : G.settings.voiceEn;
   try {
     if (tl() === 'en') { const f = lang === 'en' ? await enPackUrl(text) : await faPackUrl(text); if (f) { await playUrl(f, tok); return; } }
+    if (tl() === 'ar' && lang === 'en' && tlDia()[2] === 'ar-OM') { const f = await arPackUrl(text); if (f) { await playUrl(f, tok); return; } }
     if (tl() !== 'en' && lang === 'en') { try { await playBlob(await cloudTTS(G.settings.voiceFa === 'browser' ? 'gemini' : G.settings.voiceFa, text, tl(), emotion), tok); return; } catch (e) { } await browserSay(text, tlDia()[2]); return; }
     if (engine !== 'browser') { try { await playBlob(await cloudTTS(engine, text, lang, emotion), tok); return; } catch (e) { if (e.message !== 'NOKEY') console.warn(e); } }
     if (lang === 'en') { await browserSay(text, 'en'); return; }
@@ -793,7 +797,7 @@ routes.home = () => {
   <div class="card stack tl-card"><b>🌐 زبانی که یاد می‌گیری</b><div class="seg" id="tlsel">${[['en', '🇬🇧 انگلیسی'], ...Object.entries(TLANGS).map(([k, L]) => [k, L.flag + ' ' + L.fa])].map(([k, t]) => `<button data-v="${k}" class="${tl() === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     ${tl() !== 'en' ? `<div class="row" style="gap:6px;flex-wrap:wrap"><span class="small">لهجه/گونه:</span>${Object.entries(tlInfo().v).map(([k, d]) => `<button class="pill ${tlDia() === d ? 'acc' : ''}" data-tlv="${k}">${d[1]}</button>`).join('')}</div>
     <span class="small muted">معلم زنده، دورهٔ کامل ${esc(tlInfo().fa)} از پایه تا پیشرفته (هر درس با طراح درس کامل)، «بگو چه می‌خواهی یاد بگیری»، واژه‌های موضوعی، افعال، دیکشنری و گفتگو حالا به ${esc(tlFa())} است — توضیح فارسی + تلفظ به خط فارسی.</span>
-    <div class="row"><a class="btn" href="#live/lesson">📞 کلاس زندهٔ ${esc(tlInfo().fa)}</a><a class="btn line" href="#wtopics">📚 واژه‌های موضوعی</a><a class="btn line" href="#verbs">🔤 افعال</a></div>` : ''}</div>
+    <div class="row"><a class="btn" href="#arc">📖 دورهٔ ${esc(tlInfo().fa)}</a><a class="btn" href="#live/lesson">📞 کلاس زنده</a><a class="btn line" href="#wtopics">📚 واژه‌های موضوعی</a><a class="btn line" href="#verbs">🔤 افعال</a></div>` : ''}</div>
   <div id="install-box">${installHTML()}</div>
   <div id="online-home"></div>
   ${(() => { if (!U.plan) return ''; const md = U.plan.lastCatch === isoDay() ? U.plan.missedNote || 0 : 0; if (!md) return ''; const end = addDays(U.plan.start, U.plan.dayCount - 1); return `<div class="notice stack"><b>⏰ ${faNum(md)} روز است که طبق برنامه درس نخوانده‌ای</b><span class="small">برای اینکه باز هم تا <b>${jLabel(end, true)}</b> به هدفت برسی، برنامه خودکار جبرانی شد: از امروز روزی <b>${faNum(U.plan.minutes)} دقیقه</b> لازم است. کارهای جامانده به روزهای بعد پخش شد.</span><div class="row"><a class="btn sm" href="#coach/advisor">🧭 مشورت با مشاور</a><a class="btn ghost sm" href="#plan">دیدن تقویم</a></div></div>`; })()}

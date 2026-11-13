@@ -51,3 +51,36 @@ const AR_UNITS = [
 const COURSES = { ar: AR_UNITS };
 const curUnits = () => COURSES[tl()] || [];
 const curIdx = () => Math.max(0, Math.min(curUnits().length - 1, +((U.cIdx || {})[tl()] ?? (tl() === 'ar' ? U.arIdx : 0) ?? 0) || 0));
+
+/* ───── صفحه‌های دورهٔ عربی (مثل کتاب): فهرست درس‌ها و صفحهٔ هر درس با صدای آفلاین عمانی ───── */
+const arPlanGet = async A => { const pid = `${tl()}:${A[0]}:${tlDia()[2]}`; const P0 = (U.customPlans || {})[pid]; if (P0) return P0;
+  if (tlDia()[2] === 'ar-OM') { try { const r = await fetch(`lessons/ar/om/${A[0]}.json`); if (r.ok) { const P = { ...(await r.json()), want: A[2], d: isoDay(), offline: 1 }; (U.customPlans = U.customPlans || {})[pid] = P; saveU(); return P; } } catch { } }
+  return null; };
+routes.arc = () => {
+  if (tl() !== 'ar') return go('path'); setTop(`دورهٔ ${tlFa()}`, true); const cur = curIdx(); const done = (U.arDone || {});
+  view().innerHTML = `<div class="stack"><div class="card stack"><b>🇴🇲 دورهٔ کامل ${esc(tlFa())} — از پایه تا پیشرفته</b><span class="small muted">${faNum(curUnits().length)} درس؛ هر درس: همهٔ واژه‌ها، افعال، جمله‌های کاربردی، اصطلاحات محاوره‌ای، گرامر و مکالمه — با تلفظ به خط فارسی و صدای عمانی. معلم زنده هر درس را کامل درس می‌دهد.</span></div>
+  ${['A0', 'A1', 'A2', 'B1', 'B2', 'C1'].filter(lv => curUnits().some(a => a[1] === lv)).map(lv => `<div class="sec">سطح ${lv}</div><div class="stack" style="gap:6px">${curUnits().map((a, i) => a[1] !== lv ? '' : `<a class="card row ar-u${i === cur ? ' cur' : ''}" href="#aru/${a[0]}"><span class="pill">${faNum(i + 1)}</span><span class="grow"><b>${esc(a[2])}</b><br><span class="tiny muted">${esc(a[4])}</span></span>${done[a[0]] ? '✓' : i === cur ? '▶' : ''}</a>`).join('')}</div>`).join('')}</div>`;
+};
+routes.aru = async id => {
+  const i = curUnits().findIndex(a => a[0] === id); if (i < 0) return go('arc'); const A = curUnits()[i];
+  setTop(A[2], true); const v = view(); v.innerHTML = loading('درس را باز می‌کنم…'); const g0 = routeGen;
+  let P = await arPlanGet(A);
+  if (!P) { if (needAI(v)) return; v.innerHTML = loading('در حال طراحی کامل این درس (واژه‌ها، افعال، جمله‌ها، اصطلاحات)…'); try { await makeCustomPlan(`درس ${faNum(i + 1)} دورهٔ ${tlInfo().fa} (${A[1]}): ${A[2]} — ${A[3]}. Grammar focus: ${A[4]}`, `${tl()}:${A[0]}:${tlDia()[2]}`); P = await arPlanGet(A); } catch (e) { if (g0 === routeGen) aiErr(e); return; } }
+  if (g0 !== routeGen || !P) return;
+  const row = x => { const s = String(x); const ar = arCore(s); const rest = s.slice(s.indexOf(ar) + ar.length).replace(/^\s*[=—–-]\s*/, ''); return `<div class="ar-row"><button class="spk" data-ar="${esc(ar)}">🔊</button><span class="ar-t" dir="rtl" lang="ar">${esc(ar)}</span><span class="small">${esc(rest)}</span></div>`; };
+  const sec = (t, arr) => arr?.length ? `<div class="card stack"><b>${t}</b>${arr.map(row).join('')}</div>` : '';
+  v.innerHTML = `<div class="stack">
+  <div class="card stack"><b>درس ${faNum(i + 1)} · سطح ${A[1]} · ${esc(P.title_fa || A[2])}</b><span class="small">${esc(P.goal || '')}</span><span class="small muted">${esc(P.intro || '')}</span>
+    <button class="btn wide tlive-btn" id="arlive">🎓 معلم زنده این درس را کامل درس بدهد</button><button class="btn line sm" id="ardl">⬇ دانلود صدای آفلاین این درس</button></div>
+  ${(P.bank || []).map(g => sec('📚 ' + esc(g.g), g.items)).join('')}
+  ${sec('🔤 افعال کاربردی', P.verbs)}${sec('💬 جمله‌های آماده', P.sentences)}${sec('😎 اصطلاحات محاوره‌ای', P.colloquial)}${sec('🎭 مکالمهٔ نمونه', (P.dialogue || []).map(l => String(l).replace(/^\s*[AB]\s*[:：]\s*/, '')))}
+  ${P.grammar?.point ? `<div class="card stack"><b>📐 گرامر: ${esc(P.grammar.point)}</b><span class="small">${esc(P.grammar.rule || '')}</span>${(P.grammar.examples || []).map(row).join('')}</div>` : ''}
+  ${P.mistakes?.length ? `<div class="card stack"><b>⚠️ اشتباه‌های رایج فارسی‌زبان‌ها</b>${P.mistakes.map(m => `<span class="small">• ${esc(m)}</span>`).join('')}</div>` : ''}
+  <div class="row"><button class="btn" id="ardone">✓ این درس را یاد گرفتم</button>${i + 1 < curUnits().length ? `<a class="btn line" href="#aru/${curUnits()[i + 1][0]}">درس بعد ←</a>` : ''}</div></div>`;
+  v.onclick = e => { const b = e.target.closest('[data-ar]'); if (b) say(b.dataset.ar, 'en', 'calm', b); };
+  $('#arlive').onclick = () => { U.cIdx = U.cIdx || {}; U.cIdx[tl()] = i; saveU(); teachThis({ custom: `${tl()}:${A[0]}:${tlDia()[2]}` }, P.title_fa || A[2]); };
+  $('#ardone').onclick = () => { (U.arDone = U.arDone || {})[A[0]] = isoDay(); U.cIdx = U.cIdx || {}; U.cIdx[tl()] = Math.min(curUnits().length - 1, i + 1); addXP(20); saveU(); toast('آفرین! درس بعد باز شد 🎉'); go('arc'); };
+  $('#ardl').onclick = async () => { const b = $('#ardl'); const ix = await fetch('audio/ar/om/index.json').then(r => r.json()).catch(() => null); const L = ix?.[A[0]] || []; if (!L.length) return toast('صدای آفلاین این درس هنوز آماده نیست.');
+    const c = await caches.open('zd-media'); let n = 0; for (const h of L) { const u = `audio/ar/om/${h}.mp3`; if (!(await c.match(u))) { try { const r = await fetch(u); if (r.ok) await c.put(u, r); } catch { return toast('اینترنت قطع شد؛ دوباره بزن.'); } } b.textContent = `⬇ ${faNum(++n)}/${faNum(L.length)}`; } b.textContent = '✓ صدای این درس آفلاین ذخیره شد'; };
+};
+const _pathR = routes.path; routes.path = () => { if (tl() === 'ar') return routes.arc(); return _pathR(); };

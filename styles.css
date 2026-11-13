@@ -464,3 +464,7 @@ body.nopron .pron{display:none!important}
 .live-card .eng-hint{color:#d7f5f0;text-align:center;line-height:1.7;max-width:560px;margin:0 auto}
 .live-card .eng-hint .muted{color:#9fd9cf}
 .tl-card #tlsel{align-self:flex-start}
+.ar-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-bottom:1px dashed var(--line,#e5e7eb)}
+.ar-row:last-child{border-bottom:0}
+.ar-t{font-size:20px;font-weight:700;font-family:"Noto Naskh Arabic","Amiri","Vazirmatn",serif;line-height:1.9}
+.ar-u.cur{border:2px solid var(--acc,#14b8a6)}
