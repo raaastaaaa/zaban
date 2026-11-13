@@ -218,7 +218,20 @@ const hasAI = () => !!G.settings.prov[G.settings.brain]?.key || serverOK();
 function firstKeyed() { const p = G.settings.prov; return ['gemini', 'groq', 'anthropic', 'openai', 'openrouter', 'custom'].find(k => p[k]?.key) || (serverOK() ? 'server' : undefined); }
 
 /* اگر سهمیهٔ یک سرویس تمام شد یا خطا داد، خودکار سراغ سرویس بعدیِ دارای کلید می‌رود */
+/* ───── زبان هدف: انگلیسی یا عربی (با لهجه) ───── */
+const TLANGS = {
+  ar: { fa: 'عربی', flag: '🇴🇲', def: 'om', v: { om: ['Omani / Gulf Arabic (Khaleeji, as spoken in Oman)', 'عمانی / خلیجی', 'ar-OM'], msa: ['Modern Standard Arabic (Fusha)', 'فصحی (عربی معیار)', 'ar-SA'], eg: ['Egyptian Arabic', 'مصری', 'ar-EG'], lev: ['Levantine Arabic (Syrian/Lebanese)', 'شامی', 'ar-SY'], iq: ['Iraqi Arabic', 'عراقی', 'ar-IQ'] },
+    rules: 'Write Arabic in Arabic script with harakat on new words, ALWAYS add the pronunciation in Persian script, point out the Modern Standard Arabic form when the dialect differs, and point out false friends with Persian (words shared with Persian but different in meaning or pronunciation).' } };
+const tl = () => (typeof U !== 'undefined' && U?.tl) || 'en';
+const tlInfo = () => TLANGS[tl()];
+const tlDia = () => { const L = tlInfo(); if (!L) return ['English', 'انگلیسی', 'en-US']; const k = (typeof U !== 'undefined' && U?.tlv?.[tl()]) || L.def; return L.v[k] || L.v[L.def]; };
+const tlFa = () => tl() === 'en' ? 'انگلیسی' : `${tlInfo().fa} (${tlDia()[1]})`;
+const TL_OVERRIDE = () => tl() === 'en' ? '' : `
+
+=== TARGET LANGUAGE OVERRIDE (most important rule) ===
+The learner is learning ARABIC — ${tlDia()[0]} — NOT English. Wherever these instructions mention English, an English accent (American/British), IPA or English examples, apply them to ${tlDia()[0]} instead. Teach real, natural ${tlDia()[0]} as natives actually speak it. ${tlInfo().rules} Always give the Persian meaning, register (formal/everyday/slang) and real example sentences with Persian translations. Keep JSON field names exactly as requested (fields named "en"/"w"/"ex" simply hold the ${tlDia()[0]} text).`;
 async function ai(opts) {
+  if (tl() !== 'en' && opts?.system && !opts.__tl) opts = { ...opts, system: opts.system + TL_OVERRIDE(), __tl: 1 };
   const order = [G.settings.brain, 'gemini', 'groq', 'openrouter', 'anthropic', 'openai', 'custom'].filter((k, i, a) => a.indexOf(k) === i && G.settings.prov[k]?.key);
   if (serverOK()) order.push('server');
   if (!order.length) throw new Error('NOKEY'); if (order[0] !== 'server') budgetGuard();
@@ -315,7 +328,7 @@ let voices = [];
 function loadVoices() { try { voices = speechSynthesis.getVoices(); } catch { voices = []; } }
 if ('speechSynthesis' in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
 function bestVoice(lang) {
-  const pref = lang === 'fa' ? ['fa-IR', 'fa'] : G.settings.accent === 'UK' ? ['en-GB'] : ['en-US'];
+  const pref = lang === 'fa' ? ['fa-IR', 'fa'] : /^ar/.test(lang) ? [lang, lang.slice(0, 2)] : G.settings.accent === 'UK' ? ['en-GB'] : ['en-US'];
   const list = voices.filter(v => pref.some(p => v.lang.replace('_', '-').toLowerCase().startsWith(p.toLowerCase())));
   const score = v => (/natural|online|neural|premium|enhanced/i.test(v.name) ? 3 : 0) + (/google|microsoft|samantha|daniel|serena/i.test(v.name) ? 1 : 0);
   return list.sort((a, b) => score(b) - score(a))[0] || (lang === 'fa' ? null : voices.find(v => v.lang.startsWith('en')));
@@ -348,10 +361,14 @@ const TTS_INFLIGHT = new Map(); // درخواست تکراری برای یک م�
 function cloudTTS(engine, text, lang, emotion) { const k = [engine, lang, emotion, G.settings.accent, text].join('|'); if (TTS_INFLIGHT.has(k)) return TTS_INFLIGHT.get(k); const p = cloudTTS0(engine, text, lang, emotion).finally(() => setTimeout(() => TTS_INFLIGHT.delete(k), 50)); TTS_INFLIGHT.set(k, p); return p; }
 async function cloudTTS0(engine, text, lang, emotion) {
   const acc = G.settings.accent === 'UK' ? 'British (Received Pronunciation)' : 'General American';
-  const style = lang === 'fa'
+  const style = tl() !== 'en' && lang !== 'fa'
+    ? `Say the following in natural ${tlDia()[0]}, as a friendly native speaker, clearly and at a learner-friendly pace`
+    : tl() !== 'en' && lang === 'fa'
+    ? `Say the following in a ${EMO[emotion] || 'warm'} voice, like a friendly Iranian teacher speaking natural, fluent Tehrani Persian; pronounce the foreign words and sentences authentically in ${tlDia()[0]}`
+    : lang === 'fa'
     ? `Say the following in a ${EMO[emotion] || 'warm'} voice, like a friendly Iranian teacher speaking natural, fluent Tehrani Persian; pronounce any English words with a clear ${acc} accent`
     : `Say the following in a clear, natural ${acc} English accent, with a ${EMO[emotion] || 'friendly'} tone, at a learner-friendly pace`;
-  const key = 'a:' + hashStr([engine, G.settings.geminiVoice, G.settings.openaiVoice, acc, lang, emotion, text].join('|'));
+  const key = 'a:' + hashStr([tl() !== 'en' ? tl() + '-' + tlDia()[2] : '', engine, G.settings.geminiVoice, G.settings.openaiVoice, acc, lang, emotion, text].join('|'));
   let blob = await idb.get(key);
   if (!blob) {
     budgetGuard();
@@ -393,7 +410,8 @@ async function say(text, lang = 'en', emotion = 'cheerful', btn) {
   if (!text) return; haltAudio(); const tok = ++speakToken; btn?.classList.add('on'); try { Spatial.wake(); } catch { }
   const engine = lang === 'fa' ? G.settings.voiceFa : G.settings.voiceEn;
   try {
-    { const f = lang === 'en' ? await enPackUrl(text) : await faPackUrl(text); if (f) { await playUrl(f, tok); return; } }
+    if (tl() === 'en') { const f = lang === 'en' ? await enPackUrl(text) : await faPackUrl(text); if (f) { await playUrl(f, tok); return; } }
+    if (tl() !== 'en' && lang === 'en') { try { await playBlob(await cloudTTS(G.settings.voiceFa === 'browser' ? 'gemini' : G.settings.voiceFa, text, tl(), emotion), tok); return; } catch (e) { } await browserSay(text, tlDia()[2]); return; }
     if (engine !== 'browser') { try { await playBlob(await cloudTTS(engine, text, lang, emotion), tok); return; } catch (e) { if (e.message !== 'NOKEY') console.warn(e); } }
     if (lang === 'en') { await browserSay(text, 'en'); return; }
     // فارسی با صدای مرورگر: بخش‌های انگلیسی با صدای انگلیسی
@@ -772,6 +790,10 @@ routes.home = () => {
     <ul class="tasks">${tasks.map(t => `<li class="${taskDone(t) ? 'done' : ''}" data-tk="${esc(t.k || '')}" style="cursor:pointer"><span class="chk">${taskDone(t) ? '✓' : ''}</span><span class="grow">${esc(t.t)}</span>${taskLink(t) ? `<a href="${taskLink(t)}" class="small" onclick="event.stopPropagation()">برو ›</a>` : ''}</li>`).join('')}</ul>
     <div class="row"><a class="btn" href="#unit/${cur.id}">ادامهٔ یادگیری</a><a class="btn" style="background:#fff;color:#0c5f5d" href="#live/lesson">📞 کلاس زنده</a><a class="btn ghost" style="background:transparent;color:inherit;box-shadow:inset 0 0 0 1.5px currentColor" href="#leitner">🗃️ لایتنر${due ? ' · ' + faNum(due) + ' امروز' : ''}</a></div>
   </div>
+  <div class="card stack tl-card"><b>🌐 زبانی که یاد می‌گیری</b><div class="seg" id="tlsel">${[['en', '🇬🇧 انگلیسی'], ...Object.entries(TLANGS).map(([k, L]) => [k, L.flag + ' ' + L.fa])].map(([k, t]) => `<button data-v="${k}" class="${tl() === k ? 'on' : ''}">${t}</button>`).join('')}</div>
+    ${tl() !== 'en' ? `<div class="row" style="gap:6px;flex-wrap:wrap"><span class="small">لهجه/گونه:</span>${Object.entries(tlInfo().v).map(([k, d]) => `<button class="pill ${tlDia() === d ? 'acc' : ''}" data-tlv="${k}">${d[1]}</button>`).join('')}</div>
+    <span class="small muted">معلم زنده، دورهٔ کامل ${esc(tlInfo().fa)} از پایه تا پیشرفته (هر درس با طراح درس کامل)، «بگو چه می‌خواهی یاد بگیری»، واژه‌های موضوعی، افعال، دیکشنری و گفتگو حالا به ${esc(tlFa())} است — توضیح فارسی + تلفظ به خط فارسی.</span>
+    <div class="row"><a class="btn" href="#live/lesson">📞 کلاس زندهٔ ${esc(tlInfo().fa)}</a><a class="btn line" href="#wtopics">📚 واژه‌های موضوعی</a><a class="btn line" href="#verbs">🔤 افعال</a></div>` : ''}</div>
   <div id="install-box">${installHTML()}</div>
   <div id="online-home"></div>
   ${(() => { if (!U.plan) return ''; const md = U.plan.lastCatch === isoDay() ? U.plan.missedNote || 0 : 0; if (!md) return ''; const end = addDays(U.plan.start, U.plan.dayCount - 1); return `<div class="notice stack"><b>⏰ ${faNum(md)} روز است که طبق برنامه درس نخوانده‌ای</b><span class="small">برای اینکه باز هم تا <b>${jLabel(end, true)}</b> به هدفت برسی، برنامه خودکار جبرانی شد: از امروز روزی <b>${faNum(U.plan.minutes)} دقیقه</b> لازم است. کارهای جامانده به روزهای بعد پخش شد.</span><div class="row"><a class="btn sm" href="#coach/advisor">🧭 مشورت با مشاور</a><a class="btn ghost sm" href="#plan">دیدن تقویم</a></div></div>`; })()}
@@ -1678,3 +1700,9 @@ function applyTheme() { document.body.classList.toggle('nopron', !lsGet('zd:show
 applyTheme();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { navigator.serviceWorker.register('sw.js').then(r => r.update()).catch(() => { }); let reloaded = false; const hadCtl = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => { if (reloaded || !hadCtl) return; reloaded = true; if (!/^#(teach|talk|exam|rooms|read|theater)/.test(location.hash)) location.reload(); }); }
 try { navigator.storage?.persist?.(); } catch { } // جلوگیری از پاک شدن خودکار داده‌ها توسط مرورگر
+/* انتخاب زبان هدف (انگلیسی/عربی) و لهجه — برای هر کاربر جدا ذخیره می‌شود */
+document.addEventListener('click', e => {
+  const b = e.target.closest('#tlsel button, [data-tlv]'); if (!b) return;
+  if (b.dataset.tlv) { U.tlv = U.tlv || {}; U.tlv[tl()] = b.dataset.tlv; } else U.tl = b.dataset.v;
+  saveU(); try { LIVE_LESSON = null; } catch { } toast(`حالا ${tlFa()} یاد می‌گیری.`); routes.home();
+});
