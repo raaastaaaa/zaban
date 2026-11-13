@@ -506,3 +506,17 @@ body.tl-ar .sec{color:#8C2F2F;letter-spacing:.3px}
 body.tl-ar .sec::before{content:'۞ ';color:var(--mark)}
 body.tl-ar #top h1{font-family:'Vazirmatn',serif}
 body.tl-ar .tl-card{background:linear-gradient(135deg,rgba(201,162,39,.12),transparent);border-color:var(--mark)}
+/* ───── فلش‌کارت ───── */
+.fc-hero{background:linear-gradient(135deg,var(--accent-soft),var(--surface))}
+.fc-deck .fc-bar{height:5px;border-radius:5px;background:var(--sunk);margin-top:6px;overflow:hidden}.fc-deck .fc-bar i{display:block;height:100%;background:var(--accent)}
+.fc-prog{height:6px;border-radius:6px;background:var(--sunk);overflow:hidden}.fc-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--mark))}
+.fc-card{position:relative;min-height:280px;perspective:1200px;cursor:pointer}
+.fc-face{position:absolute;inset:0;border-radius:22px;padding:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;backface-visibility:hidden;transition:transform .55s cubic-bezier(.2,.8,.2,1);box-shadow:0 12px 36px rgba(0,0,0,.12)}
+.fc-front{background:linear-gradient(160deg,var(--hero),#0f766e);color:var(--hero-ink)}
+.fc-back{background:var(--surface);color:var(--ink);transform:rotateY(180deg);border:1px solid var(--line)}
+.fc-card.flip .fc-front{transform:rotateY(180deg)}.fc-card.flip .fc-back{transform:rotateY(0)}
+.fc-t{font-size:28px;line-height:1.5;direction:ltr}.fc-fa{font-size:24px;line-height:1.8}
+body.tl-ar .fc-t{direction:rtl;font-family:"Noto Naskh Arabic","Amiri","Vazirmatn",serif;font-size:32px}
+.fc-face .spk{font-size:22px;background:rgba(255,255,255,.18);border:0;border-radius:50%;width:46px;height:46px}
+.fc-back .spk{background:var(--accent-soft)}
+.fc-btns .btn{flex:1}.btn.bad{background:var(--bad);color:#fff}.btn.ok{background:var(--ok);color:#fff}
