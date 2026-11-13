@@ -189,7 +189,7 @@ async function liveStart(mode, ui) {
   let auth; try { auth = await liveToken(); } catch (e) { abort(); return left() ? null : aiErr(e); }
   if (left()) return abort();
   try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
-  catch { return abort('اجازهٔ میکروفون داده نشده؛ از تنظیمات مرورگر اجازه بده.'); }
+  catch (e) { abort(); if (!left()) { toast('🎙 ' + micErrMsg(e) + ' — کلاس با معلم بدون میکروفون ادامه پیدا می‌کند (جواب‌ها را تایپ کن).', 9000); setTimeout(() => relayStart(mode, ui), 400); } return; }
   if (left()) return abort();
   await rs; Live.ctx = ctx; Live.playAt = 0; Live.queue = []; Live.played = false;
   // صدای سه‌بعدی بدون اکو: معلم جلوی تو، کمی این‌طرف و آن‌طرف می‌رود (HRTF، بدون ریورب)
@@ -589,12 +589,21 @@ async function relaySpeak(text) {
   const jobs = parts.map(() => null); jobs[0] = pre(parts[0]); if (parts[1]) jobs[1] = pre(parts[1]);
   for (let i = 0; i < parts.length; i++) { if (!Relay.on || Relay.turnId !== my) return false; await jobs[i]; if (parts[i + 2]) jobs[i + 2] = pre(parts[i + 2]); await say(parts[i], 'fa', 'cheerful'); }
   return Relay.turnId === my; }
+/* چرا میکروفون باز نشد؟ — پیام دقیق به‌جای یک جملهٔ کلی */
+function micErrMsg(e) {
+  const n = e?.name || ''; const inApp = /Instagram|FBAN|FBAV|Telegram|WhatsApp|Line\/|wv\)|; wv/i.test(navigator.userAgent);
+  if (!navigator.mediaDevices?.getUserMedia) return inApp ? 'این صفحه داخل مرورگرِ یک برنامهٔ دیگر (مثل تلگرام/اینستاگرام) باز شده و آنجا میکروفون کار نمی‌کند. لینک را در Chrome یا Safari باز کن.' : 'این مرورگر به میکروفون دسترسی نمی‌دهد. اپ را در Chrome یا Safari باز کن.';
+  if (n === 'NotAllowedError' || n === 'SecurityError') return 'اجازهٔ میکروفون داده نشده. روی 🔒 کنار آدرس بزن ← Microphone ← Allow (یا در تنظیمات گوشی، اجازهٔ میکروفون مرورگر را روشن کن).';
+  if (n === 'NotFoundError' || n === 'OverconstrainedError') return 'میکروفونی پیدا نشد. هدفون/میکروفون را وصل کن.';
+  if (n === 'NotReadableError' || n === 'AbortError') return 'میکروفون دست یک برنامهٔ دیگر است (تماس، واتساپ، ضبط صدا…). آن را ببند و دوباره امتحان کن.';
+  return inApp ? 'میکروفون در مرورگرِ داخل این برنامه کار نمی‌کند؛ لینک را در Chrome یا Safari باز کن.' : 'میکروفون باز نشد.';
+}
 async function relayStart(mode, ui) {
   if (Relay.on || Relay.starting) return; Relay.starting = true; ui.connecting?.();
-  try {
-    if (!gemKey()) { toast('برای کلاس صوتی باید اینترنت وصل باشد.'); return ui.idle(); }
-    const st0 = await navigator.mediaDevices.getUserMedia({ audio: true }); st0.getTracks().forEach(t => t.stop()); // فقط اجازه؛ میکروفون موقع حرف زدن معلم بسته می‌ماند تا صدا خش و پرش نداشته باشد
-  } catch { Relay.starting = false; ui.idle(); return toast('اجازهٔ میکروفون داده نشده؛ از تنظیمات مرورگر اجازه بده.'); }
+  if (!navigator.onLine) { Relay.starting = false; ui.idle(); return toast('برای کلاس زنده باید اینترنت وصل باشد.'); }
+  Relay.noMic = false;
+  try { const st0 = await navigator.mediaDevices.getUserMedia({ audio: true }); st0.getTracks().forEach(t => t.stop()); } // فقط اجازه؛ میکروفون موقع حرف زدن معلم بسته می‌ماند تا صدا خش و پرش نداشته باشد
+  catch (e) { Relay.noMic = true; toast('🎙 ' + micErrMsg(e) + ' — کلاس بدون میکروفون شروع می‌شود؛ معلم درس می‌دهد و تو جواب‌هایت را تایپ کن.', 9000); }
   const C = window.AudioContext || window.webkitAudioContext; Relay.ctx = new C(); try { await Relay.ctx.resume(); } catch { }
   if (mode === 'lesson' || mode === 'group') { try { LIVE_LESSON = await liveLessonText(); } catch { } }
   Object.assign(Relay, { on: true, starting: false, mode, hist: [], ui, sys: livePrompt(mode) + TL_OVERRIDE() + RELAY_ADAPT + '\nFINAL RULE —' + langHint() });
@@ -667,7 +676,8 @@ async function relayTurn(input) {
 }
 async function relayListen() {
   if (!Relay.on || Relay.busy) return; const ui = Relay.ui; stopSpeak();
-  try { Relay.stream?.getTracks().forEach(t => t.stop()); Relay.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); } catch { ui.status('میکروفون در دسترس نیست؛ بنویس.'); return; }
+  if (Relay.noMic) { ui.status('✍️ جوابت را در کادر پایین بنویس و بفرست.'); return; }
+  try { Relay.stream?.getTracks().forEach(t => t.stop()); Relay.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); } catch (e) { Relay.noMic = true; ui.status('✍️ ' + micErrMsg(e) + ' جوابت را بنویس.'); return; }
   if (!Relay.on) { Relay.stream.getTracks().forEach(t => t.stop()); return; }
   const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac'].find(m => window.MediaRecorder?.isTypeSupported?.(m)) || '';
   let mr; try { mr = Relay.mr = new MediaRecorder(Relay.stream, mime ? { mimeType: mime } : undefined); } catch { ui.status('ضبط صدا روی این مرورگر نیست؛ بنویس.'); return; }
@@ -686,4 +696,5 @@ async function relayListen() {
 function relayMicBtn(show, st) { const b = $('#lrmic'); if (!b) return; b.hidden = !show; b.dataset.st = st || ''; b.textContent = st === 'rec' ? '⏹ تمام شد، بفرست' : st === 'busy' ? '⏳ صبر کن…' : st === 'speak' ? '✋ قطع کن، می‌خواهم حرف بزنم' : st === 'teach' ? '✋ سؤال دارم (درس مکث می‌کند)' : '🎤 حرف بزن'; b.disabled = st === 'busy';
   const g = $('#lrgo'); if (g) g.hidden = !(show && Relay.phase === 'pause' && st !== 'busy'); }
 function relayMicClick() { const st = $('#lrmic')?.dataset.st;
+  if (Relay.on && Relay.noMic && !Relay.busy) { Relay.noMic = false; relayListen(); return; } // دوباره امتحان کردن میکروفون
   if (st === 'teach') { Relay.paused = true; Relay.phase = 'pause'; Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); Relay.ui.status('سؤالت را بپرس؛ بعد «▶ ادامهٔ درس» را بزن.'); relayListen(); return; } if (st === 'rec') { try { Relay.mr?.stop(); } catch { } } else if (st === 'speak') { Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); relayListen(); } else if (st !== 'busy') relayListen(); }
