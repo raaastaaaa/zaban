@@ -27,7 +27,9 @@ const BGP = window.BGP = { on: false, lastTouch: 0,
   ui(title) { let b = $('#bgp'); if (!b) { b = document.createElement('div'); b.id = 'bgp'; document.body.appendChild(b); } b.innerHTML = `<span class="small grow">🔊 ${esc(title || 'در حال پخش')}</span><button class="btn sm" aria-label="توقف">⏹ توقف</button>`; b.querySelector('button').onclick = () => this.stop(); }
 };
 ['touchstart', 'wheel'].forEach(ev => addEventListener(ev, () => BGP.lastTouch = Date.now(), { passive: true }));
+const _libBook = routes.book; // کتاب‌های صوتی کتابخانه
 routes.book = async (id, sec) => {
+  if (!unitById(id) && typeof BOOKS !== 'undefined' && [...BOOKS, ...(typeof AR_BOOKS !== 'undefined' ? AR_BOOKS : [])].some(b => b.id === id)) return _libBook(id);
   const u = unitById(id); if (!u) return go('home'); if (!isOpen(u)) { toast('این درس هنوز قفل است.'); return go('home'); }
   const us = courseUnits(u.level); const n = us.indexOf(u) + 1; const lv = [...LEVELS, ...WORD_TRACK].find(l => l.id === u.level) || {};
   setTop(sec ? `${BSEC[sec][1]} · درس ${faNum(n)}` : `درس ${faNum(n)}`, true);

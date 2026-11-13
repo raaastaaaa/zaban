@@ -468,3 +468,5 @@ body.nopron .pron{display:none!important}
 .ar-row:last-child{border-bottom:0}
 .ar-t{font-size:20px;font-weight:700;font-family:"Noto Naskh Arabic","Amiri","Vazirmatn",serif;line-height:1.9}
 .ar-u.cur{border:2px solid var(--acc,#14b8a6)}
+/* حالت عربی: متن‌های «زبان هدف» راست‌به‌چپ و با قلم عربی */
+body.tl-ar .en:not(.keep-en){direction:rtl;unicode-bidi:plaintext;font-family:"Noto Naskh Arabic","Amiri","Vazirmatn",serif;font-size:1.08em;line-height:1.9}

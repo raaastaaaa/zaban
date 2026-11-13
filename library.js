@@ -18,6 +18,21 @@ const BOOKS = [
   { id: 'hamlet', lvl: 'adv', t: 'Hamlet', fa: 'هملت', by: 'ویلیام شکسپیر', hue: 260, ic: '💀', ch: 7, about: "Shakespeare's Hamlet retold as a prose story" },
   { id: 'dracula', lvl: 'adv', t: 'Dracula', fa: 'دراکولا', by: 'برام استوکر', hue: 350, ic: '🦇', ch: 8, about: "Bram Stoker's Dracula" }
 ];
+/* کتاب‌های صوتی عربی (بازنویسی آزاد میراث عربی و داستان‌های اختصاصی) — با لهجه/گونهٔ انتخاب‌شده */
+const AR_BOOKS = [
+  { id: 'ar-muscat', lvl: 'easy', t: 'حياة جديدة في مسقط', fa: 'زندگی تازه در مسقط', by: 'داستان اختصاصی زبان رستا', hue: 175, ic: '🕌', ch: 8, about: 'a young Iranian who moves to Muscat for work: the souq, the office, Omani neighbours and friends' },
+  { id: 'ar-juha', lvl: 'easy', t: 'نوادر جحا', fa: 'لطیفه‌های جحا (ملانصرالدین عربی)', by: 'ادبیات عامیانهٔ عربی', hue: 35, ic: '🫏', ch: 7, about: 'funny folk stories of Juha (the Arab Mulla Nasreddin)' },
+  { id: 'ar-sinbad', lvl: 'easy', t: 'سندباد البحري', fa: 'سندباد بحری', by: 'هزار و یک شب', hue: 205, ic: '⛵', ch: 7, about: 'the seven voyages of Sinbad, who sailed from the Gulf (Sohar/Basra)' },
+  { id: 'ar-kalila', lvl: 'easy', t: 'كليلة ودمنة', fa: 'کلیله و دمنه', by: 'ابن المقفع', hue: 95, ic: '🦊', ch: 8, about: 'animal fables of Kalila wa Dimna' },
+  { id: 'ar-trader', lvl: 'mid', t: 'التاجر الذكي', fa: 'تاجر زیرک: سفر تجاری به صحار', by: 'داستان اختصاصی زبان رستا', hue: 25, ic: '🚢', ch: 8, about: 'an Iranian trader doing business in Oman: free zones, customs, negotiation, partnership' },
+  { id: 'ar-battuta', lvl: 'mid', t: 'رحلة ابن بطوطة', fa: 'سفرنامهٔ ابن بطوطه', by: 'ابن بطوطه', hue: 45, ic: '🧭', ch: 9, about: 'the travels of Ibn Battuta, including his visit to Oman and Persia' },
+  { id: 'ar-layla', lvl: 'mid', t: 'مجنون ليلى', fa: 'لیلی و مجنون', by: 'میراث عربی', hue: 330, ic: '💌', ch: 7, about: 'the classic love story of Qays (Majnun) and Layla' },
+  { id: 'ar-nights', lvl: 'mid', t: 'حكايات ألف ليلة وليلة', fa: 'قصه‌های هزار و یک شب', by: 'هزار و یک شب', hue: 280, ic: '🪔', ch: 8, about: 'selected tales from One Thousand and One Nights told by Shahrazad' },
+  { id: 'ar-hayy', lvl: 'adv', t: 'حي بن يقظان', fa: 'حی بن یقظان', by: 'ابن طفیل', hue: 140, ic: '🏝️', ch: 7, about: 'Ibn Tufail\'s philosophical tale of a boy raised alone on an island' },
+  { id: 'ar-antara', lvl: 'adv', t: 'عنترة بن شداد', fa: 'عنتره، شوالیهٔ عرب', by: 'میراث عربی', hue: 0, ic: '🐎', ch: 8, about: 'the life and poetry of the knight-poet Antarah ibn Shaddad' },
+  { id: 'ar-gulf', lvl: 'adv', t: 'حكايات من الخليج', fa: 'حکایت‌های خلیج', by: 'افسانه‌های مردمی خلیج', hue: 195, ic: '🐚', ch: 8, about: 'Gulf folk legends: pearl divers, the sea, desert and old Muscat' }
+];
+const booksNow = () => (typeof tl === 'function' && tl() === 'ar') ? AR_BOOKS : BOOKS;
 const LVL = { easy: { fa: 'ساده', cefr: 'A1–A2', words: 120 }, mid: { fa: 'متوسط', cefr: 'B1', words: 220 }, adv: { fa: 'پیشرفته', cefr: 'B2', words: 320 } };
 const coverUrl = b => `https://image.pollinations.ai/prompt/${encodeURIComponent(`illustrated book cover art for "${b.t}", ${b.about}, painterly, vivid, no text, no letters`)}?width=360&height=540&nologo=true&seed=${parseInt(hashStr(b.id), 36) % 9999}`;
 const bookState = id => (U.books || (U.books = {}))[id] || (U.books[id] = { read: [], sec: 0, last: 0, added: isoDay() });
@@ -27,12 +42,12 @@ function ring(p, label, col = 'var(--accent)') { return `<div style="width:62px;
 function coverHTML(b, w = 96) { return `<div style="width:${w}px;aspect-ratio:2/3;border-radius:10px;overflow:hidden;position:relative;background:hsl(${b.hue} var(--tile-s) var(--tile-l));display:grid;place-items:center;font-size:${w / 2.6}px;flex:none"><span style="position:relative">${b.ic}</span><img src="em/${emCode(b.ic)}.webp" alt="" loading="lazy" style="position:absolute;inset:18% 12%;width:76%;height:64%;object-fit:contain;filter:drop-shadow(0 4px 6px rgb(0 0 0 / .25))" onload="this.previousElementSibling.style.visibility='hidden'" onerror="this.remove()"><span style="position:absolute;inset:auto 0 0 0;height:30%;background:linear-gradient(transparent,rgb(0 0 0 / .18))"></span></div>`; }
 
 routes.library = (tab = 'mine') => {
-  setTop('کتابخانه'); const v = view(); const mine = BOOKS.filter(b => U.books?.[b.id]);
+  setTop('کتابخانه'); const v = view(); const mine = booksNow().filter(b => U.books?.[b.id]);
   const tabs = `<div class="seg" style="align-self:flex-start">${[['mine', 'کتابخانهٔ من'], ['online', 'همهٔ کتاب‌ها'], ['stories', 'داستان صوتی'], ['talks', 'مکالمه‌ها']].map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" onclick="go('library/${k}')">${l}</button>`).join('')}</div>`;
   if (tab === 'mine') {
     v.innerHTML = `<div class="stack">${tabs}${mine.length ? mine.sort((a, b) => (U.books[b.id].last || 0) - (U.books[a.id].last || 0)).map(b => { const s = U.books[b.id]; return `<a class="card row" style="text-decoration:none;color:inherit;flex-wrap:nowrap" href="#book/${b.id}">${coverHTML(b, 70)}<div class="grow"><b>${esc(b.fa)}</b><div class="en small muted">${esc(b.t)}</div><div class="row" style="margin-top:6px;gap:8px">${ring(bookPct(b), faNum(bookPct(b)) + '٪')}${ring(100, hms(s.sec), 'var(--mark)')}${ring(100, LVL[b.lvl].fa, 'var(--ok)')}</div></div></a>`; }).join('') : `<div class="card stack" style="text-align:center"><div class="big-ic">📚</div><b>کتابخانه‌ات خالی است</b><span class="small muted">از «همهٔ کتاب‌ها» یک کتاب هم‌سطح خودت انتخاب کن.</span><a class="btn" href="#library/online">دیدن کتاب‌ها</a></div>`}</div>`;
   } else if (tab === 'online') {
-    v.innerHTML = `<div class="stack">${tabs}${Object.entries(LVL).map(([k, L]) => `<div class="sec">کتاب‌های ${L.fa} <small class="en">${L.cefr}</small></div><div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px">${BOOKS.filter(b => b.lvl === k).map(b => `<div class="card" style="padding:8px;width:128px;flex:none;display:flex;flex-direction:column;gap:6px"><a href="#book/${b.id}">${coverHTML(b, 112)}</a><b class="small" style="line-height:1.4">${esc(b.fa)}</b><span class="tiny muted">${esc(b.by)}</span>${U.books?.[b.id] ? '<span class="pill ok">در کتابخانه</span>' : `<button class="btn ghost sm" data-add="${b.id}">+ افزودن</button>`}</div>`).join('')}</div>`).join('')}</div>`;
+    v.innerHTML = `<div class="stack">${tabs}${Object.entries(LVL).map(([k, L]) => `<div class="sec">کتاب‌های ${L.fa} <small class="en">${L.cefr}</small></div><div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px">${booksNow().filter(b => b.lvl === k).map(b => `<div class="card" style="padding:8px;width:128px;flex:none;display:flex;flex-direction:column;gap:6px"><a href="#book/${b.id}">${coverHTML(b, 112)}</a><b class="small" style="line-height:1.4">${esc(b.fa)}</b><span class="tiny muted">${esc(b.by)}</span>${U.books?.[b.id] ? '<span class="pill ok">در کتابخانه</span>' : `<button class="btn ghost sm" data-add="${b.id}">+ افزودن</button>`}</div>`).join('')}</div>`).join('')}</div>`;
     $$('[data-add]').forEach(x => x.onclick = () => { bookState(x.dataset.add); saveU(); toast('به کتابخانه‌ات اضافه شد.'); routes.library('online'); });
   } else if (tab === 'stories') { return go('theater');
   } else {
@@ -44,8 +59,8 @@ routes.library = (tab = 'mine') => {
 };
 
 routes.book = async id => {
-  const b = BOOKS.find(x => x.id === id); if (!b) return go('library'); setTop(b.fa, true); const v = view();
-  const key = 'book:' + id; let meta = await idb.get(key);
+  const b = booksNow().find(x => x.id === id); if (!b) return go('library'); setTop(b.fa, true); const v = view();
+  const key = 'book:' + (id.startsWith('ar-') ? tlDia()[2] + ':' : '') + id; let meta = await idb.get(key);
   const render = () => {
     const s = U.books?.[id];
     v.innerHTML = `<div class="stack"><div class="card stack" style="align-items:center;text-align:center">${coverHTML(b, 150)}<b style="font-size:19px">${esc(b.fa)}</b><span class="en muted">${esc(b.t)}</span><span class="small muted">${esc(b.by)} · سطح ${LVL[b.lvl].fa} (${LVL[b.lvl].cefr})</span>
@@ -64,9 +79,9 @@ routes.book = async id => {
 };
 
 routes.read = async (id, idx) => {
-  const b = BOOKS.find(x => x.id === id); idx = +idx; const meta = await idb.get('book:' + id); if (!meta) return go('book/' + id);
+  const b = booksNow().find(x => x.id === id); idx = +idx; const meta = await idb.get('book:' + (id.startsWith('ar-') ? tlDia()[2] + ':' : '') + id); if (!meta) return go('book/' + id);
   const st = bookState(id); st.last = Date.now(); saveU(); const c = meta.chapters[idx]; setTop(c.en, true); const v = view();
-  const key = `chap:${id}:${idx}`; let ch = await idb.get(key);
+  const key = `chap:${id.startsWith("ar-") ? tlDia()[2] + ":" : ""}${id}:${idx}`; let ch = await idb.get(key);
   if (!ch) {
     if (needAI(v)) return; v.innerHTML = loading('در حال نوشتن فصل ' + faNum(idx + 1) + '…');
     try {
@@ -77,7 +92,7 @@ routes.read = async (id, idx) => {
     } catch (e) { v.innerHTML = ''; return aiErr(e); }
   }
   let showFa = lsGet('zd:showFa', true); let playing = false; let cur = 0; const t0 = Date.now();
-  const para = p => esc(p).replace(/\*\*(.+?)\*\*/g, '<span class="kw" style="color:var(--accent);font-weight:700">$1</span>').replace(/(<span[^>]*>.*?<\/span>)|([A-Za-z][A-Za-z'’-]*)/g, (m, kw, w) => kw || `<span class="tw">${w}</span>`);
+  const para = p => esc(p).replace(/\*\*(.+?)\*\*/g, '<span class="kw" style="color:var(--accent);font-weight:700">$1</span>').replace(/(<span[^>]*>.*?<\/span>)|(&[#a-z0-9]+;)|([A-Za-z][A-Za-z'’-]*|[\u0621-\u064A\u064B-\u0652\u0671-\u06D3]+)/g, (m, kw, ent, w) => kw || ent || `<span class="tw">${w}</span>`);
   v.innerHTML = `<div class="stack" style="padding-bottom:70px">
   <div class="row" style="position:sticky;top:calc(58px + env(safe-area-inset-top,0px));z-index:5;background:var(--bg);padding-block:4px"><span class="small muted grow">فصل ${faNum(idx + 1)} از ${faNum(b.ch)}</span><button class="icon-btn" id="tr" title="ترجمه">آ</button><button class="icon-btn" id="wl" title="واژه‌ها" style="font-family:var(--en);font-weight:800">W</button></div>
   ${G.settings.img === 'ai' ? `<img alt="" style="border-radius:14px;aspect-ratio:16/10;object-fit:cover;width:100%;background:var(--sunk)" src="https://image.pollinations.ai/prompt/${encodeURIComponent(`illustration, ${b.about}, scene: ${c.beats}, painterly, no text`)}?width=640&height=400&nologo=true&seed=${idx + 7}" onerror="this.remove()">` : ''}
@@ -87,7 +102,7 @@ routes.read = async (id, idx) => {
   <div style="position:fixed;left:0;right:0;bottom:calc(var(--nav) + env(safe-area-inset-bottom,0px));z-index:25;display:flex;justify-content:center;padding:0 max(16px,env(safe-area-inset-left,0px)) 8px"><div class="card row" style="max-width:728px;width:100%;padding:8px;flex-wrap:nowrap;gap:6px">
   <button class="icon-btn on" id="pl">▶</button><button class="icon-btn" id="pv" title="پاراگراف قبل">⏮</button><button class="icon-btn" id="nxp" title="پاراگراف بعد">⏭</button><div class="bar grow"><i id="pb" style="width:0"></i></div><select id="sp" class="in" style="width:auto;min-height:34px;padding:4px"><option value="0.75">۰٫۷۵×</option><option value="0.9" selected>۱×</option><option value="1.1">۱٫۲×</option></select><label class="small row" style="gap:4px;flex-wrap:nowrap"><input type="checkbox" id="rf">فارسی</label></div></div>`;
   const pps = $$('.pp', v);
-  const ck = `chapwav:${id}:${idx}`; idb.get(ck).then(bl => { if (bl) audioBox($('#cb'), bl, `${id}-ch${idx + 1}`); });
+  const ck = `chapwav:${id.startsWith("ar-") ? tlDia()[2] + ":" : ""}${id}:${idx}`; idb.get(ck).then(bl => { if (bl) audioBox($('#cb'), bl, `${id}-ch${idx + 1}`); });
   $('#mkca').onclick = async () => { const box = $('#cb'); const chunks = []; for (let i = 0; i < ch.paragraphs.length; i += 3) chunks.push({ lang: 'en', emo: 'calm', text: ch.paragraphs.slice(i, i + 3).map(p => p.en.replace(/\*\*/g, '')).join('\n\n') }); try { const bl = await buildAudio(ck, chunks, (i, n) => box.innerHTML = loading(`ساخت صوت… ${faNum(i + 1)} از ${faNum(n)}`)); audioBox(box, bl, `${id}-ch${idx + 1}`); } catch (e) { box.innerHTML = ''; aiErr(e); } };
   const hi = i => { pps.forEach((p, k) => p.style.background = k === i ? 'var(--accent-soft)' : ''); $('#pb').style.width = ((i + 1) / pps.length * 100) + '%'; pps[i]?.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
   const play = async () => {
