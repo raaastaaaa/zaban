@@ -77,3 +77,22 @@ async function ttsDialog(lines, voices, opts = {}) {
   const m = /rate=(\d+)/.exec(part.inlineData.mimeType || ''); const blob = pcmToWav(part.inlineData.data, m ? +m[1] : 24000);
   idb.set(key, blob).catch(() => { }); return blob;
 }
+
+/* ───── صدای طبیعی رایگان (Microsoft neural) از راه سرور برنامه — بدون سهمیه، یکنواخت ───── */
+const EDGE_VOICES = { 'en-US': ['en-US-AvaNeural', 'en-US-AndrewNeural'], 'en-GB': ['en-GB-SoniaNeural', 'en-GB-RyanNeural'], 'fa-IR': ['fa-IR-DilaraNeural', 'fa-IR-FaridNeural'], 'ar-OM': ['ar-OM-AyshaNeural', 'ar-OM-AbdullahNeural'], 'ar-SA': ['ar-SA-ZariyahNeural', 'ar-SA-HamedNeural'], 'ar-EG': ['ar-EG-SalmaNeural', 'ar-EG-ShakirNeural'], 'ar-SY': ['ar-SY-AmanyNeural', 'ar-SY-LaithNeural'], 'ar-IQ': ['ar-IQ-RanaNeural', 'ar-IQ-BasselNeural'], 'de-DE': ['de-DE-KatjaNeural', 'de-DE-ConradNeural'], 'de-AT': ['de-AT-IngridNeural', 'de-AT-JonasNeural'], 'de-CH': ['de-CH-LeniNeural', 'de-CH-JanNeural'], 'tr-TR': ['tr-TR-EmelNeural', 'tr-TR-AhmetNeural'], 'zh-CN': ['zh-CN-XiaoxiaoNeural', 'zh-CN-YunxiNeural'], 'zh-TW': ['zh-TW-HsiaoChenNeural', 'zh-TW-YunJheNeural'], 'zh-HK': ['zh-HK-HiuMaanNeural', 'zh-HK-WanLungNeural'] };
+const edgeVoice = (loc, male) => (EDGE_VOICES[loc] || EDGE_VOICES['en-US'])[male ? 1 : 0];
+const targetLoc = () => tl() === 'en' ? (G.settings.accent === 'UK' ? 'en-GB' : 'en-US') : tlDia()[2];
+let EDGE_DOWN = 0;
+async function edgeTTS(text, voice, rate) {
+  const key = 'edge:' + hashStr(voice + '|' + (rate || '') + '|' + text); const hit = await idb.get(key).catch(() => null); if (hit) return hit;
+  if (Date.now() < EDGE_DOWN) throw new Error('edge-down');
+  const c = typeof sb === 'function' ? sb() : null; const t = c && (await c.auth.getSession()).data.session?.access_token; if (!t) throw new Error('NOLOGIN');
+  const r = await fetch(`${SB_URL}/functions/v1/live?tts=1&jwt=${encodeURIComponent(t)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, voice, rate }) });
+  if (!r.ok) { if (r.status === 404) EDGE_DOWN = Date.now() + 10 * 60000; throw new Error('edge ' + r.status); }
+  const blob = await r.blob(); idb.set(key, blob).catch(() => { }); return blob;
+}
+/* اگر صدای Gemini (سهمیهٔ روزانه) تمام شد، به‌جای صدای رباتیِ مرورگر از صدای طبیعی Microsoft استفاده شود */
+const _cloudTTS0 = cloudTTS0;
+cloudTTS0 = async function (engine, text, lang, emotion) {
+  try { return await _cloudTTS0(engine, text, lang, emotion); }
+  catch (e) { const loc = lang === 'fa' ? 'fa-IR' : lang === 'en' ? targetLoc() : (tlDia()[2] || 'en-US'); try { return await edgeTTS(text, edgeVoice(loc, /Charon|Puck|Fenrir|Orus/.test(G.settings.geminiVoice))); } catch { throw e; } } };

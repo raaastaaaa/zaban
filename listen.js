@@ -43,7 +43,14 @@ async function lsRun(S) {
     const r = await ai({ temp: 0.9, max: 3000, system: SYS, messages: [{ role: 'user', content: `${typeof learnerContext === 'function' ? learnerContext() : ''}\nTopic: "${topic}". Target words/phrases: ${words.join(', ') || '(none given)'}.\nThis is PART ${part + 1} of a continuous programme; ${part ? 'continue naturally from where part ' + part + ' ended (do not re-introduce the show). Previous ending: «' + prev.slice(-300) + '»' : 'open the programme with a short intro'}. Write about ${mins} minute(s) of speech (${mins * 10}-${mins * 13} lines). EXACTLY two speakers: ${hosts.map(h => h[0]).join(' and ')}${S.fmt === 'story' ? ' (the first narrates, the second voices the characters)' : ''}. ${left < 100 ? 'This is the FINAL part: wrap up and say goodbye.' : ''}\nReturn JSON {"lines":[{"who":"${hosts[0][0]}|${hosts[1][0]}","t":"line in ${L}","fa":"Persian translation"}],"questions":[{"q":"comprehension question in Persian","a":"short answer in Persian"}]} with 2 questions about this part.` }] });
     part++; const lines = (r.lines || []).filter(l => l && l.t).map(l => ({ ...l, who: l.who === hosts[1][0] ? hosts[1][0] : hosts[0][0] })); prev = lines.map(l => l.t).join(' '); (r.questions || []).forEach(q => asked.push(q)); return lines; };
   // هر بخش: متن → یک فایل صوتی پیوسته با دو گوینده → پخش بی‌فاصله؛ بخش بعدی هم‌زمان ساخته می‌شود
-  const synth = async lines => { try { const blob = await ttsDialog(lines, VO, { lang: L, speed: S.speed }); return { lines, buf: await AE.decode(blob) }; } catch (e) { console.warn('dialog tts', e); return { lines, buf: null }; } };
+  const rateOf = { slow: '-15%', normal: '-4%', native: '+6%' }[S.speed] || '+0%';
+  const synth = async lines => {
+    // ۱) صدای طبیعی Microsoft برای هر خط (بی‌سهمیه و یکنواخت)، موازی و از قبل
+    try { const vs = [edgeVoice(targetLoc(), true), edgeVoice(targetLoc(), false)]; const bufs = new Array(lines.length); let k = 0;
+      await Promise.all([0, 1, 2, 3].map(async () => { while (k < lines.length) { const j = k++; bufs[j] = await AE.decode(await edgeTTS(lines[j].t, lines[j].who === hosts[1][0] ? vs[1] : vs[0], rateOf)); } }));
+      return { lines, bufs }; } catch (e) { console.warn('edge', e); }
+    // ۲) یک فایل پیوستهٔ دوگوینده با Gemini
+    try { const blob = await ttsDialog(lines, VO, { lang: L, speed: S.speed }); return { lines, buf: await AE.decode(blob) }; } catch (e) { console.warn('dialog tts', e); return { lines, buf: null }; } };
   const nextPart = () => gen().then(synth);
   const st = $('#lsstat') || (() => { const d = document.createElement('div'); d.id = 'lsstat'; d.className = 'small muted'; body.prepend(d); return d; })();
   st.textContent = '⏳ برنامه آماده می‌شود… (چند ثانیه)';
@@ -56,7 +63,13 @@ async function lsRun(S) {
     const els = P.lines.map(l => { allLines.push(l); const el = document.createElement('div'); el.className = 'small ln'; el.style.cssText = 'padding:4px 6px;border-radius:8px;transition:background .3s';
       el.innerHTML = `<span class="pill">${esc(l.who)}</span> <span class="en">${esc(l.t)}</span>${S.fa && l.fa ? `<div class="muted">${esc(l.fa)}</div>` : ''}`; $('#lslines').append(el); return el; });
     st.textContent = '';
-    if (P.buf) { // پخش پیوسته + هایلایت هم‌زمان (زمان هر خط به نسبت طولش)
+    if (P.bufs) { // خط‌به‌خط ولی بی‌فاصله: همه از قبل ساخته و پشت سر هم چیده می‌شوند
+      let at = Math.max(AE.now() + 0.05, endAt + 0.35);
+      const tm = P.bufs.map((b, k) => { const [x, z] = POS[P.lines[k].who] || [0, -1.2]; const r = AE.schedule(b, at, { x, z }); const st0 = r.start; at = r.end + 0.32; endAt = r.end;
+        return setTimeout(() => { if (!LS.on) return; els.forEach(q => q.style.background = ''); els[k].style.background = 'var(--accent-soft)'; els[k].scrollIntoView({ behavior: 'smooth', block: 'center' }); }, Math.max(0, (st0 - AE.now()) * 1000)); });
+      LS.timers = (LS.timers || []).concat(tm);
+      while (LS.on && AE.now() < endAt - 2) await wait(250);
+    } else if (P.buf) { // پخش پیوسته + هایلایت هم‌زمان (زمان هر خط به نسبت طولش)
       const r = AE.schedule(P.buf, Math.max(AE.now() + 0.05, endAt + 0.35)); endAt = r.end; const lens = P.lines.map(l => l.t.length + 12); const sum = lens.reduce((a, b) => a + b, 0); let acc = 0;
       const tm = P.lines.map((l, k) => { const at = r.start + (acc / sum) * (r.end - r.start); acc += lens[k]; return setTimeout(() => { if (!LS.on) return; els.forEach(x => x.style.background = ''); els[k].style.background = 'var(--accent-soft)'; els[k].scrollIntoView({ behavior: 'smooth', block: 'center' }); }, Math.max(0, (at - AE.now()) * 1000)); });
       LS.timers = (LS.timers || []).concat(tm);
