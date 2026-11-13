@@ -28,7 +28,7 @@ routes.listen = () => {
   $('#lsst').onclick = () => lsStop();
   $('#lsgo').onclick = () => lsRun(S);
 };
-function lsStop() { LS.on = false; stopSpeak(); try { Music.stop(); } catch { } clearInterval(LS.clk); const s = $('#lsst'); if (s) s.hidden = true; const c = $('#lsclk'); if (c) c.hidden = true; }
+function lsStop() { LS.on = false; (LS.timers || []).forEach(clearTimeout); LS.timers = []; stopSpeak(); try { Music.stop(); } catch { } clearInterval(LS.clk); const s = $('#lsst'); if (s) s.hidden = true; const c = $('#lsclk'); if (c) c.hidden = true; }
 async function lsRun(S) {
   const v = view(); if (needAI($('#lsq'))) return; const topic = S.topic || lsTopicDefault(); const lvl = lsLevel(); const words = lsWords();
   const L = tl() === 'ar' ? tlDia()[0] : (G.settings.accent === 'UK' ? 'British English' : 'American English');
@@ -36,29 +36,37 @@ async function lsRun(S) {
   LS.on = true; $('#lsst').hidden = false; const clk = $('#lsclk'); clk.hidden = false; const t0 = Date.now(); const total = S.min * 60;
   LS.clk = setInterval(() => { const s = Math.floor((Date.now() - t0) / 1000); clk.textContent = `${faNum(Math.floor(s / 60))}:${faNum(String(s % 60).padStart(2, '0'))} / ${faNum(S.min)}:۰۰`; }, 1000);
   const SYS = `You write ${L} listening material for a Persian-speaking learner at CEFR ${lvl}. Strictly at this level: simple structures and high-frequency words for A1/A2, richer for B1+. ${LS_FORMATS[S.fmt][2]} Natural spoken language as natives really talk (contractions, fillers, reactions). Use the target words naturally and recycle them. Every line is one speaker turn of 1-3 sentences.${tl() === 'ar' ? ' Write Arabic in Arabic script with harakat on difficult words; dialect: ' + L + '.' : ''} Persian translations must be natural colloquial Persian.`;
-  const hosts = tl() === 'ar' ? [['سالم', 'Charon'], ['مريم', 'Kore'], ['متصل', 'Puck']] : [['Sam', 'Puck'], ['Lily', 'Kore'], ['Caller', 'Charon']];
-  const POS = { [hosts[0][0]]: [-1.3, -1], [hosts[1][0]]: [1.3, -1], [hosts[2][0]]: [0, -2.4] }; const VO = Object.fromEntries(hosts);
-  const rate = { slow: 0.82, normal: 1, native: 1.12 }[S.speed] || 1; const keepRate = G.settings.rate;
-  const asked = []; let part = 0, spokenSec = 0, prev = ''; const allLines = [];
-  const gen = async () => { const left = total - (Date.now() - t0) / 1000; const mins = Math.max(2, Math.min(5, Math.round(left / 60)));
-    const r = await ai({ temp: 0.9, max: 4000, system: SYS, messages: [{ role: 'user', content: `${typeof learnerContext === 'function' ? learnerContext() : ''}\nTopic: "${topic}". Target words/phrases: ${words.join(', ') || '(none given)'}.\nThis is PART ${part + 1} of a continuous programme; ${part ? 'continue naturally from where part ' + part + ' ended (do not re-introduce the show). Previous ending: «' + prev.slice(-300) + '»' : 'open the programme with a short intro'}. Write about ${mins} minutes of speech (${mins * 11}-${mins * 14} lines). Speakers: ${hosts.map(h => h[0]).join(', ')}${S.fmt === 'story' ? ' (use the first as narrator)' : ''}. ${left < 150 ? 'This is the FINAL part: wrap up and say goodbye.' : ''}\nReturn JSON {"lines":[{"who":"speaker name","t":"line in ${L}","fa":"Persian translation"}],"questions":[{"q":"comprehension question in Persian","a":"short answer in Persian"}]} with 3 questions about this part.` }] });
-    part++; prev = (r.lines || []).map(l => l.t).join(' '); (r.questions || []).forEach(q => asked.push(q)); return r.lines || []; };
-  try { Music.play('happy'); await wait(1500); Music.duck(true); } catch { }
-  let next = gen();
-  try {
-    while (LS.on) {
-      let lines; try { lines = await next; } catch (e) { if (!allLines.length) { lsStop(); return aiErr(e); } break; }
-      if (!LS.on) break;
-      const left = total - (Date.now() - t0) / 1000; if (left > 120) next = gen(); else next = null;
-      for (const l of lines) {
-        if (!LS.on || !/^#listen/.test(location.hash)) { LS.on = false; break; }
-        allLines.push(l); const el = document.createElement('div'); el.className = 'small ln'; el.style.cssText = 'padding:4px 6px;border-radius:8px;background:var(--accent-soft)';
-        el.innerHTML = `<span class="pill">${esc(l.who)}</span> <span class="en">${esc(l.t)}</span>${S.fa && l.fa ? `<div class="muted">${esc(l.fa)}</div>` : ''}`; $('#lslines').append(el); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); $$('.ln', body).forEach(x => { if (x !== el) x.style.background = ''; });
-        const [x, z] = POS[l.who] || [0, -1.2]; G.settings.rate = rate; const ts = Date.now(); await voiceAt(l.t, 'en', 'cheerful', VO[l.who] || 'Puck', x, z); spokenSec += (Date.now() - ts) / 1000; await wait(250);
-      }
-      if (!next) break;
+  const hosts = tl() === 'ar' ? [['سالم', 'Charon'], ['مريم', 'Kore']] : [['Sam', 'Puck'], ['Lily', 'Kore']];
+  const VO = Object.fromEntries(hosts); const POS = { [hosts[0][0]]: [-1.2, -1], [hosts[1][0]]: [1.2, -1] };
+  const asked = []; let part = 0, prev = ''; const allLines = [];
+  const gen = async () => { const left = total - (Date.now() - t0) / 1000; const mins = Math.max(1, Math.min(2, Math.round(left / 60)));
+    const r = await ai({ temp: 0.9, max: 3000, system: SYS, messages: [{ role: 'user', content: `${typeof learnerContext === 'function' ? learnerContext() : ''}\nTopic: "${topic}". Target words/phrases: ${words.join(', ') || '(none given)'}.\nThis is PART ${part + 1} of a continuous programme; ${part ? 'continue naturally from where part ' + part + ' ended (do not re-introduce the show). Previous ending: «' + prev.slice(-300) + '»' : 'open the programme with a short intro'}. Write about ${mins} minute(s) of speech (${mins * 10}-${mins * 13} lines). EXACTLY two speakers: ${hosts.map(h => h[0]).join(' and ')}${S.fmt === 'story' ? ' (the first narrates, the second voices the characters)' : ''}. ${left < 100 ? 'This is the FINAL part: wrap up and say goodbye.' : ''}\nReturn JSON {"lines":[{"who":"${hosts[0][0]}|${hosts[1][0]}","t":"line in ${L}","fa":"Persian translation"}],"questions":[{"q":"comprehension question in Persian","a":"short answer in Persian"}]} with 2 questions about this part.` }] });
+    part++; const lines = (r.lines || []).filter(l => l && l.t).map(l => ({ ...l, who: l.who === hosts[1][0] ? hosts[1][0] : hosts[0][0] })); prev = lines.map(l => l.t).join(' '); (r.questions || []).forEach(q => asked.push(q)); return lines; };
+  // هر بخش: متن → یک فایل صوتی پیوسته با دو گوینده → پخش بی‌فاصله؛ بخش بعدی هم‌زمان ساخته می‌شود
+  const synth = async lines => { try { const blob = await ttsDialog(lines, VO, { lang: L, speed: S.speed }); return { lines, buf: await AE.decode(blob) }; } catch (e) { console.warn('dialog tts', e); return { lines, buf: null }; } };
+  const nextPart = () => gen().then(synth);
+  const st = $('#lsstat') || (() => { const d = document.createElement('div'); d.id = 'lsstat'; d.className = 'small muted'; body.prepend(d); return d; })();
+  st.textContent = '⏳ برنامه آماده می‌شود… (چند ثانیه)';
+  try { Music.play('happy'); Music.duck(true); } catch { }
+  let next = nextPart(); let endAt = 0;
+  while (LS.on) {
+    let P; try { P = await next; } catch (e) { if (!allLines.length) { lsStop(); return aiErr(e); } break; }
+    if (!LS.on || !/^#listen/.test(location.hash)) break;
+    const left = total - (Date.now() - t0) / 1000; next = left > 75 ? nextPart() : null;
+    const els = P.lines.map(l => { allLines.push(l); const el = document.createElement('div'); el.className = 'small ln'; el.style.cssText = 'padding:4px 6px;border-radius:8px;transition:background .3s';
+      el.innerHTML = `<span class="pill">${esc(l.who)}</span> <span class="en">${esc(l.t)}</span>${S.fa && l.fa ? `<div class="muted">${esc(l.fa)}</div>` : ''}`; $('#lslines').append(el); return el; });
+    st.textContent = '';
+    if (P.buf) { // پخش پیوسته + هایلایت هم‌زمان (زمان هر خط به نسبت طولش)
+      const r = AE.schedule(P.buf, Math.max(AE.now() + 0.05, endAt + 0.35)); endAt = r.end; const lens = P.lines.map(l => l.t.length + 12); const sum = lens.reduce((a, b) => a + b, 0); let acc = 0;
+      const tm = P.lines.map((l, k) => { const at = r.start + (acc / sum) * (r.end - r.start); acc += lens[k]; return setTimeout(() => { if (!LS.on) return; els.forEach(x => x.style.background = ''); els[k].style.background = 'var(--accent-soft)'; els[k].scrollIntoView({ behavior: 'smooth', block: 'center' }); }, Math.max(0, (at - AE.now()) * 1000)); });
+      LS.timers = (LS.timers || []).concat(tm);
+      // تا نزدیک پایان این بخش صبر کن (بخش بعدی در این فاصله ساخته شده و بلافاصله بعدش چیده می‌شود)
+      while (LS.on && AE.now() < endAt - 1.5) await wait(250);
+    } else { // اگر ساخت صدای پیوسته نشد: خط‌به‌خط
+      for (const [k, l] of P.lines.entries()) { if (!LS.on) break; els.forEach(x => x.style.background = ''); els[k].style.background = 'var(--accent-soft)'; els[k].scrollIntoView({ behavior: 'smooth', block: 'center' }); const [x, z] = POS[l.who] || [0, -1.2]; await voiceAt(l.t, 'en', 'cheerful', VO[l.who] || 'Puck', x, z); }
     }
-  } finally { G.settings.rate = keepRate; }
+    if (!next) { while (LS.on && AE.now() < endAt) await wait(200); break; }
+  }
   const played = Math.round((Date.now() - t0) / 60000);
   try { Music.duck(false); await wait(1200); Music.stop(); } catch { } clearInterval(LS.clk); $('#lsst') && ($('#lsst').hidden = true);
   if (/^#listen/.test(location.hash)) { const Lg = todayLog(); Lg.news = (Lg.news || 0) + played; Lg.min = (Lg.min || 0) + played; saveU(); lsQuiz(asked.slice(-6), allLines); }

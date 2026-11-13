@@ -13,7 +13,7 @@ const Spatial = (() => {
       const conv = ctx.createConvolver(); conv.buffer = impulse(ctx, 1.4, 2.8);
       wet = ctx.createGain(); dry = ctx.createGain();
       src.connect(dry); dry.connect(ctx.destination); // مسیر عادی
-      pan.connect(ctx.destination); pan.connect(conv); conv.connect(wet); wet.connect(ctx.destination);
+      pan.connect(ctx.destination); // بدون ریورب (پژواک و خش حذف شد)
       ready = true; route(); return true;
     } catch (e) { console.warn('3D', e); return false; }
   }
@@ -26,7 +26,7 @@ const Spatial = (() => {
   function route() {
     if (!ready) return; const on = G.settings.spatial === '1' || G.settings.spatial === '2'; orbit();
     try { src.disconnect(); } catch { }
-    if (on) { src.connect(pan); wet.gain.value = 0.14; } else { src.connect(dry); dry.gain.value = 1; wet.gain.value = 0; }
+    if (on) { src.connect(pan); wet.gain.value = 0; } else { src.connect(dry); dry.gain.value = 1; wet.gain.value = 0; }
   }
   function at(x = 0, z = -1.2, y = 0) {
     if (!ready || G.settings.spatial === '2') return; const t = ctx.currentTime;
