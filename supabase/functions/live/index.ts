@@ -25,7 +25,8 @@ async function edgeTTS(text: string, voice: string, rate = "+0%"): Promise<Uint8
       ws.send(`X-RequestId:${id}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${ts}Z\r\nPath:ssml\r\n\r\n<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'><voice name='${voice}'><prosody pitch='+0Hz' rate='${rate}' volume='+0%'>${esc(text)}</prosody></voice></speak>`); };
     ws.onmessage = (e) => { if (typeof e.data === "string") { if (e.data.includes("Path:turn.end")) { clearTimeout(to); ws.close(); const n = chunks.reduce((a, c) => a + c.length, 0); const out = new Uint8Array(n); let o = 0; for (const c of chunks) { out.set(c, o); o += c.length; } res(out); } return; }
       const b = new Uint8Array(e.data); const hl = (b[0] << 8) | b[1]; chunks.push(b.slice(2 + hl)); };
-    ws.onerror = (e) => { clearTimeout(to); rej(new Error("ws error " + ((e as any).message || ""))); };
+    ws.onerror = (e) => { clearTimeout(to); rej(new Error("ws error " + ((e as any).message || "") + " " + (Deno.version?.deno || ""))); };
+    ws.onclose = (e) => { clearTimeout(to); rej(new Error("closed " + e.code + " " + e.reason)); };
   });
 }
 
@@ -39,8 +40,8 @@ Deno.serve(async (req) => {
     const b = await req.json().catch(() => ({}));
     const text = String(b.text ?? "").slice(0, 3000); const voice = String(b.voice ?? "en-US-AvaNeural").replace(/[^A-Za-z0-9-]/g, ""); const rate = /^[+-]\d{1,2}%$/.test(b.rate ?? "") ? b.rate : "+0%";
     if (!text.trim()) return new Response("empty", { status: 400, headers: cors });
-    for (let k = 0; k < 3; k++) { try { const mp3 = await edgeTTS(text, voice, rate); if (mp3.length > 500) return new Response(mp3 as unknown as BodyInit, { headers: { ...cors, "content-type": "audio/mpeg", "cache-control": "public, max-age=31536000" } }); } catch (_) { await new Promise((r) => setTimeout(r, 400 * (k + 1))); } }
-    return new Response("tts failed", { status: 502, headers: cors });
+    let lastErr = ""; for (let k = 0; k < 3; k++) { try { const mp3 = await edgeTTS(text, voice, rate); if (mp3.length > 500) return new Response(mp3 as unknown as BodyInit, { headers: { ...cors, "content-type": "audio/mpeg", "cache-control": "public, max-age=31536000" } }); } catch (e) { lastErr = String((e as Error)?.message || e); await new Promise((r) => setTimeout(r, 400 * (k + 1))); } }
+    return new Response("tts failed: " + lastErr, { status: 502, headers: cors });
   }
   if ((req.headers.get("upgrade") ?? "").toLowerCase() !== "websocket") return new Response("live ok", { headers: cors });
   // ── پل کلاس زنده ──
