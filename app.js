@@ -830,7 +830,7 @@ function unitCard(u) {
     <span class="tile" style="--h:${u.hue}">${esc(u.icon)}</span>${u.track === 'ws' ? `<span class="tiny muted">سرفصل ${faNum(u.wsi + 1)}</span>` : u.idx < 1000 ? `<span class="tiny muted" style="font-weight:700">درس ${faNum(u.n)}</span>` : ''}<b>${esc(u.fa)}</b><span class="en">${esc(u.en)}</span>
     <div class="bar mark"><i style="width:${words.length ? Math.round(learned / words.length * 100) : 0}%"></i></div></a>`;
 }
-function taskLink(t) { const k = t.k || ''; if (k.startsWith('topic:')) return '#verbs/' + encodeURIComponent('⭐ ' + k.slice(6)); if (k.startsWith('wtopic:')) return '#wtopics/' + encodeURIComponent(k.slice(7)); if (k.startsWith('step:')) { const [, id, st] = k.split(':'); return st === 'words' ? `#unit/${id}/words` : st === 'dialog' ? `#unit/${id}/conv` : st === 'teach' ? `#unit/${id}/gram` : `#${st}/${id}`; } if (k.startsWith('exam:')) return '#exam/' + k.split(':')[1]; if (k === 'cards') return '#leitner'; if (k === 'radio') return '#listen'; if (k === 'news') return '#news'; return ''; }
+function taskLink(t) { const k = t.k || ''; if (k.startsWith('topic:')) return '#verbs/' + encodeURIComponent('⭐ ' + k.slice(6)); if (k.startsWith('wtopic:')) return '#wtopics/' + encodeURIComponent(k.slice(7)); if (k.startsWith('step:')) { const [, id, st] = k.split(':'); return st === 'words' ? `#unit/${id}/words` : st === 'dialog' ? `#unit/${id}/conv` : st === 'teach' ? `#unit/${id}/gram` : `#${st}/${id}`; } if (k.startsWith('exam:')) return '#exam/' + k.split(':')[1]; if (k === 'cards') return '#leitner'; if (k === 'radio') return '#listen'; if (k === 'news') return tl() === 'en' ? '#news' : '#listen'; return ''; }
 function taskDone(t) {
   if ((U.mdone || {})[isoDay() + '|' + t.k]) return true;
   const cur = currentUnit(); const st = unitState(cur);
@@ -1452,6 +1452,7 @@ routes.tools = () => {
     ['feedback', '💡', 'انتقادات و پیشنهادات', 'ایده، درخواست یا ایرادی دیدی؟ با صدا یا متن به مدیر برنامه بگو.'],
     ['wtopics', '🗂️', 'واژه‌ها بر اساس موضوع', 'هر موضوعی بنویس (فرودگاه، ترید، پوشاک…)؛ همهٔ واژه‌ها با رسمی/عامیانه، کاربرد و مثال.'],
     ['verbs', '🔁', 'افعال کاربردی', 'فعل‌های پرکاربرد دسته‌بندی‌شده با سه شکل فعل، معنی، مثال و آزمون.'],
+    ['listen', '🎧', 'استودیوی شنیداری', 'رادیو، اخبار، داستان یا پادکست ساختگی دقیقاً در سطح و درس تو — با مدت دلخواه (۵ تا ۴۵ دقیقه) و سؤال درک مطلب؛ انگلیسی و عربی'],
     ['theater', '🎬', 'تئاتر داستان صوتی', 'داستان با سناریو، صحنه‌های تصویری، صداپیشه و موسیقی متن، با واژه‌های خودت.'],
     ['practice', '✍️', 'تمرین آفلاین و هوشمند', 'جای خالی، مرتب کردن، دیکته، ترجمه و جواب‌نویسی با تصحیح؛ و تمرین مشابه برای هر اشتباه.'],
     ['vision', '🔭', 'چشم‌انداز من', 'با همین سرعت کی به کجا می‌رسی؛ تاریخ‌ها روی تقویم شمسی.'],
