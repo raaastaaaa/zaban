@@ -136,7 +136,7 @@ ${liveMemText()}
 ${typeof planContext === 'function' ? planContext() : ''}
 LANGUAGE POLICY: level A1 (Intro, first lessons) → about 70% Persian explanations, 30% English practice; A2 (Level 1) → 50/50, ask simple questions in English; B1 and above (Levels 2-3, Intermediate/Advanced vocabulary) → mostly English, Persian only for tricky points. Tell the student at the start, in one short sentence, how much Persian/English you will use today — consistent with the STUDENT'S CHOICE below if there is one.
 ${({ fa: 'STUDENT\'S CHOICE (overrides the level policy above): TEACH IN PERSIAN. Give ALL explanations, instructions, feedback, jokes and chat in natural, fluent Persian; use English only for the words, sentences and examples being taught and for the student\'s practice. Always translate new English into Persian.', mix: 'STUDENT\'S CHOICE: half Persian, half English — explain in Persian, practise and chat in simple English.', en: 'STUDENT\'S CHOICE: mostly English (immersion); use Persian only when the student is clearly stuck.' })[G.settings.teachLang || 'fa'] || ''}
-CLASS LENGTH: about ${+G.settings.classMin || 60} minutes. Plan the class to fill this time: first teach the whole topic completely and in depth (every item with examples, stories and mini-dialogues), then practise and answer questions; never finish early because the list is short — go deeper instead.
+${classPlanText()}
 ACCENT: model every English word and sentence in ${acc} English${acc === 'British' ? ' (RP: non-rhotic r, clear t)' : ' (General American: rhotic r, flap t)'}, and when relevant point out how the other accent differs.
 ATMOSPHERE: the class must NEVER feel dry, stiff or formal. Be warm, friendly and fun like a favourite teacher who is also a friend: use colloquial Tehrani Persian («عزیزم»، «ایول»، «دمت گرم»، «آفرین بهت»), light jokes, playful teasing, real laughter, small stories from "your life", surprising facts about English and native culture, and lots of genuine praise. Use the students' own lives (job, family, hobbies they told you) in examples. Vary the rhythm: quick games, mini challenges, funny role-plays. Discipline (below) stays kind and humorous, never cold or bossy.
 HUMOUR & CARE: now and then be genuinely funny (a witty remark, a funny example sentence, a playful exaggeration — e.g. "My cat is my boss, she wakes me up at 5!"), but never at a student's expense. Teach like a caring, devoted teacher («استاد دلسوز»): give vivid real-life examples from Iranian daily life and the student's own life, small memory tricks («یه ترفند بگم که هیچ‌وقت یادت نره…»), and short stories; check how they feel, encourage after mistakes ("اشکال نداره، همه اولش همینو می‌گن").
@@ -344,7 +344,11 @@ routes.live = (mode = 'lesson') => {
     <div class="row" style="justify-content:center"><button class="btn live-go" id="lgo">📞 شروع کلاس</button></div>
     <span class="tiny" style="opacity:.8">مثل تماس تلفنی حرف بزن؛ وسط حرف معلم هم می‌توانی بپری. هدفون بهتر است.</span></div>
   <div class="row small" style="justify-content:space-between;gap:6px"><span>زبان آموزش معلم:</span><div class="seg" id="ltl">${[['fa', '🇮🇷 فارسی'], ['mix', 'نیمه‌نیمه'], ['en', '🇬🇧 بیشتر انگلیسی']].map(([k, t]) => `<button data-v="${k}" class="${(G.settings.teachLang || 'fa') === k ? 'on' : ''}">${t}</button>`).join('')}</div></div>
-  <div class="row small" style="justify-content:space-between;gap:6px"><span>مدت کلاس:</span><div class="seg" id="lcmin">${[20, 40, 60, 90].map(k => `<button data-v="${k}" class="${(+G.settings.classMin || 60) === k ? 'on' : ''}">${faNum(k)} دقیقه</button>`).join('')}</div></div>
+  <div class="card stack cd-card" id="cdcard"><div class="row" style="justify-content:space-between;gap:6px"><b>🧭 طراحی کلاس</b><span class="pill acc" id="cdtot"></span></div>
+    <div class="seg" id="cdmode"><button data-v="interactive">🙋 تعاملی (پرسش و پاسخ)</button><button data-v="lecture">🎧 تک‌گویی (فقط گوش می‌دهم)</button></div>
+    <span class="tiny muted" id="cdmodeh"></span>
+    <div class="cd-secs" id="cdsecs"></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap"><span class="tiny muted">قالب‌های آماده:</span>${[['quick', '⚡ ۲۰ دقیقه'], ['std', '📚 ۶۰ دقیقه'], ['deep', '🏆 ۹۰ دقیقهٔ عمیق'], ['conv', '💬 فقط مکالمه'], ['vocab', '🗂️ فقط واژه']].map(([k, t]) => `<button class="pill" data-cdp="${k}">${t}</button>`).join('')}</div></div>
   <label class="row small" style="gap:6px;flex-wrap:nowrap"><span style="white-space:nowrap">معلم مرا این‌طور صدا کند:</span><input class="in grow" id="lcm" value="${esc(callMe())}" placeholder="مثلاً رَستا"></label>
   <div class="vb-cats" style="flex-wrap:wrap">${Object.entries(LIVE_MODES).map(([k, [ic, t]]) => `<button class="pill ${k === mode ? 'acc' : ''}" data-lm="${k}">${ic} ${t}</button>`).join('')}</div>
   <div class="small muted" id="lmd">${esc(LIVE_MODES[mode][2])}</div>
@@ -452,7 +456,18 @@ routes.live = (mode = 'lesson') => {
     VR.listeners = [onVR]; drawVR();
   }
   $('#lgn') && ($('#lgn').onchange = e => { lsSet('zd:group:' + G.active, e.target.value.trim()); seats(); });
-  $('#lcmin').onclick = e => { const b = e.target.closest('button'); if (!b) return; G.settings.classMin = +b.dataset.v; saveG('settings'); $$('#lcmin button').forEach(x => x.classList.toggle('on', x === b)); };
+  const drawCD = () => { const CP = classPlan(); $('#cdtot').textContent = `${faNum(CP.total)} دقیقه`; $$('#cdmode button').forEach(b => b.classList.toggle('on', b.dataset.v === CP.mode));
+    $('#cdmodeh').textContent = CP.mode === 'lecture' ? 'معلم کل درس را کامل و پیوسته توضیح می‌دهد؛ وسط کار سؤالی از تو نمی‌پرسد. هر وقت خواستی «✋ سؤال دارم» را بزن.' : 'معلم درس می‌دهد و هر چند مورد یک سؤال کوتاه می‌پرسد تا فعال بمانی؛ تمرین و نقش‌آفرینی دوطرفه است.';
+    $('#cdsecs').innerHTML = CP.secs.map(x => `<div class="cd-sec${x.on ? '' : ' off'}" data-k="${x.k}"><label class="row" style="gap:6px"><input type="checkbox" data-on="${x.k}" ${x.on ? 'checked' : ''}><span>${CLASS_SECTIONS[x.k].ic} ${CLASS_SECTIONS[x.k].fa}</span></label><div class="row" style="gap:4px"><button class="mini" data-d="${x.k}">−</button><b class="cd-min">${faNum(x.min)}′</b><button class="mini" data-i="${x.k}">+</button></div></div>`).join(''); };
+  const PRESETS = { quick: { mode: 'interactive', min: { warm: 1, vocab: 7, verbs: 2, sent: 3, gram: 2, conv: 2, prac: 2, quiz: 1, recap: 0 }, on: { recap: false } }, std: { min: Object.fromEntries(CLASS_ORDER.map(k => [k, CLASS_SECTIONS[k].def])), on: {} }, deep: { min: { warm: 3, vocab: 30, verbs: 12, sent: 15, gram: 10, conv: 10, prac: 5, quiz: 3, recap: 2 }, on: {} }, conv: { min: { warm: 2, vocab: 5, verbs: 0, sent: 10, gram: 0, conv: 25, prac: 10, quiz: 3, recap: 2 }, on: { verbs: false, gram: false } }, vocab: { min: { warm: 2, vocab: 35, verbs: 0, sent: 5, gram: 0, conv: 0, prac: 10, quiz: 5, recap: 2 }, on: { verbs: false, gram: false, conv: false } } };
+  $('#cdcard').onclick = e => { const b = e.target.closest('button, input'); if (!b) return; const P = U.classPlan || (U.classPlan = {}); P.min = P.min || {}; P.on = P.on || {};
+    if (b.dataset.v && b.closest('#cdmode')) P.mode = b.dataset.v;
+    else if (b.dataset.cdp) { const pr = PRESETS[b.dataset.cdp]; P.min = { ...pr.min }; P.on = Object.fromEntries(CLASS_ORDER.map(k => [k, pr.on[k] !== false])); if (pr.mode) P.mode = pr.mode; }
+    else if (b.dataset.i) P.min[b.dataset.i] = Math.min(60, (P.min[b.dataset.i] ?? CLASS_SECTIONS[b.dataset.i].def) + (b.dataset.i === 'vocab' ? 5 : 1));
+    else if (b.dataset.d) P.min[b.dataset.d] = Math.max(0, (P.min[b.dataset.d] ?? CLASS_SECTIONS[b.dataset.d].def) - (b.dataset.d === 'vocab' ? 5 : 1));
+    else if (b.dataset.on) P.on[b.dataset.on] = b.checked;
+    saveU(); drawCD(); if (Live.on || Relay.on) toast('از کلاس بعد اعمال می‌شود.'); };
+  drawCD();
   $('#ltl').onclick = e => { const b = e.target.closest('button'); if (!b) return; G.settings.teachLang = b.dataset.v; saveG('settings'); $$('#ltl button').forEach(x => x.classList.toggle('on', x === b)); toast(Live.on ? 'از کلاس بعد اعمال می‌شود.' : 'ذخیره شد.'); };
   $('#lcm').onchange = e => lsSet('zd:callme:' + G.active, e.target.value.trim());
   const typedToTeacher = (n, msg) => { if (!Live.on || !Live.ws) return false; ui.say('me', `✍️ ${n ? n + ': ' : ''}${msg}`); ui.say('end'); liveLog('S', `(typed by ${n || 'student'}) ${msg}`);
@@ -520,24 +535,49 @@ async function sendToGPT(p, how) {
 const Relay = { on: false, hist: [], busy: false };
 const inIran = () => { try { return /Tehran/i.test(Intl.DateTimeFormat().resolvedOptions().timeZone || ''); } catch { return false; } };
 if (G.settings.relayMig !== 2) { G.settings.liveEngine = inIran() ? 'relay' : 'gemini'; G.settings.relayMig = 2; try { saveG('settings'); } catch { } }
+/* ───────── مدل تدریس معلم زنده (طراحی‌شده با Fable 5) ─────────
+   کلاس از چند «بخش» ساخته می‌شود؛ کاربر برای هر بخش زمان تعیین می‌کند و حالت کلاس را انتخاب می‌کند:
+   تعاملی (پرسش و پاسخ مداوم) یا تک‌گویی (معلم کامل توضیح می‌دهد، آخر هر بخش فقط جمع‌بندی). */
+const CLASS_SECTIONS = {
+  warm: { fa: 'گرم‌کردن و معرفی درس', ic: '👋', def: 3, how: 'Greet warmly by name, ask one light question (interactive mode only), state today\'s goal in one sentence, say what the student will be able to DO at the end, and give the plan of the class (sections and minutes).' },
+  vocab: { fa: 'آموزش واژه‌ها', ic: '🗂️', def: 20, how: 'Teach the COMPLETE word bank group by group: each word = target language + Persian meaning + pronunciation in Persian script + register (who/when) + one memory trick + two real example sentences with Persian translation. Put the group on the board.' },
+  verbs: { fa: 'افعال کاربردی', ic: '🔤', def: 8, how: 'Teach the useful verbs: forms (English: base/past/participle; Arabic: past/present/imperative with the most common pronouns), one example per form, typical Persian-speaker mistakes.' },
+  sent: { fa: 'جمله‌ها و اصطلاحات محاوره‌ای', ic: '💬', def: 10, how: 'Teach the ready-to-use sentences and the colloquial/everyday expressions natives really say, with the situation each one belongs to, register, and what NOT to say.' },
+  gram: { fa: 'گرامر درس', ic: '📐', def: 7, how: 'Explain the grammar point in Persian with a simple rule, 3 examples, the contrast with Persian, and the 2 most common mistakes.' },
+  conv: { fa: 'مکالمهٔ نمونه و نقش‌آفرینی', ic: '🎭', def: 7, how: 'Perform the sample dialogue with two clearly different voices/names, explain each line, then (interactive mode) role-play it with the student both ways; (lecture mode) perform it twice, the second time slower with Persian after each line.' },
+  prac: { fa: 'تمرین و پرسش و پاسخ', ic: '✍️', def: 10, how: 'Concept-check questions, Persian→target translation drills, fill-the-gap, "what would you say if…" situations, pronunciation drills; one question at a time, kind correction. In lecture mode: give each exercise, pause 3 seconds in words ("فکر کن…"), then give the answer and explain.' },
+  quiz: { fa: 'کوییز پایانی', ic: '🏁', def: 4, how: '8 quick questions covering all sections; score and praise. In lecture mode: question, short pause, answer.' },
+  recap: { fa: 'جمع‌بندی و تکلیف', ic: '🎓', def: 2, how: 'Summarise what was learned, name the 3 things to remember, the student\'s 2-3 mistakes to work on, give one small homework, and say goodbye warmly.' } };
+const CLASS_ORDER = ['warm', 'vocab', 'verbs', 'sent', 'gram', 'conv', 'prac', 'quiz', 'recap'];
+const classPlan = () => { const P = U.classPlan || {}; const secs = CLASS_ORDER.map(k => ({ k, min: P.min?.[k] ?? CLASS_SECTIONS[k].def, on: P.on?.[k] !== false })); return { secs, mode: P.mode || 'interactive', total: secs.filter(x => x.on).reduce((a, x) => a + x.min, 0) }; };
+const savePlan = (patch) => { U.classPlan = Object.assign(U.classPlan || {}, patch); saveU(); };
+function classPlanText() { const CP = classPlan(); const L = tl() === 'ar' ? 'Arabic' : 'English';
+  return `
+=== CLASS DESIGN (the student configured it; follow it exactly) ===
+MODE: ${CP.mode === 'lecture' ? 'LECTURE (تک‌گویی) — the student wants to LISTEN. Do NOT ask the student questions or wait for answers in any section except the final recap; teach continuously and completely like a recorded masterclass by a devoted teacher. Where an exercise needs an answer, say the exercise, say "یه لحظه فکر کن…", then give the answer and explanation yourself.' : 'INTERACTIVE (تعاملی) — teach each section completely, and inside every section keep the student active: after every 2-4 items ask ONE short question, wait, correct kindly, then continue. Never lecture more than ~40 seconds without involving the student.'}
+TOTAL LENGTH: ${CP.total} minutes. SECTIONS in order (minutes):
+${CP.secs.filter(x => x.on).map((x, i) => `${i + 1}. ${CLASS_SECTIONS[x.k].ic} ${CLASS_SECTIONS[x.k].fa} — ${x.min} min: ${CLASS_SECTIONS[x.k].how}`).join('\n')}
+Target language: ${L}. Announce each section in Persian when it starts ("خب، حالا می‌ریم سراغ …"). Fill each section's time properly: if the material runs out early, go deeper (more examples, mini-stories, collocations, culture tips, recap); if time is short, prioritise the most useful items but never skip a section entirely. Keep track of time from the time hints you receive.`; }
 const RELAY_ADAPT = `
 === THIS CLASS RUNS AS A TURN-BASED VOICE CALL (no tools available) ===
 Each turn you receive the student's voice (audio) or a typed message. Reply ONLY with JSON:
 {"heard":"exact transcript of what the student just said in the audio, keeping their mistakes (empty if the input was text)","say":"what you say now — length depends on the PHASE (see below); natural, warm and caring, following the language policy; it is read aloud by a voice, so no emojis, no markdown, no lists, no IPA","board":null or {"title":"","items":[{"en":"","fa":""}]},"fix":null or {"wrong":"","right":"","why":"short Persian reason"}}
 Wherever the instructions mention tools: show_board → put the items in "board"; correct_writing → "fix"; play_conversation → read a short version of the dialogue yourself or role-play it with the student; guest_say/call_on/give_points/set_activity/give_homework → just say it; ask_brain → think and answer yourself; mark_done → skip.
-THE CLASS HAS TWO PHASES:
+THE CLASS FOLLOWS THE CLASS DESIGN (sections, minutes, mode) given above. Internally: PHASE 1 = the teaching sections (warm-up, vocabulary, verbs, sentences, grammar, dialogue); PHASE 2 = practice, quiz and recap.
 PHASE 1 — TEACHING (no waiting, no questions to the student): like a devoted private teacher, teach the COMPLETE material as a flowing explanation, segment by segment. Cover EVERY item of the word/phrase bank, one by one, in a logical order (e.g. family: mother, father, sister, brother… then grandparents, uncles/aunts, in-laws…): the English word, its Persian meaning, a pronunciation tip in Persian script for the chosen accent, when/with whom/how natives use it (register, common mistakes of Persians, difference from similar words), and 2 varied real-life example sentences with Persian translation. Use warm, caring, encouraging language, small memory tricks and a little humour. Teach in this order when the material has these parts: all vocabulary groups → useful verbs → useful sentences → colloquial/everyday expressions → American vs British differences → a short dialogue. For EVERY single item give at least one full example sentence with its Persian translation (never just list words). Each segment: about 150-220 words covering only 2-4 items so each is taught properly, with those items in "board". Do NOT ask the student anything in this phase. When EVERY item has been taught, give a short summary and set "done": true.
 PHASE 2 — PRACTICE & Q&A: now interactive: answer the student's questions fully, then concept-check questions, mini role-plays, a short quiz and a recap — ONE question at a time, short turns (max ~40 words), wait for the answer, correct kindly.
-Add to the JSON: "done": true|false (true only when phase 1 is complete).
-In PHASE 1 never ask "are you ready?" or any question and never wait — just keep teaching.
+Add to the JSON: "done": true|false (true only when phase 1 is complete), "section": "<key of the section you are in: warm|vocab|verbs|sent|gram|conv|prac|quiz|recap>".
+In LECTURE mode never ask "are you ready?" or any question and never wait — just keep teaching. In INTERACTIVE mode, a teaching segment may END with exactly one short question for the student (then set "ask": true so the class waits for the answer); otherwise "ask": false.
 NEW TOPIC REQUESTS: if at ANY moment the student asks you to teach a topic (e.g. "کلمات ترید رو یادم بده", "teach me words about the airport", "می‌خوام دربارهٔ خرید یاد بگیرم"), do NOT start teaching it from memory in short turns. Instead reply with "say": one warm sentence like «عالیه! الان یه درس کامل دربارهٔ ... برات آماده می‌کنم، یه لحظه صبر کن» and set "new_topic": "<the topic in the student's words>". Otherwise "new_topic": "".
 If the audio is silent or unclear, kindly ask them to repeat.`;
-const RELAY_TEACH_START = '(PHASE 1 starts now. Greet the student warmly in 1-2 sentences, say today\'s topic, that this is a full class of about ' + (+G.settings.classMin || 60) + ' minutes and that you will first teach everything completely and then practise together, then teach the FIRST segment.)';
-const relayMin = () => +G.settings.classMin || 60;
+const RELAY_TEACH_START = '(The class starts now: do the WARM-UP section as designed (greet by name, today\'s topic, the plan with minutes), then immediately start the first teaching section.)';
+const relayMin = () => classPlan().total || 60;
 const langHint = () => ({ fa: ' LANGUAGE: the student chose PERSIAN — every explanation, comment, transition and joke MUST be in natural spoken Persian; English ONLY for the word/phrase/example being taught (always followed by its Persian meaning). Never speak whole English paragraphs.', mix: ' LANGUAGE: half Persian (explanations) and half simple English (practice).', en: ' LANGUAGE: mostly English; Persian only when the student is stuck.' })[G.settings.teachLang || 'fa'] || '';
 const relayEl = () => Math.round((Date.now() - (Live.started || Date.now())) / 60000);
-const RELAY_TIME = () => `(CLASS LENGTH: ${relayMin()} minutes in total; ${relayEl()} minutes have passed. Phase 1 (teaching) should take about ${Math.round(relayMin() * 0.6)} minutes, phase 2 (practice) the rest.)`;
-const relayTeachNext = () => langHint() + ` (PHASE 1: continue teaching the NEXT items that have not been taught yet — never repeat earlier items. ${RELAY_TIME()} If all items are taught but phase-1 time is not yet used, go DEEPER instead of finishing: more varied examples, short stories and mini-dialogues using the items, collocations and word families, related useful words that were not in the list, culture tips, common mistakes of Persian speakers, and quick recaps of earlier groups. Set done=true only when everything is taught AND about ${Math.round(relayMin() * 0.6)} minutes have passed (or the student asked to move on).)`;
+const relayTeachMin = () => classPlan().secs.filter(x => x.on && !['prac', 'quiz', 'recap'].includes(x.k)).reduce((a, x) => a + x.min, 0);
+const relaySecNow = () => { let t = 0; for (const x of classPlan().secs.filter(x => x.on)) { t += x.min; if (relayEl() < t) return x; } return classPlan().secs.filter(x => x.on).slice(-1)[0]; };
+const RELAY_TIME = () => { const sn = relaySecNow(); return `(CLASS LENGTH: ${relayMin()} minutes in total; ${relayEl()} minutes have passed. By the design you should now be in section «${CLASS_SECTIONS[sn.k].fa}» (${sn.k}). Teaching sections end at minute ${relayTeachMin()}; then practice/quiz/recap.)`; };
+const relayTeachNext = () => langHint() + ` (PHASE 1: continue teaching the NEXT items that have not been taught yet — never repeat earlier items. ${RELAY_TIME()} If all items are taught but phase-1 time is not yet used, go DEEPER instead of finishing: more varied examples, short stories and mini-dialogues using the items, collocations and word families, related useful words that were not in the list, culture tips, common mistakes of Persian speakers, and quick recaps of earlier groups. Set done=true only when all teaching sections are covered AND about ${relayTeachMin()} minutes have passed (or the student asked to move on).)`;
 const RELAY_TEACH_NEXT = '(PHASE 1: continue teaching the next items.)';
 const RELAY_QA_START = '(PHASE 1 is finished. Start PHASE 2: tell the student warmly that now it is their turn — they can ask any question, then you will practise together. Ask your first short question.)';
 const relayQaHint = () => `(PHASE 2. ${RELAY_TIME()}${langHint()} Keep practising with varied activities until the class time is used; in the last 3 minutes do the quiz recap and say goodbye.)`;
@@ -575,7 +615,7 @@ async function relayAsk(text) { // یک درخواست متنی به مغز (ب�
   const raw = d.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
   let r; try { r = JSON.parse(raw.replace(/^```json|```$/g, '')); } catch { r = { say: raw.replace(/[{}"]/g, '').slice(0, 1200) }; }
   r.__q = text; return r; }
-const relayNoAsk = r => { if (!r?.say || r.done || Relay.phase !== 'teach') return r; const ps = r.say.split(/(?<=[.!؟?…])\s+/); while (ps.length > 1) { const last = ps[ps.length - 1].trim(); if (/؟\s*$/.test(last) || (/\?\s*$/.test(last) && /[\u0600-\u06FF]/.test(last))) ps.pop(); else break; } r.say = ps.join(' '); return r; };
+const relayNoAsk = r => { if (!r?.say || r.done || Relay.phase !== 'teach' || (r.ask && classPlan().mode !== 'lecture')) return r; const ps = r.say.split(/(?<=[.!؟?…])\s+/); while (ps.length > 1) { const last = ps[ps.length - 1].trim(); if (/؟\s*$/.test(last) || (/\?\s*$/.test(last) && /[\u0600-\u06FF]/.test(last))) ps.pop(); else break; } r.say = ps.join(' '); return r; };
 const relayPre = r => { relayNoAsk(r); if (r?.say && G.settings.voiceFa !== 'browser') relayChunks(r.say).slice(0, 2).forEach(p => cloudTTS(G.settings.voiceFa, p, 'fa', 'cheerful').catch(() => { })); return r; };
 async function relayTeach(first) {
   const ui = Relay.ui; Relay.paused = false; relayMicBtn(true, 'teach'); ui.status('📖 معلم دارد درس را کامل توضیح می‌دهد… (سؤال داشتی «✋ سؤال دارم» را بزن)');
@@ -589,6 +629,7 @@ async function relayTeach(first) {
     if (r.say) { ui.say('t', r.say); ui.say('end'); liveLog('T', r.say + ' '); Relay.turnId = (Relay.turnId || 0) + 1; if (!(await relaySpeak(r.say))) break; }
     if (r.done) { Relay.phase = 'qa'; break; }
     if (Relay.paused) return;
+    if (r.ask && classPlan().mode !== 'lecture') { Relay.phase = 'pause'; Relay.paused = true; Relay.askPause = true; ui.status('جواب بده 🙂 (بعدش خودش ادامه می‌دهد)'); relayListen(); return; }
     if (Relay.queued) { const q = Relay.queued; Relay.queued = null; Relay.phase = 'pause'; Relay.paused = true; return relayTurn(q); }
   }
   if (Relay.on && Relay.phase === 'qa' && !Relay.paused) { relayMicBtn(true, 'busy'); relayTurn({ text: RELAY_QA_START }); }
@@ -620,6 +661,7 @@ async function relayTurn(input) {
     if (r.say) { ui.say('t', r.say); ui.say('end'); liveLog('T', r.say + ' '); ui.status('🔊 معلم حرف می‌زند… (برای حرف زدن، 🎤 را بزن)'); relayMicBtn(true, 'speak'); Relay.busy = false; Relay.turnId = (Relay.turnId || 0) + 1; if (!(await relaySpeak(r.say))) return; }
   } catch (e) { console.warn(e); if (Relay.on) { ui.status('اینترنت کند بود؛ دوباره حرف بزن یا بنویس.'); } }
   finally { Relay.busy = false; }
+  if (Relay.on && Relay.askPause && Relay.phase === 'pause') { Relay.askPause = false; Relay.phase = 'teach'; return relayTeach('(Good — the student answered and you reacted. Continue the teaching section from exactly where you stopped.)'); }
   if (Relay.on && Relay.queued) { const q = Relay.queued; Relay.queued = null; Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); return relayTurn(q); }
   if (Relay.on && !Relay.busy) relayListen();
 }

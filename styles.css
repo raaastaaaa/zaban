@@ -470,3 +470,7 @@ body.nopron .pron{display:none!important}
 .ar-u.cur{border:2px solid var(--acc,#14b8a6)}
 /* حالت عربی: متن‌های «زبان هدف» راست‌به‌چپ و با قلم عربی */
 body.tl-ar .en:not(.keep-en){direction:rtl;unicode-bidi:plaintext;font-family:"Noto Naskh Arabic","Amiri","Vazirmatn",serif;font-size:1.08em;line-height:1.9}
+.cd-card{gap:8px}.cd-secs{display:flex;flex-direction:column;gap:4px}
+.cd-sec{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:10px;background:var(--card2,rgba(0,0,0,.035))}
+.cd-sec.off{opacity:.45}.cd-min{min-width:34px;text-align:center}
+.mini{width:28px;height:28px;border-radius:50%;border:1px solid var(--line,#ddd);background:var(--card,#fff);font-weight:800}
