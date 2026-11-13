@@ -56,10 +56,12 @@ const ZH_ROOMS = [
 const roomsNow = () => ({ ar: AR_ROOMS, de: DE_ROOMS, tr: TR_ROOMS, zh: ZH_ROOMS })[tl()] || ROOMS;
 const BAD_WORDS = { test: t => { const toks = String(t).toLowerCase().split(/[\s.,!?؟،؛:;"'()\[\]{}«»\-_/\\*]+/).filter(Boolean); const en = /^(f+u+c+k\w*|sh[i1]t\w*|b[i1]tch\w*|d[i1]ck|d[i1]cks|pussy|porn\w*|n[i1]gg\w*|asshole\w*|bastards?|sluts?|whores?)$/; const fa = /^(کیر\S*|کسکش\S*|جنده\S*|کون|کونی|سکس\S*|لاشی|حرومزاده\S*|گاییدم|گاییدی)$/; return toks.some(w => en.test(w) || fa.test(w)) || /کس\s+کش/.test(t); } };
 
+const PCOLS = 'id,username,display_name,avatar,photo,is_admin,banned,warnings,created_at'; // «آخرین بازدید» عمداً نیست: فقط مدیر می‌بیند
+const amAdmin = () => !!OP?.is_admin;
 let _sb = null, _sbFor = null, OP = null; // OP = پروفایل آنلاین کاربر فعال
 function sb() { if (!window.supabase) return null; if (_sb && _sbFor === G.active) return _sb; _sbFor = G.active; _sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, storageKey: 'zd-sb-' + G.active, autoRefreshToken: true } }); OP = null; return _sb; }
 async function session() { const c = sb(); if (!c) return null; try { const { data } = await c.auth.getSession(); return data.session; } catch { return null; } }
-async function myProfile(force) { if (OP && !force) return OP; const s = await session(); if (!s) return null; const { data } = await sb().from('profiles').select('*').eq('id', s.user.id).maybeSingle(); OP = data || null; if (OP && G.active) { lsSet('zd:admin:' + G.active, !!OP.is_admin); lsSet('zd:unlock:' + G.active, OP.unlock || ''); } return OP; }
+async function myProfile(force) { if (OP && !force) return OP; const s = await session(); if (!s) return null; const { data } = await sb().from('profiles').select(PCOLS).eq('id', s.user.id).maybeSingle(); OP = data || null; if (OP && G.active) { lsSet('zd:admin:' + G.active, !!OP.is_admin); lsSet('zd:unlock:' + G.active, OP.unlock || ''); } return OP; }
 
 /* ───── ورود و ثبت‌نام با کد تأیید ایمیل ───── */
 function loginSheet(after) {
@@ -116,12 +118,23 @@ async function handleAuthRedirect() {
 }
 
 /* ───── همگام‌سازی پیشرفت ───── */
+/* آمار هر زبان جدا: فقط دقیقه‌های مطالعه (امروز/هفته/کل) و درس فعلیِ همان زبان */
+function langStats() {
+  const out = {}; const langs = new Set(['en']); Object.values(U.log).forEach(L => L.ml && Object.keys(L.ml).forEach(k => langs.add(k)));
+  for (const lg of langs) { let week = 0, total = 0; for (const d of Object.keys(U.log)) { const m = langMinOf(d, lg); total += m; } for (let d = weekStart(); d <= isoDay(); d = addDays(d, 1)) week += langMinOf(d, lg);
+    if (total < 1) continue; out[lg] = { week: Math.round(week), total: Math.round(total), wk: weekStart() }; } // بدون تاریخ روز: کسی نفهمد آخرین بار کی آمده
+  try { const cur = tl(); if (out[cur]) out[cur].unit = cur === 'en' ? currentUnit().fa : (curUnits()[curIdx()]?.[2] || ''); } catch { }
+  return out;
+}
+const weekStart = (d = isoDay()) => { const w = new Date(d + 'T12:00:00Z').getUTCDay(); return addDays(d, -((w + 1) % 7)); }; // شنبه‌ی همین هفته
+const fmtMin = m => m >= 60 ? `${faNum(Math.floor(m / 60))} ساعت${m % 60 ? ' و ' + faNum(m % 60) + ' دقیقه' : ''}` : `${faNum(m || 0)} دقیقه`;
+const langLabel = () => tl() === 'en' ? 'انگلیسی' : tlInfo().fa;
 let syncT = 0;
 async function syncNow() {
   const p = await myProfile(); if (!p || !U) return; if (window.backupSafe && !(await backupSafe())) return;
   const sum = (n) => { let s = 0; for (let i = 0; i < n; i++) s += U.log[addDays(isoDay(), -i)]?.min || 0; return Math.round(s); };
   const ai30 = aiUseSum(U, 3650);
-  const row = { user_id: p.id, xp: U.xp || 0, week_xp: weekXP(U), streak: streakOf(U), mastered: masteredCount(), learned: learnedCount(), current_unit: currentUnit().fa, minutes_total: Math.round(Object.values(U.log).reduce((a, x) => a + (x.min || 0), 0)), minutes_today: sum(1), minutes_week: sum(7), ai_chat: ai30.chat, ai_voice: ai30.voice, level: U.placement?.level || null, updated_at: new Date().toISOString() };
+  const row = { user_id: p.id, xp: U.xp || 0, week_xp: weekXP(U), streak: streakOf(U), mastered: masteredCount(), learned: learnedCount(), current_unit: currentUnit().fa, minutes_total: Math.round(Object.values(U.log).reduce((a, x) => a + (x.min || 0), 0)), minutes_today: sum(1), minutes_week: sum(7), ai_chat: ai30.chat, ai_voice: ai30.voice, level: U.placement?.level || null, updated_at: new Date().toISOString(), lang_stats: langStats() };
   try { await sb().from('progress').upsert(row, { onConflict: 'user_id' }); await sb().from('profiles').update({ last_seen: new Date().toISOString(), display_name: me().name, avatar: me().avatar, photo: me().photo || null }).eq('id', p.id); } catch { }
 }
 setInterval(() => { if (U?.online && document.visibilityState === 'visible') syncNow(); }, 90000);
@@ -130,17 +143,20 @@ addEventListener('visibilitychange', () => { if (document.visibilityState === 'h
 /* ───── رقابت زنده و پیام‌های مدیر روی صفحهٔ اول ───── */
 async function homeOnline() {
   const box = $('#online-home'); if (!box) return;
-  if (!U.online) { box.innerHTML = `<div class="card row" style="flex-wrap:nowrap"><span style="font-size:28px">🌐</span><div class="grow"><b>رقابت با همه</b><div class="small muted">با یک کلیک وارد مسابقه شو؛ سطح، درس‌ها، واژه‌ها و زمان مطالعهٔ همه را ببین. ایمیل لازم نیست.</div></div><button class="btn sm" id="lg">پیوستن به رقابت</button></div>`; $('#lg').onclick = () => joinCompetition(); return; }
+  if (!U.online) { box.innerHTML = `<div class="card row" style="flex-wrap:nowrap"><span style="font-size:28px">🌐</span><div class="grow"><b>رقابت با همه</b><div class="small muted">با یک کلیک وارد مسابقه شو و زمان مطالعه‌ات را با هم‌زبان‌هایت مقایسه کن. ایمیل لازم نیست.</div></div><button class="btn sm" id="lg">پیوستن به رقابت</button></div>`; $('#lg').onclick = () => joinCompetition(); return; }
   syncNow();
   try {
-    startPresence(); const { data } = await sb().from('progress').select('week_xp,xp,streak,mastered,learned,current_unit,minutes_today,minutes_week,profiles(username,display_name,avatar,photo,last_seen)').order('week_xp', { ascending: false }).limit(10);
+    startPresence(); const lg = tl();
+    const { data: raw } = await sb().from('progress').select('user_id,lang_stats,profiles(username,display_name,avatar,photo)').limit(1000);
+    const wk = weekStart(); const stat = r => { const x = r.lang_stats?.[lg]; if (!x) return null; return { week: x.wk === wk ? x.week || 0 : 0, total: x.total || 0, unit: x.unit || '' }; };
+    const data = (raw || []).map(r => ({ ...r, s: stat(r) })).filter(r => r.s && r.profiles).sort((a, b) => b.s.week - a.s.week || b.s.total - a.s.total).slice(0, 10);
     const p = await myProfile();
     const { data: notes } = await sb().from('notices').select('*').order('created_at', { ascending: false }).limit(5);
     const seen = lsGet('zd:noteSeen:' + G.active, 0); const fresh = (notes || []).filter(n => new Date(n.created_at).getTime() > seen);
     box.innerHTML = `${fresh.map(n => `<div class="notice stack"><b>📣 ${esc(n.title)}</b><span class="small">${esc(n.body)}</span></div>`).join('')}${fresh.length ? '<button class="btn line sm" id="nseen">خواندم</button>' : ''}
     <div class="row"><a class="btn ghost sm" href="#dm">💬 پیام‌ها<span id="unr"></span></a><a class="btn ghost sm" href="#rooms">🗣️ انجمن</a></div>
-    <div class="sec">🏆 جدول رقابت زنده <small>همهٔ کاربران · امتیاز این هفته</small></div>
-    <div class="card stack">${(data || []).map((r, i) => `<a class="row" href="#u/${esc(r.profiles?.username)}" style="text-decoration:none;color:inherit;flex-wrap:nowrap;${r.profiles?.username === p?.username ? 'background:var(--accent-soft);border-radius:10px;padding:4px' : ''}"><span style="width:24px;font-weight:900">${['🥇', '🥈', '🥉'][i] || faNum(i + 1)}</span><span class="avatar">${safeImg(r.profiles?.photo) ? `<img src="${safeImg(r.profiles.photo)}" alt="" style="width:100%;height:100%;object-fit:cover">` : esc(r.profiles?.avatar || '🙂')}</span>${dot(r.profiles?.username)}<span class="grow" style="min-width:0"><b>${esc(r.profiles?.display_name)}</b> <span class="en tiny muted">@${esc(r.profiles?.username)}</span><br><span class="tiny muted">${esc(r.current_unit || '')} · امروز ${faNum(r.minutes_today)} دقیقه · 🔥${faNum(r.streak)} · ${ONLINE.has(r.profiles?.username) ? '<b style="color:var(--ok)">آنلاین</b>' : lastSeenFa(r.profiles?.last_seen)}</span></span><span class="pill acc">${faNum(r.week_xp)}</span></a>`).join('') || '<span class="small muted">هنوز کسی نیست؛ اولین نفر باش!</span>'}</div>`;
+    <div class="sec">🏆 رقابت ${esc(langLabel())} <small>فقط زبان‌آموزهای ${esc(langLabel())} · زمان مطالعهٔ این هفته (از شنبه)</small></div>
+    <div class="card stack">${data.length ? data.map((r, i) => `<a class="row" href="#u/${esc(r.profiles.username)}" style="text-decoration:none;color:inherit;flex-wrap:nowrap;${r.profiles.username === p?.username ? 'background:var(--accent-soft);border-radius:10px;padding:4px' : ''}"><span style="width:24px;font-weight:900">${['🥇', '🥈', '🥉'][i] || faNum(i + 1)}</span><span class="avatar">${safeImg(r.profiles.photo) ? `<img src="${safeImg(r.profiles.photo)}" alt="" style="width:100%;height:100%;object-fit:cover">` : esc(r.profiles.avatar || '🙂')}</span>${dot(r.profiles.username)}<span class="grow" style="min-width:0"><b>${esc(r.profiles.display_name)}</b> <span class="en tiny muted">@${esc(r.profiles.username)}</span><br><span class="tiny muted">${r.s.unit ? esc(r.s.unit) + ' · ' : ''}کل: ${fmtMin(r.s.total)}</span></span><b class="num small" style="white-space:nowrap">${fmtMin(r.s.week)}</b></a>`).join('') : `<span class="small muted">هنوز کسی در این هفته ${esc(langLabel())} نخوانده؛ اولین نفر باش!</span>`}</div>`;
     unreadCount().then(n => { if (n && $('#unr')) $('#unr').innerHTML = ` <span class="pill bad">${faNum(n)}</span>`; }).catch(() => { });
     $('#nseen') && ($('#nseen').onclick = () => { lsSet('zd:noteSeen:' + G.active, Date.now()); homeOnline(); });
   } catch { box.innerHTML = '<div class="small muted">اتصال به جدول رقابت برقرار نشد (اگر در ایرانی، VPN را روشن کن).</div>'; }
@@ -150,12 +166,14 @@ async function homeOnline() {
 routes.u = async (username) => {
   setTop('@' + username, true); const v = view(); v.innerHTML = loading();
   if (!(await session())) { v.innerHTML = '<div class="card stack"><b>برای دیدن صفحهٔ کاربران وارد حساب آنلاین شو.</b><button class="btn" id="lg">ورود</button></div>'; $('#lg').onclick = () => loginSheet(() => routes.u(username)); return; }
-  const { data: p } = await sb().from('profiles').select('*, progress(*)').eq('username', username).maybeSingle();
+  await myProfile(); const adm = amAdmin();
+  const { data: p } = await sb().from('profiles').select(PCOLS + ',progress(lang_stats)').eq('username', username).maybeSingle();
   if (!p) { v.innerHTML = '<div class="card">کاربری با این یوزرنیم پیدا نشد.</div>'; return; }
-  const g = Array.isArray(p.progress) ? p.progress[0] : p.progress || {};
-  v.innerHTML = `<div class="stack"><div class="card stack" style="align-items:center;text-align:center"><span class="avatar" style="width:96px;height:96px;font-size:48px">${safeImg(p.photo) ? `<img src="${safeImg(p.photo)}" alt="" style="width:100%;height:100%;object-fit:cover">` : esc(p.avatar)}</span><b style="font-size:20px">${esc(p.display_name)} ${dot(p.username)}</b><span class="en muted">@${esc(p.username)}</span><span class="small ${ONLINE.has(p.username) ? '' : 'muted'}">${ONLINE.has(p.username) ? '🟢 الان آنلاین است' : 'آخرین بازدید: ' + lastSeenFa(p.last_seen)}</span><a class="btn sm" href="#dm/${esc(p.username)}">💬 پیام دادن</a><span class="pill">${rankOf(g.xp || 0)} · عضو از ${jLabel(p.created_at.slice(0, 10), true)}</span></div>
-  <div class="grid2">${[['⭐', 'امتیاز کل', g.xp], ['🔥', 'روز پیاپی', g.streak], ['🎓', 'درس قبول‌شده', g.mastered], ['🧠', 'واژهٔ تثبیت‌شده', g.learned], ['⏱️', 'دقیقه امروز', g.minutes_today], ['📅', 'دقیقه این هفته', g.minutes_week]].map(([ic, l, n]) => `<div class="card" style="text-align:center"><div style="font-size:22px">${ic}</div><b class="num" style="font-size:22px">${faNum(n || 0)}</b><div class="small muted">${l}</div></div>`).join('')}</div>
-  <div class="card small">درس فعلی: <b>${esc(g.current_unit || '—')}</b></div></div>`;
+  const g = (Array.isArray(p.progress) ? p.progress[0] : p.progress) || {}; const lg = tl(); const x = g.lang_stats?.[lg];
+  const week = x && x.wk === weekStart() ? x.week || 0 : 0;
+  let seen = ''; if (adm) { const { data: a } = await sb().rpc('admin_last_seen', { uname: username }); seen = `<span class="small ${ONLINE.has(p.username) ? '' : 'muted'}">${ONLINE.has(p.username) ? '🟢 الان آنلاین است' : 'آخرین بازدید: ' + (a ? lastSeenFa(a) : '—')} <span class="tiny">(فقط تو می‌بینی)</span></span>`; }
+  v.innerHTML = `<div class="stack"><div class="card stack" style="align-items:center;text-align:center"><span class="avatar" style="width:96px;height:96px;font-size:48px">${safeImg(p.photo) ? `<img src="${safeImg(p.photo)}" alt="" style="width:100%;height:100%;object-fit:cover">` : esc(p.avatar)}</span><b style="font-size:20px">${esc(p.display_name)} ${dot(p.username)}</b><span class="en muted">@${esc(p.username)}</span>${seen}<a class="btn sm" href="#dm/${esc(p.username)}">💬 پیام دادن</a></div>
+  ${x ? `<div class="sec">⏱️ مطالعهٔ ${esc(langLabel())}</div><div class="grid2">${[['📅', 'این هفته', week], ['⏳', 'کل', x.total || 0]].map(([ic, l, n]) => `<div class="card" style="text-align:center"><div style="font-size:22px">${ic}</div><b class="num" style="font-size:20px">${fmtMin(n)}</b><div class="small muted">${l}</div></div>`).join('')}</div>${x.unit ? `<div class="card small">درس فعلی در ${esc(langLabel())}: <b>${esc(x.unit)}</b></div>` : ''}` : `<div class="card small muted">${esc(p.display_name)} هنوز ${esc(langLabel())} نخوانده است.</div>`}</div>`;
 };
 
 /* ───── انجمن و چت‌روم با معلم ناظر ───── */
@@ -223,7 +241,7 @@ routes.rooms = async (id) => {
 routes.admin = async () => {
   setTop('پنل مدیر', true); const v = view(); v.innerHTML = loading();
   const p = await myProfile(true); if (!p?.is_admin) { v.innerHTML = '<div class="card">این صفحه فقط برای مدیر است.</div>'; return; }
-  const { data: rows } = await sb().from('profiles').select('*, progress(*)').order('last_seen', { ascending: false }).limit(500);
+  const { data: rows } = await sb().rpc('admin_users'); // فقط مدیر؛ شامل آخرین بازدید
   const users = rows || []; const today = isoDay(); const g = u => (Array.isArray(u.progress) ? u.progress[0] : u.progress) || {};
   startPresence(); const activeToday = users.filter(u => isoDay(new Date(u.last_seen)) === today).length; const week = users.filter(u => Date.now() - new Date(u.last_seen) < 7 * DAY).length;
   const since = addDays(today, -29); const { data: usage } = await sb().from('ai_usage').select('user_id, day, usd, calls').gte('day', since);
@@ -271,7 +289,7 @@ function lastSeenFa(ts) {
   if (m < 2) return 'همین الان'; if (m < 60) return `${faNum(m)} دقیقه پیش`; const h = Math.round(m / 60); if (h < 24) return `${faNum(h)} ساعت پیش`;
   const d = Math.round(h / 24); return d < 30 ? `${faNum(d)} روز پیش` : jLabel(isoDay(new Date(ts)), true);
 }
-const dot = (username) => `<span class="dot${ONLINE.has(username) ? ' live' : ''}" data-dot="${esc(username)}" title="آنلاین"></span>`;
+const dot = (username) => amAdmin() ? `<span class="dot${ONLINE.has(username) ? ' live' : ''}" data-dot="${esc(username)}" title="آنلاین"></span>` : ''; // وضعیت آنلاین فقط برای مدیر
 setInterval(() => { if (U?.online) startPresence(); }, 5000);
 
 /* ───── پیام خصوصی ───── */
@@ -283,21 +301,21 @@ routes.dm = async (username) => {
     const { data, error } = await sb().from('dms').select('*').or(`from_user.eq.${me_.id},to_user.eq.${me_.id}`).order('created_at', { ascending: false }).limit(300);
     if (error) { v.innerHTML = `<div class="notice">پیام خصوصی هنوز فعال نشده؛ مدیر باید فایل supabase-setup-2.sql را اجرا کند.</div>`; return; }
     const ids = [...new Set((data || []).map(m => m.from_user === me_.id ? m.to_user : m.from_user))];
-    const { data: ps } = ids.length ? await sb().from('profiles').select('id,username,display_name,avatar,photo,last_seen').in('id', ids) : { data: [] };
-    const { data: everyone } = await sb().from('profiles').select('id,username,display_name,avatar,photo,last_seen,is_admin').order('last_seen', { ascending: false }).limit(200);
-    const row = (u, extra = '') => `<a class="card row" style="text-decoration:none;color:inherit;flex-wrap:nowrap" href="#dm/${esc(u.username)}"><span class="avatar" style="position:relative">${safeImg(u.photo) ? `<img src="${safeImg(u.photo)}" alt="">` : esc(u.avatar || '🙂')}</span>${dot(u.username)}<span class="grow" style="min-width:0"><b>${esc(u.display_name)}</b>${u.is_admin ? ' <span class="pill acc">مدیر</span>' : ''} <span class="en tiny muted">@${esc(u.username)}</span><br><span class="tiny muted">${ONLINE.has(u.username) ? 'آنلاین' : 'آخرین بازدید: ' + lastSeenFa(u.last_seen)}</span>${extra}</span></a>`;
+    const { data: ps } = ids.length ? await sb().from('profiles').select('id,username,display_name,avatar,photo').in('id', ids) : { data: [] };
+    const { data: everyone } = await sb().from('profiles').select('id,username,display_name,avatar,photo,is_admin').order('display_name').limit(300);
+    const row = (u, extra = '') => `<a class="card row" style="text-decoration:none;color:inherit;flex-wrap:nowrap" href="#dm/${esc(u.username)}"><span class="avatar" style="position:relative">${safeImg(u.photo) ? `<img src="${safeImg(u.photo)}" alt="">` : esc(u.avatar || '🙂')}</span>${dot(u.username)}<span class="grow" style="min-width:0"><b>${esc(u.display_name)}</b>${u.is_admin ? ' <span class="pill acc">مدیر</span>' : ''} <span class="en tiny muted">@${esc(u.username)}</span>${amAdmin() && ONLINE.has(u.username) ? '<br><span class="tiny muted">آنلاین</span>' : ''}${extra}</span></a>`;
     v.innerHTML = `<div class="stack">${ids.length ? '<div class="sec">گفتگوهای من</div>' + ids.map(id => { const u = (ps || []).find(x => x.id === id); if (!u) return ''; const last = data.find(m => m.from_user === id || m.to_user === id); const unread = data.filter(m => m.from_user === id && !m.read).length; return row(u, `<br><span class="small">${esc(last.body.slice(0, 60))}</span>${unread ? ` <span class="pill bad">${faNum(unread)} تازه</span>` : ''}`); }).join('') : ''}
     <div class="sec">همهٔ زبان‌آموزها <small>برای شروع گفتگو بزن</small></div><input id="fq" class="in" placeholder="جستجوی نام یا یوزرنیم…"><div class="stack" id="ev">${(everyone || []).filter(u => u.id !== me_.id).map(u => `<div data-q="${esc(u.display_name + ' ' + u.username)}">${row(u)}</div>`).join('')}</div></div>`;
     $('#fq').oninput = e => { const q = e.target.value.trim().toLowerCase(); $$('#ev [data-q]').forEach(d => d.hidden = q && !d.dataset.q.toLowerCase().includes(q)); };
     return;
   }
-  const { data: other } = await sb().from('profiles').select('*').eq('username', username).maybeSingle(); if (!other) { setTop('پیام', true); v.innerHTML = '<div class="card">کاربر پیدا نشد.</div>'; return; }
+  const { data: other } = await sb().from('profiles').select(PCOLS).eq('username', username).maybeSingle(); if (!other) { setTop('پیام', true); v.innerHTML = '<div class="card">کاربر پیدا نشد.</div>'; return; }
   setTop(other.display_name, true);
-  v.innerHTML = `<div class="convo"><a class="card row" href="#u/${esc(other.username)}" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span class="avatar">${safeImg(other.photo) ? `<img src="${safeImg(other.photo)}" alt="">` : esc(other.avatar)}</span>${dot(other.username)}<span class="grow"><b>${esc(other.display_name)}</b> <span class="en tiny muted">@${esc(other.username)}</span><br><span class="tiny muted" id="ls">${ONLINE.has(other.username) ? 'آنلاین' : 'آخرین بازدید: ' + lastSeenFa(other.last_seen)}</span></span></a>
+  v.innerHTML = `<div class="convo"><a class="card row" href="#u/${esc(other.username)}" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span class="avatar">${safeImg(other.photo) ? `<img src="${safeImg(other.photo)}" alt="">` : esc(other.avatar)}</span>${dot(other.username)}<span class="grow"><b>${esc(other.display_name)}</b> <span class="en tiny muted">@${esc(other.username)}</span>${amAdmin() && ONLINE.has(other.username) ? '<br><span class="tiny muted" id="ls">آنلاین</span>' : ''}</span></a>
   <div class="notice soft small">پیام‌ها خصوصی‌اند. سعی کن انگلیسی بنویسی؛ دکمهٔ ✨ متنت را قبل از فرستادن اصلاح می‌کند.</div><div class="msgs" id="msgs">${loading()}</div>
   <div class="composer"><textarea id="tx" rows="1" placeholder="پیام…"></textarea><button class="icon-btn" id="fix" title="اصلاح انگلیسی">✨</button><button class="icon-btn on" id="snd">${I.send}</button></div></div>`;
   const msgs = $('#msgs'); const pair = `and(from_user.eq.${me_.id},to_user.eq.${other.id}),and(from_user.eq.${other.id},to_user.eq.${me_.id})`;
-  const render = m => `<div class="msg ${m.from_user === me_.id ? 'me' : 'ai'}" dir="auto">${esc(m.body)}<div class="tiny" style="opacity:.6">${new Date(m.created_at).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}${m.from_user === me_.id && m.read ? ' ✓✓' : ''}</div></div>`;
+  const render = m => `<div class="msg ${m.from_user === me_.id ? 'me' : 'ai'}" dir="auto">${esc(m.body)}${m.from_user === me_.id || amAdmin() ? `<div class="tiny" style="opacity:.6">${new Date(m.created_at).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}${m.from_user === me_.id && m.read && amAdmin() ? ' ✓✓' : ''}</div>` : ''}</div>`; // زمان پیام طرف مقابل نمایش داده نمی‌شود
   const { data, error } = await sb().from('dms').select('*').or(pair).order('created_at').limit(300);
   if (error) { msgs.innerHTML = `<div class="notice">پیام خصوصی هنوز فعال نشده؛ مدیر باید فایل supabase-setup-2.sql را اجرا کند.</div>`; return; }
   msgs.innerHTML = (data || []).map(render).join('') || '<div class="small muted" style="text-align:center">اولین پیام را بفرست 👋</div>'; msgs.lastElementChild?.scrollIntoView();
@@ -336,7 +354,7 @@ async function authSignIn(id, pw) {
   }
   const { data, error } = await tmp.auth.signInWithPassword({ email, password: pw });
   if (error) return toast(authErrFa(error.message), 6000);
-  const { data: prof } = await tmp.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
+  const { data: prof } = await tmp.from('profiles').select(PCOLS).eq('id', data.user.id).maybeSingle();
   const md = data.user.user_metadata || {};
   const nm = prof?.display_name || md.display_name || 'کاربر', av = prof?.avatar || md.avatar || '🙂';
   const same = G.users.find(x => userData(x.id).online?.uid === data.user.id); const reuse = !same && U && !U.online && G.active;

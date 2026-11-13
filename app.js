@@ -192,6 +192,11 @@ const rankOf = xp => xp < 300 ? 'تازه‌کار' : xp < 1500 ? 'کاشف' : x
 /* زمان مطالعه: هر ۳۰ ثانیهٔ فعال حساب می‌شود */
 let lastAct = Date.now();
 ['pointerdown', 'keydown'].forEach(e => addEventListener(e, () => { lastAct = Date.now(); unlockAudio(); }, { passive: true }));
+/* زمان مطالعهٔ هر زبان جدا (برای رقابت فقط بین هم‌زبان‌ها): هر افزایش دقیقه به زبانِ در حال یادگیری نسبت داده می‌شود */
+let LM_SEEN = null;
+function langMinTick() { try { if (!U) return; const t = isoDay(); const L = U.log[t]; if (!L) return; const k = t + ':' + (G?.active || ''); if (!LM_SEEN || LM_SEEN.k !== k) { LM_SEEN = { k, v: L.min || 0 }; return; } const d = (L.min || 0) - LM_SEEN.v; LM_SEEN.v = L.min || 0; if (d > 0 && d < 120) { L.ml = L.ml || {}; const lg = tl(); L.ml[lg] = +((L.ml[lg] || 0) + d).toFixed(2); } } catch { } }
+setInterval(langMinTick, 5000);
+const langMinOf = (day, lg) => { const L = U.log[day]; if (!L) return 0; if (L.ml) return L.ml[lg] || 0; return lg === 'en' ? (L.min || 0) : 0; }; // روزهای قبل از این قابلیت = انگلیسی
 setInterval(() => { if (U && document.visibilityState === 'visible' && Date.now() - lastAct < 60000) { const t = isoDay(); const L = U.log[t] || (U.log[t] = { xp: 0, min: 0 }); L.min = +(L.min + 0.5).toFixed(1); saveU(); } }, 30000);
 
 function paceInfo() { // سرعت یادگیری و پیش‌بینی
