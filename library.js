@@ -32,7 +32,35 @@ const AR_BOOKS = [
   { id: 'ar-antara', lvl: 'adv', t: 'عنترة بن شداد', fa: 'عنتره، شوالیهٔ عرب', by: 'میراث عربی', hue: 0, ic: '🐎', ch: 8, about: 'the life and poetry of the knight-poet Antarah ibn Shaddad' },
   { id: 'ar-gulf', lvl: 'adv', t: 'حكايات من الخليج', fa: 'حکایت‌های خلیج', by: 'افسانه‌های مردمی خلیج', hue: 195, ic: '🐚', ch: 8, about: 'Gulf folk legends: pearl divers, the sea, desert and old Muscat' }
 ];
-const booksNow = () => (typeof tl === 'function' && tl() === 'ar') ? AR_BOOKS : BOOKS;
+/* کتاب‌های صوتی آلمانی، ترکی و چینی (بازنویسی آزاد ادبیات کهن و داستان‌های اختصاصی) */
+const DE_BOOKS = [
+  { id: 'de-berlin', lvl: 'easy', t: 'Ein neues Leben in Berlin', fa: 'زندگی تازه در برلین', by: 'داستان اختصاصی زبان رستا', hue: 0, ic: '🏙️', ch: 8, about: 'a young Iranian who moves to Berlin: Anmeldung, the WG flat, the U-Bahn, German colleagues and friends' },
+  { id: 'de-grimm', lvl: 'easy', t: 'Grimms Märchen', fa: 'افسانه‌های برادران گریم', by: 'برادران گریم', hue: 95, ic: '🍎', ch: 8, about: 'retold Grimm fairy tales: Hansel and Gretel, Snow White, the Bremen Town Musicians' },
+  { id: 'de-muench', lvl: 'easy', t: 'Die Abenteuer des Barons Münchhausen', fa: 'ماجراهای بارون مونکهاوزن', by: 'ادبیات کلاسیک آلمانی', hue: 35, ic: '🎩', ch: 7, about: 'the funny tall tales of Baron Münchhausen' },
+  { id: 'de-job', lvl: 'mid', t: 'Mein erster Job in München', fa: 'اولین کار من در مونیخ', by: 'داستان اختصاصی زبان رستا', hue: 210, ic: '💼', ch: 8, about: 'job interview, office life, bureaucracy and Bavarian culture in Munich' },
+  { id: 'de-emil', lvl: 'mid', t: 'Die Stadtmusikanten und andere Geschichten', fa: 'داستان‌های کوتاه آلمانی', by: 'بازنویسی آزاد', hue: 140, ic: '📚', ch: 8, about: 'short classic German stories and legends (Loreley, the Pied Piper of Hamelin)' },
+  { id: 'de-faust', lvl: 'adv', t: 'Faust — frei erzählt', fa: 'فاوست (بازگویی آزاد)', by: 'گوته', hue: 280, ic: '📜', ch: 7, about: 'a free prose retelling of Goethe\'s Faust' },
+  { id: 'de-history', lvl: 'adv', t: 'Geschichten aus Deutschland', fa: 'حکایت‌هایی از تاریخ آلمان', by: 'داستان اختصاصی زبان رستا', hue: 45, ic: '🏰', ch: 8, about: 'stories from German history: castles, Gutenberg, the fall of the Berlin Wall' }
+];
+const TR_BOOKS = [
+  { id: 'tr-istanbul', lvl: 'easy', t: "İstanbul'da Yeni Bir Hayat", fa: 'زندگی تازه در استانبول', by: 'داستان اختصاصی زبان رستا', hue: 200, ic: '🕌', ch: 8, about: 'a young Iranian in Istanbul: ferry rides, the bazaar, çay, neighbours and friends' },
+  { id: 'tr-nasreddin', lvl: 'easy', t: 'Nasreddin Hoca Fıkraları', fa: 'لطیفه‌های ملانصرالدین', by: 'ادبیات عامیانهٔ ترکی', hue: 35, ic: '🫏', ch: 7, about: 'funny stories of Nasreddin Hoca' },
+  { id: 'tr-keloglan', lvl: 'easy', t: 'Keloğlan Masalları', fa: 'قصه‌های کچل اوغلان', by: 'افسانه‌های ترکی', hue: 95, ic: '🧒', ch: 7, about: 'Turkish folk tales of the clever bald boy Keloğlan' },
+  { id: 'tr-trade', lvl: 'mid', t: 'Kapalıçarşı\'da Ticaret', fa: 'تجارت در بازار بزرگ', by: 'داستان اختصاصی زبان رستا', hue: 25, ic: '🧿', ch: 8, about: 'an Iranian trader in the Grand Bazaar: negotiation, partners, shipping' },
+  { id: 'tr-dede', lvl: 'mid', t: 'Dede Korkut Hikâyeleri', fa: 'حکایت‌های دده قورقود', by: 'حماسهٔ اوغوز', hue: 140, ic: '🏹', ch: 8, about: 'the Oghuz epic tales of Dede Korkut' },
+  { id: 'tr-rumi', lvl: 'adv', t: 'Mevlâna\'dan Hikâyeler', fa: 'حکایت‌هایی از مولانا', by: 'مولانا', hue: 330, ic: '🌀', ch: 7, about: 'stories from Rumi\'s Masnavi, retold in Turkish, and life in Konya' },
+  { id: 'tr-ottoman', lvl: 'adv', t: 'Osmanlı Sarayından Hikâyeler', fa: 'حکایت‌هایی از کاخ عثمانی', by: 'داستان اختصاصی زبان رستا', hue: 45, ic: '👑', ch: 8, about: 'stories from Ottoman history: Topkapı palace, Mimar Sinan, the Tulip Era' }
+];
+const ZH_BOOKS = [
+  { id: 'zh-beijing', lvl: 'easy', t: '在北京的新生活', fa: 'زندگی تازه در پکن', by: 'داستان اختصاصی زبان رستا', hue: 0, ic: '🏮', ch: 8, about: 'a young Iranian in Beijing: hutongs, the subway, WeChat pay, Chinese friends' },
+  { id: 'zh-idioms', lvl: 'easy', t: '成语故事', fa: 'داستان ضرب‌المثل‌های چینی', by: 'ادبیات کهن چین', hue: 35, ic: '🐉', ch: 8, about: 'the stories behind famous Chinese chengyu idioms' },
+  { id: 'zh-fables', lvl: 'easy', t: '中国寓言', fa: 'حکایت‌های پندآموز چینی', by: 'ادبیات کهن چین', hue: 95, ic: '🐼', ch: 7, about: 'short Chinese fables and folk tales' },
+  { id: 'zh-trade', lvl: 'mid', t: '义乌的生意', fa: 'تجارت در ییوو', by: 'داستان اختصاصی زبان رستا', hue: 25, ic: '📦', ch: 8, about: 'an Iranian trader in Yiwu and Guangzhou: suppliers, samples, prices, shipping' },
+  { id: 'zh-monkey', lvl: 'mid', t: '西游记故事', fa: 'سفر به غرب (شاه میمون)', by: 'وو چنگ‌ئن', hue: 45, ic: '🐒', ch: 8, about: 'adventures of the Monkey King from Journey to the West' },
+  { id: 'zh-silk', lvl: 'adv', t: '丝绸之路', fa: 'جادهٔ ابریشم', by: 'داستان اختصاصی زبان رستا', hue: 200, ic: '🐫', ch: 7, about: 'stories of the Silk Road between China and Persia' },
+  { id: 'zh-confucius', lvl: 'adv', t: '孔子的故事', fa: 'داستان‌هایی از کنفوسیوس', by: 'فلسفهٔ چین', hue: 280, ic: '📜', ch: 7, about: 'the life and teachings of Confucius in simple stories' }
+];
+const booksNow = () => { const t = typeof tl === 'function' ? tl() : 'en'; return ({ ar: AR_BOOKS, de: DE_BOOKS, tr: TR_BOOKS, zh: ZH_BOOKS })[t] || BOOKS; };
 const LVL = { easy: { fa: 'ساده', cefr: 'A1–A2', words: 120 }, mid: { fa: 'متوسط', cefr: 'B1', words: 220 }, adv: { fa: 'پیشرفته', cefr: 'B2', words: 320 } };
 const coverUrl = b => `https://image.pollinations.ai/prompt/${encodeURIComponent(`illustrated book cover art for "${b.t}", ${b.about}, painterly, vivid, no text, no letters`)}?width=360&height=540&nologo=true&seed=${parseInt(hashStr(b.id), 36) % 9999}`;
 const bookState = id => (U.books || (U.books = {}))[id] || (U.books[id] = { read: [], sec: 0, last: 0, added: isoDay() });

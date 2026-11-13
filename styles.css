@@ -506,6 +506,48 @@ body.tl-ar .sec{color:#8C2F2F;letter-spacing:.3px}
 body.tl-ar .sec::before{content:'۞ ';color:var(--mark)}
 body.tl-ar #top h1{font-family:'Vazirmatn',serif}
 body.tl-ar .tl-card{background:linear-gradient(135deg,rgba(201,162,39,.12),transparent);border-color:var(--mark)}
+
+/* ═══ آلمان: باوهاوس — زغالی، قرمز و طلایی پرچم، شبکهٔ هندسی تمیز، گوشه‌های تیزتر ═══ */
+body.tl-de{ --hero:#1C1C1E; --hero-ink:#F5F3EE; --bg:#F4F3F0; --surface:#FFFFFF; --sunk:#E8E6E1; --ink:#161616; --muted:#5E5D5A; --line:#DAD7D0; --accent:#B3261E; --accent-ink:#FFFFFF; --accent-soft:#F6DCD9; --mark:#D4A72C; --mark-ink:#231A00; --ok:#2F6B4F; --ok-soft:#DDEFE4; --acc:#B3261E;
+  background-color:var(--bg); background-image:linear-gradient(rgba(28,28,30,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(28,28,30,.045) 1px, transparent 1px); background-size:28px 28px; }
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body.tl-de{ --bg:#121214; --surface:#1C1C1F; --sunk:#26262A; --ink:#F2F0EB; --muted:#A9A69F; --line:#34343A; --accent:#E5534B; --accent-ink:#1A0000; --accent-soft:#3A2220; --mark:#E2B93B; --mark-ink:#241C00; --acc:#E5534B; background-image:linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); }}
+:root[data-theme="dark"] body.tl-de{ --bg:#121214; --surface:#1C1C1F; --sunk:#26262A; --ink:#F2F0EB; --muted:#A9A69F; --line:#34343A; --accent:#E5534B; --accent-ink:#1A0000; --accent-soft:#3A2220; --mark:#E2B93B; --mark-ink:#241C00; --acc:#E5534B; background-image:linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); }
+body.tl-de .live-card{background:linear-gradient(160deg,#1C1C1E,#2B2B2F 55%,#B3261E 150%)}
+body.tl-de .today{background:linear-gradient(135deg,#1C1C1E,#33333A)}
+body.tl-de .sec{color:#B3261E;letter-spacing:.3px}
+body.tl-de .sec::before{content:'■ ';color:var(--mark)}
+body.tl-de .tl-card{background:linear-gradient(135deg,color-mix(in srgb,var(--mark) 14%,transparent),transparent);border-color:var(--mark)}
+body.tl-de .card{border-radius:10px;border:1px solid var(--line);border-top:3px solid #1C1C1E}
+body.tl-de .btn{border-radius:8px}
+body.tl-de .today{border-bottom:4px solid #D4A72C}
+
+/* ═══ ترکیه: کاشی ایزنیک — آبی کبالت، فیروزه‌ای، قرمز مرجانی روی زمینهٔ عاجی، نقش لاله ═══ */
+body.tl-tr{ --hero:#1E3A8A; --hero-ink:#F8F4EA; --bg:#F7F2E7; --surface:#FFFCF5; --sunk:#ECE3D0; --ink:#1B2238; --muted:#5F6170; --line:#E2D7C0; --accent:#C0392B; --accent-ink:#FFF8F0; --accent-soft:#F6DDD8; --mark:#0E7C86; --mark-ink:#FFFFFF; --ok:#2F7A4F; --ok-soft:#DFF0E3; --acc:#0E7C86;
+  background-color:var(--bg); background-image:radial-gradient(circle at 50% 50%, rgba(30,58,138,.07) 2px, transparent 2.6px), radial-gradient(circle at 0 0, rgba(14,124,134,.06) 6px, transparent 6.6px); background-size:22px 22px, 44px 44px; }
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body.tl-tr{ --bg:#121828; --surface:#1A2136; --sunk:#232B44; --ink:#F1ECE0; --muted:#A9AEC0; --line:#2E3854; --accent:#F07A6A; --accent-ink:#2A0700; --accent-soft:#3C2630; --mark:#3FB7C1; --mark-ink:#00262A; --acc:#3FB7C1; background-image:radial-gradient(circle at 50% 50%, rgba(63,183,193,.08) 2px, transparent 2.6px); }}
+:root[data-theme="dark"] body.tl-tr{ --bg:#121828; --surface:#1A2136; --sunk:#232B44; --ink:#F1ECE0; --muted:#A9AEC0; --line:#2E3854; --accent:#F07A6A; --accent-ink:#2A0700; --accent-soft:#3C2630; --mark:#3FB7C1; --mark-ink:#00262A; --acc:#3FB7C1; background-image:radial-gradient(circle at 50% 50%, rgba(63,183,193,.08) 2px, transparent 2.6px); }
+body.tl-tr .live-card{background:linear-gradient(160deg,#1E3A8A,#0E7C86 60%,#C0392B 150%)}
+body.tl-tr .today{background:linear-gradient(135deg,#1E3A8A,#24489E)}
+body.tl-tr .sec{color:#1E3A8A;letter-spacing:.3px}
+body.tl-tr .sec::before{content:'❀ ';color:var(--mark)}
+body.tl-tr .tl-card{background:linear-gradient(135deg,color-mix(in srgb,var(--mark) 14%,transparent),transparent);border-color:var(--mark)}
+body.tl-tr .card{border:1px solid var(--line);box-shadow:0 1px 0 rgba(14,124,134,.25) inset}
+body.tl-tr .today{border-bottom:3px solid #0E7C86}
+
+/* ═══ چین: سرخ امپراتوری و طلایی روی کاغذ برنج، جوهر سیاه، نقش ابر ═══ */
+body.tl-zh{ --hero:#7A1414; --hero-ink:#FBF3E4; --bg:#F8F3E8; --surface:#FFFDF7; --sunk:#EFE6D3; --ink:#1A1512; --muted:#6A5F55; --line:#E6DAC2; --accent:#9E1B1B; --accent-ink:#FFF7EC; --accent-soft:#F5DAD3; --mark:#C9A227; --mark-ink:#2A2100; --ok:#2F7A4F; --ok-soft:#DFF0E3; --acc:#9E1B1B;
+  background-color:var(--bg); background-image:radial-gradient(circle at 25% 30%, rgba(158,27,27,.05) 8px, transparent 8.6px), radial-gradient(circle at 75% 70%, rgba(201,162,39,.07) 5px, transparent 5.6px); background-size:60px 60px, 60px 60px; }
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body.tl-zh{ --bg:#170F0E; --surface:#221615; --sunk:#2D1D1B; --ink:#F6EBDD; --muted:#BDAA98; --line:#3B2724; --accent:#E2574A; --accent-ink:#200400; --accent-soft:#3E2220; --mark:#E2B93B; --mark-ink:#241C00; --acc:#E2574A; background-image:radial-gradient(circle at 25% 30%, rgba(226,185,59,.06) 8px, transparent 8.6px); }}
+:root[data-theme="dark"] body.tl-zh{ --bg:#170F0E; --surface:#221615; --sunk:#2D1D1B; --ink:#F6EBDD; --muted:#BDAA98; --line:#3B2724; --accent:#E2574A; --accent-ink:#200400; --accent-soft:#3E2220; --mark:#E2B93B; --mark-ink:#241C00; --acc:#E2574A; background-image:radial-gradient(circle at 25% 30%, rgba(226,185,59,.06) 8px, transparent 8.6px); }
+body.tl-zh .live-card{background:linear-gradient(160deg,#7A1414,#9E1B1B 55%,#C9A227 150%)}
+body.tl-zh .today{background:linear-gradient(135deg,#7A1414,#93201C)}
+body.tl-zh .sec{color:#9E1B1B;letter-spacing:.3px}
+body.tl-zh .sec::before{content:'◈ ';color:var(--mark)}
+body.tl-zh .tl-card{background:linear-gradient(135deg,color-mix(in srgb,var(--mark) 14%,transparent),transparent);border-color:var(--mark)}
+body.tl-zh .card{border:1px solid var(--line);box-shadow:0 1px 0 rgba(201,162,39,.3) inset}
+body.tl-zh .today{border-bottom:3px solid #C9A227}
+body.tl-zh .en:not(.keep-en), body.tl-zh .fc-t{font-family:"Noto Serif SC","Noto Sans SC","PingFang SC","Microsoft YaHei",serif}
+body.tl-zh .fc-t{font-size:34px;letter-spacing:2px}
 /* ───── فلش‌کارت ───── */
 .fc-hero{background:linear-gradient(135deg,var(--accent-soft),var(--surface))}
 .fc-deck .fc-bar{height:5px;border-radius:5px;background:var(--sunk);margin-top:6px;overflow:hidden}.fc-deck .fc-bar i{display:block;height:100%;background:var(--accent)}
