@@ -8,9 +8,9 @@ const LS_FORMATS = {
   dialog: ['💬', 'مکالمه‌های واقعی', 'Several realistic everyday conversations in the situation of the topic (shop, phone, office…), each followed by a one-sentence Persian hint of what happened.'],
   podcast: ['🎧', 'پادکست آموزشی', 'A teacher-host explains the topic\'s key words and phrases in the target language slowly, with examples, like a learner podcast.'] };
 const LS = { on: false };
-function lsLevel() { if (tl() === 'ar') return curUnits()[curIdx()]?.[1] || 'A1'; return currentUnit().cefr || 'A1'; }
-function lsTopicDefault() { if (tl() === 'ar') { const A = curUnits()[curIdx()]; return `${A[2]} — ${A[3]}`; } const u = currentUnit(); return `${u.en} (${u.fa})`; }
-function lsWords() { try { if (tl() === 'ar') { const P = (U.customPlans || {})[`ar:${curUnits()[curIdx()][0]}:${tlDia()[2]}`]; return (P?.bank || []).flatMap(g => g.items).map(x => String(x).split(/\s[=—]\s/)[0]).slice(0, 40); } return unitWords(currentUnit()).map(w => w.w).slice(0, 40); } catch { return []; } }
+function lsLevel() { if (tl() !== 'en') return curUnits()[curIdx()]?.[1] || 'A1'; return currentUnit().cefr || 'A1'; }
+function lsTopicDefault() { if (tl() !== 'en') { const A = curUnits()[curIdx()]; return `${A[2]} — ${A[3]}`; } const u = currentUnit(); return `${u.en} (${u.fa})`; }
+function lsWords() { try { if (tl() !== 'en') { const P = (U.customPlans || {})[`${tl()}:${curUnits()[curIdx()][0]}:${tlDia()[2]}`]; return (P?.bank || []).flatMap(g => g.items).map(x => String(x).split(/\s[=—]\s/)[0]).slice(0, 40); } return unitWords(currentUnit()).map(w => w.w).slice(0, 40); } catch { return []; } }
 routes.listen = () => {
   setTop('استودیوی شنیداری', true); const v = view(); const S = U.listen || (U.listen = { min: 20, fmt: 'radio', speed: 'normal', fa: true });
   v.innerHTML = `<div class="stack">
@@ -31,12 +31,12 @@ routes.listen = () => {
 function lsStop() { LS.on = false; (LS.timers || []).forEach(clearTimeout); LS.timers = []; stopSpeak(); try { Music.stop(); } catch { } clearInterval(LS.clk); const s = $('#lsst'); if (s) s.hidden = true; const c = $('#lsclk'); if (c) c.hidden = true; }
 async function lsRun(S) {
   const v = view(); if (needAI($('#lsq'))) return; const topic = S.topic || lsTopicDefault(); const lvl = lsLevel(); const words = lsWords();
-  const L = tl() === 'ar' ? tlDia()[0] : (G.settings.accent === 'UK' ? 'British English' : 'American English');
+  const L = tl() !== 'en' ? tlDia()[0] : (G.settings.accent === 'UK' ? 'British English' : 'American English');
   const body = $('#lsbody'); body.hidden = false; body.innerHTML = `<b>${LS_FORMATS[S.fmt][0]} ${esc(LS_FORMATS[S.fmt][1])} · ${esc(topic)}</b><div id="lslines" class="stack" style="gap:4px"></div>`;
   LS.on = true; $('#lsst').hidden = false; const clk = $('#lsclk'); clk.hidden = false; const t0 = Date.now(); const total = S.min * 60;
   LS.clk = setInterval(() => { const s = Math.floor((Date.now() - t0) / 1000); clk.textContent = `${faNum(Math.floor(s / 60))}:${faNum(String(s % 60).padStart(2, '0'))} / ${faNum(S.min)}:۰۰`; }, 1000);
   const SYS = `You write ${L} listening material for a Persian-speaking learner at CEFR ${lvl}. Strictly at this level: simple structures and high-frequency words for A1/A2, richer for B1+. ${LS_FORMATS[S.fmt][2]} Natural spoken language as natives really talk (contractions, fillers, reactions). Use the target words naturally and recycle them. Every line is one speaker turn of 1-3 sentences.${tl() === 'ar' ? ' Write Arabic in Arabic script with harakat on difficult words; dialect: ' + L + '.' : ''} Persian translations must be natural colloquial Persian.`;
-  const hosts = tl() === 'ar' ? [['سالم', 'Charon'], ['مريم', 'Kore']] : [['Sam', 'Puck'], ['Lily', 'Kore']];
+  const hosts = { ar: [['سالم', 'Charon'], ['مريم', 'Kore']], de: [['Jonas', 'Charon'], ['Lena', 'Kore']], tr: [['Emre', 'Charon'], ['Elif', 'Kore']], zh: [['小明', 'Charon'], ['小雨', 'Kore']] }[tl()] || [['Sam', 'Puck'], ['Lily', 'Kore']];
   const VO = Object.fromEntries(hosts); const POS = { [hosts[0][0]]: [-1.2, -1], [hosts[1][0]]: [1.2, -1] };
   const asked = []; let part = 0, prev = ''; const allLines = [];
   const gen = async () => { const left = total - (Date.now() - t0) / 1000; const mins = Math.max(1, Math.min(2, Math.round(left / 60)));

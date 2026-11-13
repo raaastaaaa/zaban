@@ -220,8 +220,14 @@ function firstKeyed() { const p = G.settings.prov; return ['gemini', 'groq', 'an
 /* اگر سهمیهٔ یک سرویس تمام شد یا خطا داد، خودکار سراغ سرویس بعدیِ دارای کلید می‌رود */
 /* ───── زبان هدف: انگلیسی یا عربی (با لهجه) ───── */
 const TLANGS = {
-  ar: { fa: 'عربی', flag: '🇴🇲', def: 'om', v: { om: ['Omani / Gulf Arabic (Khaleeji, as spoken in Oman)', 'عمانی / خلیجی', 'ar-OM'], msa: ['Modern Standard Arabic (Fusha)', 'فصحی (عربی معیار)', 'ar-SA'], eg: ['Egyptian Arabic', 'مصری', 'ar-EG'], lev: ['Levantine Arabic (Syrian/Lebanese)', 'شامی', 'ar-SY'], iq: ['Iraqi Arabic', 'عراقی', 'ar-IQ'] },
-    rules: 'Write Arabic in Arabic script with harakat on new words, ALWAYS add the pronunciation in PERSIAN SCRIPT (e.g. «السلام عليكم = اَسّلامُ عَلِیکُم») — NEVER Latin transliteration, point out the Modern Standard Arabic form when the dialect differs, and point out false friends with Persian (words shared with Persian but different in meaning or pronunciation).' } };
+  ar: { fa: 'عربی', flag: '🇴🇲', name: 'ARABIC', def: 'om', v: { om: ['Omani / Gulf Arabic (Khaleeji, as spoken in Oman)', 'عمانی / خلیجی', 'ar-OM'], msa: ['Modern Standard Arabic (Fusha)', 'فصحی (عربی معیار)', 'ar-SA'], eg: ['Egyptian Arabic', 'مصری', 'ar-EG'], lev: ['Levantine Arabic (Syrian/Lebanese)', 'شامی', 'ar-SY'], iq: ['Iraqi Arabic', 'عراقی', 'ar-IQ'] },
+    rules: 'Write Arabic in Arabic script with harakat on new words, ALWAYS add the pronunciation in PERSIAN SCRIPT (e.g. «السلام عليكم = اَسّلامُ عَلِیکُم») — NEVER Latin transliteration, point out the Modern Standard Arabic form when the dialect differs, and point out false friends with Persian (words shared with Persian but different in meaning or pronunciation).' },
+  de: { fa: 'آلمانی', flag: '🇩🇪', name: 'GERMAN', def: 'de', v: { de: ['Standard German (Hochdeutsch, as spoken in Germany)', 'آلمانِ آلمان', 'de-DE'], at: ['Austrian German', 'اتریشی', 'de-AT'], ch: ['Swiss Standard German', 'سوئیسی', 'de-CH'] },
+    rules: 'ALWAYS give every noun with its article (der/die/das) and plural, verbs with their key forms (infinitive, 3rd person present, Präteritum, Partizip II with haben/sein), mark the case after prepositions, explain du vs Sie, and add the pronunciation in PERSIAN SCRIPT (never Latin transliteration).' },
+  tr: { fa: 'ترکی استانبولی', flag: '🇹🇷', name: 'TURKISH', def: 'tr', v: { tr: ['Istanbul Turkish (standard Türkiye Türkçesi)', 'استانبولی', 'tr-TR'] },
+    rules: 'Explain vowel harmony and suffix chains step by step (split every long word into root + suffixes with the meaning of each), give the pronunciation in PERSIAN SCRIPT, point out the many words shared with Persian and the false friends, and teach sen vs siz.' },
+  zh: { fa: 'چینی', flag: '🇨🇳', name: 'CHINESE', def: 'cmn', v: { cmn: ['Mandarin Chinese (Putonghua, simplified characters)', 'ماندارین', 'zh-CN'], tw: ['Taiwanese Mandarin (traditional characters)', 'ماندارین تایوانی', 'zh-TW'], yue: ['Cantonese (Hong Kong)', 'کانتونی', 'zh-HK'] },
+    rules: 'ALWAYS write each item as Chinese characters + pinyin WITH tone marks (Jyutping for Cantonese) + pronunciation in PERSIAN SCRIPT + Persian meaning. Teach tones explicitly and how a wrong tone changes meaning; give the measure word with every noun; use radicals as memory tricks.' } };
 const tl = () => (typeof U !== 'undefined' && U?.tl) || 'en';
 const tlInfo = () => TLANGS[tl()];
 const tlDia = () => { const L = tlInfo(); if (!L) return ['English', 'انگلیسی', 'en-US']; const k = (typeof U !== 'undefined' && U?.tlv?.[tl()]) || L.def; return L.v[k] || L.v[L.def]; };
@@ -229,7 +235,7 @@ const tlFa = () => tl() === 'en' ? 'انگلیسی' : `${tlInfo().fa} (${tlDia()
 const TL_OVERRIDE = () => tl() === 'en' ? '' : `
 
 === TARGET LANGUAGE OVERRIDE (most important rule) ===
-The learner is learning ARABIC — ${tlDia()[0]} — NOT English. Wherever these instructions mention English, an English accent (American/British), IPA or English examples, apply them to ${tlDia()[0]} instead. Teach real, natural ${tlDia()[0]} as natives actually speak it. ${tlInfo().rules} Always give the Persian meaning, register (formal/everyday/slang) and real example sentences with Persian translations. Keep JSON field names exactly as requested (fields named "en"/"w"/"ex" simply hold the ${tlDia()[0]} text).`;
+The learner is learning ${tlInfo().name} — ${tlDia()[0]} — NOT English. Wherever these instructions mention English, an English accent (American/British), IPA or English examples, apply them to ${tlDia()[0]} instead. Teach real, natural ${tlDia()[0]} as natives actually speak it. ${tlInfo().rules} Always give the Persian meaning, register (formal/everyday/slang) and real example sentences with Persian translations. Keep JSON field names exactly as requested (fields named "en"/"w"/"ex" simply hold the ${tlDia()[0]} text).`;
 async function ai(opts) {
   if (tl() !== 'en' && opts?.system && !opts.__tl) opts = { ...opts, system: opts.system + TL_OVERRIDE(), __tl: 1 };
   const order = [G.settings.brain, 'gemini', 'groq', 'openrouter', 'anthropic', 'openai', 'custom'].filter((k, i, a) => a.indexOf(k) === i && G.settings.prov[k]?.key);
@@ -328,7 +334,7 @@ let voices = [];
 function loadVoices() { try { voices = speechSynthesis.getVoices(); } catch { voices = []; } }
 if ('speechSynthesis' in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
 function bestVoice(lang) {
-  const pref = lang === 'fa' ? ['fa-IR', 'fa'] : /^ar/.test(lang) ? [lang, lang.slice(0, 2)] : G.settings.accent === 'UK' ? ['en-GB'] : ['en-US'];
+  const pref = lang === 'fa' ? ['fa-IR', 'fa'] : /^(ar|de|tr|zh)/.test(lang) ? [lang, lang.slice(0, 2)] : G.settings.accent === 'UK' ? ['en-GB'] : ['en-US'];
   const list = voices.filter(v => pref.some(p => v.lang.replace('_', '-').toLowerCase().startsWith(p.toLowerCase())));
   const score = v => (/natural|online|neural|premium|enhanced/i.test(v.name) ? 3 : 0) + (/google|microsoft|samantha|daniel|serena/i.test(v.name) ? 1 : 0);
   return list.sort((a, b) => score(b) - score(a))[0] || (lang === 'fa' ? null : voices.find(v => v.lang.startsWith('en')));
@@ -392,8 +398,11 @@ const EN_PACK = {};
 async function enPackIdx(acc) { if (!EN_PACK[acc]) EN_PACK[acc] = fetch(`audio/en/${acc}/index.json`).then(r => r.json()).then(j => ({ j, all: new Set(Object.values(j).flat()) })).catch(() => (delete EN_PACK[acc], null)); return EN_PACK[acc]; }
 const FA_PACK = {};
 async function faPackUrl(text) { const acc = G.settings.accent === 'UK' ? 'UK' : 'US'; if (!FA_PACK[acc]) FA_PACK[acc] = fetch(`audio/fa/${acc}/index.json`).then(r => r.json()).then(j => new Set(Object.values(j).flat())).catch(() => (delete FA_PACK[acc], null)); const ix = await FA_PACK[acc]; const h = hashStr((text || '').trim()); return ix?.has(h) ? `audio/fa/${acc}/${h}.mp3` : null; }
-const AR_PACK = {}; // صدای آفلاین عمانی (زن و مرد عمانی؛ Edge TTS)
-async function arPackUrl(text) { if (!AR_PACK.ix) AR_PACK.ix = fetch('audio/ar/om/index.json').then(r => r.json()).then(j => new Set(Object.values(j).flat())).catch(() => (delete AR_PACK.ix, null)); const ix = await AR_PACK.ix; if (!ix) return null; const t = arCore(text); const h = hashStr(t); return ix.has(h) ? `audio/ar/om/${h}.mp3` : null; }
+const PACKS = {}; // صدای آفلاین هر زبان/لهجه (Microsoft neural؛ از قبل ساخته‌شده)
+async function packUrl(text) { const dir = (typeof OFFLINE_DIR !== 'undefined') && OFFLINE_DIR[tlDia()[2]]; if (!dir) return null;
+  if (!PACKS[dir]) PACKS[dir] = fetch(`audio/${dir}/index.json`).then(r => r.json()).then(j => new Set(Object.values(j).flat())).catch(() => (delete PACKS[dir], null));
+  const ix = await PACKS[dir]; if (!ix) return null; const h = hashStr(arCore(text)); return ix.has(h) ? `audio/${dir}/${h}.mp3` : null; }
+const arPackUrl = packUrl;
 const arCore = t => String(t || '').split(/\s+[=—–-]\s+|\s*\(/)[0].trim();
 async function enPackUrl(text) { const acc = G.settings.accent === 'UK' ? 'UK' : 'US'; const ix = await enPackIdx(acc); if (!ix) return null; for (const t of [(text || '').trim(), (text || '').replace(/\s*\([^)]*\)/g, '').trim()]) { const h = hashStr(t); if (ix.all.has(h)) return `audio/en/${acc}/${h}.mp3`; } return null; }
 function playUrl(url, tok) { return new Promise(res => { if (tok !== speakToken) return res(); const done = () => { if (blobRes === done) blobRes = null; res(); }; blobRes = done; player.src = url; player.playbackRate = 1; player.onended = player.onerror = done; player.play().catch(done); }); }
@@ -414,7 +423,7 @@ async function say(text, lang = 'en', emotion = 'cheerful', btn) {
   const engine = lang === 'fa' ? G.settings.voiceFa : G.settings.voiceEn;
   try {
     if (tl() === 'en') { const f = lang === 'en' ? await enPackUrl(text) : await faPackUrl(text); if (f) { await playUrl(f, tok); return; } }
-    if (tl() === 'ar' && lang === 'en' && tlDia()[2] === 'ar-OM') { const f = await arPackUrl(text); if (f) { await playUrl(f, tok); return; } }
+    if (tl() !== 'en' && lang === 'en') { const f = await packUrl(text); if (f) { await playUrl(f, tok); return; } }
     if (tl() !== 'en' && lang === 'en') { try { await playBlob(await cloudTTS(G.settings.voiceFa === 'browser' ? 'gemini' : G.settings.voiceFa, text, tl(), emotion), tok); return; } catch (e) { } await browserSay(text, tlDia()[2]); return; }
     if (engine !== 'browser') { try { await playBlob(await cloudTTS(engine, text, lang, emotion), tok); return; } catch (e) { if (e.message !== 'NOKEY') console.warn(e); } }
     if (lang === 'en') { await browserSay(text, 'en'); return; }
@@ -612,7 +621,7 @@ const I = {
   lock: '🔒'
 };
 function toast(t, ms = 3200) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, ms); }
-function setTop(title, back) { try { document.body.classList.toggle('tl-ar', tl() === 'ar'); } catch { } if (!back && !['home', 'plan', 'library', 'chat', 'tools', 'me', ''].includes((location.hash.slice(1).split('/')[0]))) back = true; $('#top').innerHTML = `${back ? `<button class="back" aria-label="بازگشت" onclick="history.length>1?history.back():go('home')">${I.back}</button>` : ''}<h1>${esc(title)}</h1><button class="back" aria-label="حالت روز و شب" title="روز / شب" onclick="toggleDayNight()">${document.documentElement.dataset.theme === 'dark' ? '☀️' : '🌙'}</button>${U && !U.online && window.loginSheet ? `<button class="btn sm" style="margin-inline-start:auto" onclick="loginSheet(()=>router())">ورود / ثبت‌نام</button>` : ''}${me() ? `<button class="userchip" onclick="go('users')"><span class="avatar">${avHTML(me())}</span>${esc(me().name)}</button>` : ''}`; }
+function setTop(title, back) { try { ['ar', 'de', 'tr', 'zh'].forEach(k => document.body.classList.toggle('tl-' + k, tl() === k)); } catch { } if (!back && !['home', 'plan', 'library', 'chat', 'tools', 'me', ''].includes((location.hash.slice(1).split('/')[0]))) back = true; $('#top').innerHTML = `${back ? `<button class="back" aria-label="بازگشت" onclick="history.length>1?history.back():go('home')">${I.back}</button>` : ''}<h1>${esc(title)}</h1><button class="back" aria-label="حالت روز و شب" title="روز / شب" onclick="toggleDayNight()">${document.documentElement.dataset.theme === 'dark' ? '☀️' : '🌙'}</button>${U && !U.online && window.loginSheet ? `<button class="btn sm" style="margin-inline-start:auto" onclick="loginSheet(()=>router())">ورود / ثبت‌نام</button>` : ''}${me() ? `<button class="userchip" onclick="go('users')"><span class="avatar">${avHTML(me())}</span>${esc(me().name)}</button>` : ''}`; }
 function go(h) { location.hash = h; }
 const view = () => $('#view');
 function sheet(html) { const bg = document.createElement('div'); bg.className = 'sheet-bg'; bg.innerHTML = `<div class="sheet" role="dialog"><div class="grab"></div>${html}</div>`; bg.onclick = e => { if (e.target === bg) bg.remove(); }; document.body.appendChild(bg); return bg; }
@@ -786,13 +795,13 @@ routes.home = () => {
   if (U.plan) { try { const md = missedDays(); if (md && U.plan.lastCatch !== isoDay()) { catchUpPlan(); U.plan.lastCatch = isoDay(); U.plan.missedNote = md; saveU(); } } catch (e) { console.warn(e); } }
   const cur = currentUnit(); const due = dueIds().length; const p = paceInfo(); const tp = todayPlan(); const L = U.log[isoDay()] || { xp: 0, min: 0 };
   const board = G.users.map(u => ({ u, d: userData(u.id) })).map(x => ({ ...x, w: weekXP(x.d) })).sort((a, b) => b.w - a.w);
-  const tasks = (tp ? tp.tasks : [{ k: 'cards', t: `مرور ${faNum(due)} فلش‌کارت موعددار` }, { k: 'unit', t: `ادامهٔ درس «${tl() === 'ar' ? curUnits()[curIdx()][2] : cur.fa}»` }]).filter(t => !(t.k === 'cards' && !due)).concat(listenTasks());
+  const tasks = (tp ? tp.tasks : [{ k: 'cards', t: `مرور ${faNum(due)} فلش‌کارت موعددار` }, { k: 'unit', t: `ادامهٔ درس «${tl() !== 'en' ? curUnits()[curIdx()][2] : cur.fa}»` }]).filter(t => !(t.k === 'cards' && !due)).concat(listenTasks());
   view().innerHTML = `<div class="stack">
   <div class="today">
     <div class="row"><span class="grow small muted">${jLabel(isoDay(), true)} · ${faNum(Math.round(L.min))} دقیقه مطالعهٔ امروز</span><span class="pill mark">🔥 ${faNum(streakOf(U))} روز</span></div>
-    ${tl() === 'ar' ? (() => { const A = curUnits()[curIdx()]; return `<b style="font-size:19px">درس ${faNum(curIdx() + 1)} عربی: ${esc(A[2])} <span class="small" style="opacity:.8">· سطح ${A[1]}</span></b>`; })() : `<b style="font-size:19px">درس ${faNum(cur.idx + 1)}: ${esc(cur.fa)} <span class="en" style="opacity:.7;font-size:14px">${esc(cur.en)}</span></b>`}
+    ${tl() !== 'en' ? (() => { const A = curUnits()[curIdx()]; return `<b style="font-size:19px">درس ${faNum(curIdx() + 1)} ${esc(tlInfo().fa)}: ${esc(A[2])} <span class="small" style="opacity:.8">· سطح ${A[1]}</span></b>`; })() : `<b style="font-size:19px">درس ${faNum(cur.idx + 1)}: ${esc(cur.fa)} <span class="en" style="opacity:.7;font-size:14px">${esc(cur.en)}</span></b>`}
     <ul class="tasks">${tasks.map(t => `<li class="${taskDone(t) ? 'done' : ''}" data-tk="${esc(t.k || '')}" style="cursor:pointer"><span class="chk">${taskDone(t) ? '✓' : ''}</span><span class="grow">${esc(t.t)}</span>${taskLink(t) ? `<a href="${taskLink(t)}" class="small" onclick="event.stopPropagation()">برو ›</a>` : ''}</li>`).join('')}</ul>
-    <div class="row"><a class="btn" href="${tl() === 'ar' ? '#aru/' + curUnits()[curIdx()][0] : '#unit/' + cur.id}">ادامهٔ یادگیری</a><a class="btn" style="background:#fff;color:#0c5f5d" href="#live/lesson">📞 کلاس زنده</a><a class="btn ghost" style="background:transparent;color:inherit;box-shadow:inset 0 0 0 1.5px currentColor" href="#leitner">🗃️ لایتنر${due ? ' · ' + faNum(due) + ' امروز' : ''}</a></div>
+    <div class="row"><a class="btn" href="${tl() !== 'en' ? '#aru/' + curUnits()[curIdx()][0] : '#unit/' + cur.id}">ادامهٔ یادگیری</a><a class="btn" style="background:#fff;color:#0c5f5d" href="#live/lesson">📞 کلاس زنده</a><a class="btn ghost" style="background:transparent;color:inherit;box-shadow:inset 0 0 0 1.5px currentColor" href="#leitner">🗃️ لایتنر${due ? ' · ' + faNum(due) + ' امروز' : ''}</a></div>
   </div>
   <div class="card stack tl-card"><b>🌐 زبانی که یاد می‌گیری</b><div class="seg" id="tlsel">${[['en', '🇬🇧 انگلیسی'], ...Object.entries(TLANGS).map(([k, L]) => [k, L.flag + ' ' + L.fa])].map(([k, t]) => `<button data-v="${k}" class="${tl() === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     ${tl() !== 'en' ? `<div class="row" style="gap:6px;flex-wrap:wrap"><span class="small">لهجه/گونه:</span>${Object.entries(tlInfo().v).map(([k, d]) => `<button class="pill ${tlDia() === d ? 'acc' : ''}" data-tlv="${k}">${d[1]}</button>`).join('')}</div>
@@ -830,7 +839,7 @@ function unitCard(u) {
     <span class="tile" style="--h:${u.hue}">${esc(u.icon)}</span>${u.track === 'ws' ? `<span class="tiny muted">سرفصل ${faNum(u.wsi + 1)}</span>` : u.idx < 1000 ? `<span class="tiny muted" style="font-weight:700">درس ${faNum(u.n)}</span>` : ''}<b>${esc(u.fa)}</b><span class="en">${esc(u.en)}</span>
     <div class="bar mark"><i style="width:${words.length ? Math.round(learned / words.length * 100) : 0}%"></i></div></a>`;
 }
-function taskLink(t) { const k = t.k || ''; if (tl() === 'ar' && (k === 'unit' || k.startsWith('step:') || k.startsWith('unit:'))) return '#aru/' + curUnits()[curIdx()][0]; if (k.startsWith('topic:')) return '#verbs/' + encodeURIComponent('⭐ ' + k.slice(6)); if (k.startsWith('wtopic:')) return '#wtopics/' + encodeURIComponent(k.slice(7)); if (k.startsWith('step:')) { const [, id, st] = k.split(':'); return st === 'words' ? `#unit/${id}/words` : st === 'dialog' ? `#unit/${id}/conv` : st === 'teach' ? `#unit/${id}/gram` : `#${st}/${id}`; } if (k.startsWith('exam:')) return '#exam/' + k.split(':')[1]; if (k === 'cards') return '#leitner'; if (k === 'radio') return '#listen'; if (k === 'news') return tl() === 'en' ? '#news' : '#listen'; return ''; }
+function taskLink(t) { const k = t.k || ''; if (tl() !== 'en' && (k === 'unit' || k.startsWith('step:') || k.startsWith('unit:'))) return '#aru/' + curUnits()[curIdx()][0]; if (k.startsWith('topic:')) return '#verbs/' + encodeURIComponent('⭐ ' + k.slice(6)); if (k.startsWith('wtopic:')) return '#wtopics/' + encodeURIComponent(k.slice(7)); if (k.startsWith('step:')) { const [, id, st] = k.split(':'); return st === 'words' ? `#unit/${id}/words` : st === 'dialog' ? `#unit/${id}/conv` : st === 'teach' ? `#unit/${id}/gram` : `#${st}/${id}`; } if (k.startsWith('exam:')) return '#exam/' + k.split(':')[1]; if (k === 'cards') return '#leitner'; if (k === 'radio') return '#listen'; if (k === 'news') return tl() === 'en' ? '#news' : '#listen'; return ''; }
 function taskDone(t) {
   if ((U.mdone || {})[isoDay() + '|' + t.k]) return true;
   const cur = currentUnit(); const st = unitState(cur);
@@ -1599,7 +1608,7 @@ routes.guide = () => {
     ['🎯', 'هدفت را بگو؛ برنامه با ما', 'فقط بگو تا کی می‌خواهی به چه سطحی برسی، در چه موضوع‌هایی (مثلاً ترید، خرید، سفر) و روزی چقدر وقت داری؛ با تایپ یا با صدا. برنامه بررسی می‌کند شدنی است یا نه، وقت روزانه را حساب می‌کند و کار هر روز را روی تقویم می‌چیند. تو فقط هر روز طبق برنامه جلو برو.', '#plan'],
     ['📈', 'نمودار پیشرفت', 'هر روز می‌بینی چه چیزهایی یاد گرفته‌ای، چقدر تا سطح بعد مانده، کجای برنامه هستی و اگر عقب افتادی، برنامه خودش جبرانی می‌چیند و خبرت می‌کند.', '#progress'],
     ['📖', 'درس‌ها مثل کتاب (همه باز)', 'هیچ درسی قفل نیست. ۴۳ درس انگلیسی از مقدماتی تا متوسط و ۳۹ مبحث گرامر، هر درس با بخش‌های جدا: مکالمه، متن، گرامر، واژه‌ها، همهٔ عبارت‌ها از رسمی تا عامیانه، تمرین و آزمون. ترجمه، تلفظ نیتیو به خط فارسی و صدای آمریکایی یا بریتانیایی، همه آفلاین.', '#path'],
-    ['🌐', 'انگلیسی یا عربی؟', 'در صفحهٔ اول زبانت را انتخاب می‌کنی: انگلیسی (آمریکایی/بریتانیایی) یا عربی (عمانی/خلیجی، فصحی، مصری، شامی، عراقی). همهٔ امکانات — معلم زنده، دوره، کتاب‌های صوتی، شنیداری، دیکشنری — با همان زبان کار می‌کنند. دورهٔ عربی ۴۰ درس از پایه تا پیشرفته (A0 تا C1) است و همه‌اش آفلاین با صدای عمانی.', '#home'],
+    ['🌐', 'کدام زبان؟', 'در صفحهٔ اول زبانت را انتخاب می‌کنی: انگلیسی (آمریکایی/بریتانیایی)، عربی (عمانی/خلیجی، فصحی، مصری، شامی، عراقی)، آلمانی، ترکی استانبولی یا چینی. همهٔ امکانات — معلم زنده، دوره، کتاب‌های صوتی، شنیداری، دیکشنری — با همان زبان کار می‌کنند. دورهٔ عربی ۴۰ درس از پایه تا پیشرفته (A0 تا C1) است و همه‌اش آفلاین با صدای عمانی.', '#home'],
     ['📞', 'کلاس زنده با معلم', 'مثل تماس تلفنی با یک معلم خصوصی که فارسی توضیح می‌دهد: اول کل درس را کامل و با مثال درس می‌دهد، بعد تمرین و پرسش و پاسخ. سه راه: «بدون فیلترشکن» (داخل ایران)، «زنده» (هم‌زمان و بی‌مکث، با فیلترشکن یا خارج از ایران) و ChatGPT. غلط‌های نوشتاری‌ات را با خط قرمز تصحیح می‌کند.', '#live/lesson'],
     ['🧭', 'طراحی کلاس به سلیقهٔ خودت', 'برای هر بخش کلاس (واژه‌ها، افعال، جمله‌ها، گرامر، مکالمه، تمرین، کوییز) زمان تعیین می‌کنی و می‌گویی تعاملی باشد یا فقط گوش بدهی. قالب‌های آماده هم هست: ۲۰ دقیقه، ۶۰ دقیقه، ۹۰ دقیقهٔ عمیق، فقط مکالمه.', '#live/lesson'],
     ['✨', 'هر چه بخواهی یاد بگیری', 'توی کلاس زنده بنویس یا بگو «مصاحبهٔ کاری»، «کلمات ترید»، «فرق since و for»… برنامه یک درس کامل طراحی می‌کند (همهٔ واژه‌ها، افعال، جمله‌ها، اصطلاحات محاوره‌ای، گرامر، مکالمه) و معلم همان را درس می‌دهد. از صفحهٔ واژه‌ها و افعال هم دکمهٔ «معلم زنده یادم بده» هست.', '#live/lesson'],

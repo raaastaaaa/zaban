@@ -58,7 +58,7 @@ async function _llt(out) { try {
     return `\n=== VOCABULARY TOPIC (Word Skills ${u.levelFa || ''}): "${u.en}" (${u.fa}) — section: ${u.sec || ''} ===\nCOMPLETE WORD BANK (teach ALL of it, in groups of 5-6):\n${W.map(w => `- ${w.w} = ${w.fa}${w.reg ? ` [${RG[w.reg] || w.reg}]` : ''}${w.use ? ` — ${w.use}` : ''}${w.ex ? ` e.g. "${w.ex}" (${w.exFa || ''})` : ''}`).join('\n')}`; } }
   if (tl() !== 'en' && !S.custom && !S.topic?.items?.length) { // دورهٔ زبان دیگر: درس فعلی با طراح درس کامل ساخته و ذخیره می‌شود
     const A = curUnits()[curIdx()]; const pid = `${tl()}:${A[0]}:${tlDia()[2]}`;
-    if (!customPlans()[pid] && tl() === 'ar' && tlDia()[2] === 'ar-OM') { try { const r = await fetch(`lessons/ar/om/${A[0]}.json`); if (r.ok) { customPlans()[pid] = { ...(await r.json()), want: A[2], d: isoDay(), offline: 1 }; saveU(); } } catch { } } // درس آمادهٔ آفلاین
+    if (!customPlans()[pid] && OFFLINE_DIR[tlDia()[2]]) { try { const r = await fetch(`lessons/${OFFLINE_DIR[tlDia()[2]]}/${A[0]}.json`); if (r.ok) { customPlans()[pid] = { ...(await r.json()), want: A[2], d: isoDay(), offline: 1 }; saveU(); } } catch { } } // درس آمادهٔ آفلاین
     if (!customPlans()[pid]) { try { await makeCustomPlan(`درس ${faNum(curIdx() + 1)} دورهٔ ${tlInfo().fa} (${A[1]}): ${A[2]} — ${A[3]}. Grammar focus: ${A[4]}`, pid); } catch (e) { console.warn(e); } }
     S = Object.assign({}, S, { custom: pid }); }
   if (S.topic?.items?.length) { out.L = null; return `\n=== TOPIC the student chose: «${S.topic.title}» ===\nCOMPLETE ITEM BANK (teach ALL of it, in groups of 5-6, with meaning, register, when to use, native pronunciation, example sentences from real life, then practise each group interactively — questions, mini role-plays, quick quizzes — before moving on; recycle earlier groups):\n${S.topic.items.slice(0, 120).map(x => '- ' + x).join('\n')}`; }
@@ -551,7 +551,7 @@ const CLASS_SECTIONS = {
 const CLASS_ORDER = ['warm', 'vocab', 'verbs', 'sent', 'gram', 'conv', 'prac', 'quiz', 'recap'];
 const classPlan = () => { const P = U.classPlan || {}; const secs = CLASS_ORDER.map(k => ({ k, min: P.min?.[k] ?? CLASS_SECTIONS[k].def, on: P.on?.[k] !== false })); return { secs, mode: P.mode || 'interactive', total: secs.filter(x => x.on).reduce((a, x) => a + x.min, 0) }; };
 const savePlan = (patch) => { U.classPlan = Object.assign(U.classPlan || {}, patch); saveU(); };
-function classPlanText() { const CP = classPlan(); const L = tl() === 'ar' ? 'Arabic' : 'English';
+function classPlanText() { const CP = classPlan(); const L = tl() === 'en' ? 'English' : tlDia()[0];
   return `
 === CLASS DESIGN (the student configured it; follow it exactly) ===
 MODE: ${CP.mode === 'lecture' ? 'LECTURE (تک‌گویی) — the student wants to LISTEN. Do NOT ask the student questions or wait for answers in any section except the final recap; teach continuously and completely like a recorded masterclass by a devoted teacher. Where an exercise needs an answer, say the exercise, say "یه لحظه فکر کن…", then give the answer and explanation yourself.' : 'INTERACTIVE (تعاملی) — teach each section completely, and inside every section keep the student active: after every 2-4 items ask ONE short question, wait, correct kindly, then continue. Never lecture more than ~40 seconds without involving the student.'}
