@@ -347,14 +347,15 @@ async function joinCompetition() {
 }
 
 /* ───── انتقادات و پیشنهادات (متن یا صدا) ───── */
-routes.feedback = () => {
+routes.feedback = (k0) => {
   setTop('انتقادات و پیشنهادات', true); const v = view();
   v.innerHTML = `<div class="stack"><div class="card stack"><b>💡 ایده، درخواست یا انتقادت را بگو</b><span class="small muted">با صدا ضبط کن یا بنویس؛ مستقیم به دست مدیر برنامه می‌رسد.</span>
-    <div class="seg" id="fk">${[['idea', '💡 پیشنهاد'], ['bug', '🐞 ایراد'], ['request', '🙋 درخواست'], ['other', '💬 سایر']].map(([k, t], i) => `<button data-v="${k}" class="${i ? '' : 'on'}">${t}</button>`).join('')}</div>
+    <div class="seg" id="fk">${[['idea', '💡 پیشنهاد برای این اپ'], ['startup', '🚀 ایدهٔ استارتاپ'], ['bug', '🐞 ایراد'], ['request', '🙋 درخواست'], ['other', '💬 سایر']].map(([k, t], i) => `<button data-v="${k}" class="${i ? '' : 'on'}">${t}</button>`).join('')}</div>
     <div class="row" style="flex-wrap:nowrap;align-items:stretch"><textarea id="fb" class="in grow" rows="5" placeholder="بنویس یا دکمهٔ 🎙 را بزن و بگو…"></textarea></div>
     <div class="row"><button class="btn ghost" id="frec">🎙 ضبط صدا</button><span id="fst" class="small muted"></span></div><div id="fau"></div>
     <button class="btn" id="fsend">فرستادن</button></div><div id="fmine"></div></div>`;
   let kind = 'idea', audio = null, rec = null, chunks = [], sr = null;
+  if (k0 === 'startup') { kind = 'startup'; $$('#fk button').forEach(x => x.classList.toggle('on', x.dataset.v === 'startup')); $('#fb').placeholder = 'ایده‌ات را بگو: چه مشکلی را حل می‌کند، برای چه کسانی، و چرا الان؟ من می‌خوانم و اگر جذاب بود با هم جلو می‌بریم.'; }
   $('#fk').onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('#fk button').forEach(x => x.classList.toggle('on', x === b)); kind = b.dataset.v; };
   $('#frec').onclick = async () => {
     if (rec) { rec.stop(); try { sr?.stop(); } catch { } return; }
@@ -384,3 +385,16 @@ async function adminFeedback(box) {
   $$('[data-fs]', box).forEach(b => b.onclick = async () => { await sb().from('feedback').update({ seen: true }).eq('id', b.dataset.fs); adminFeedback(box); });
   $$('[data-fd]', box).forEach(b => b.onclick = async () => { await sb().from('feedback').delete().eq('id', b.dataset.fd); adminFeedback(box); });
 }
+
+/* ───── دربارهٔ ما ───── */
+routes.about = () => {
+  setTop('دربارهٔ ما', true); const v = view();
+  v.innerHTML = `<div class="stack">
+  <div class="card stack about-hero"><img src="logo.svg" alt="" style="width:84px;height:84px;border-radius:22px"><b style="font-size:20px">زبان رستا</b><span class="small">یادگیری زبان مثل یک کلاس خصوصیِ گرم — با معلمی که فارسی توضیح می‌دهد، هر چه بخواهی یادت می‌دهد و هیچ‌وقت خسته نمی‌شود.</span></div>
+  <div class="card stack"><b>👋 من رستا هستم</b>
+    <span class="small" style="line-height:2">طراح این اپلیکیشن و چند استارتاپ دیگر. سال‌هاست در حوزهٔ پژوهش و راهبرد کار می‌کنم و همیشه دنبال این بوده‌ام که فناوری را به ابزاری ساده و در دسترس برای زندگی واقعی آدم‌ها تبدیل کنم. «زبان رستا» از یک نیاز شخصی شروع شد: می‌خواستم زبان را آن‌طور یاد بگیرم که یک معلم خصوصی دلسوز درس می‌دهد — با توضیح فارسی، تلفظ به خط خودمان، مثال‌های واقعی، و بدون اینکه حتی یک کلمه از قلم بیفتد. بعد فکر کردم چرا این امکان برای همه نباشد؟</span>
+    <span class="small" style="line-height:2">این برنامه هر روز بهتر می‌شود، و بخش بزرگی از این بهتر شدن از نظرها و ایده‌های شما می‌آید.</span></div>
+  <div class="card stack"><b>🚀 ایده‌ای برای یک استارتاپ داری؟</b><span class="small">اگر ایده‌ای در سر داری — هر حوزه‌ای — یا دنبال هم‌تیمی هستی، برایم بنویس یا با صدا بگو. همهٔ پیام‌ها را خودم می‌خوانم.</span><a class="btn" href="#feedback/startup">🚀 ایده‌ام را می‌گویم</a></div>
+  <div class="card stack"><b>💡 نظری برای بهتر شدن این اپ داری؟</b><span class="small">پیشنهاد، درخواست یا ایراد — با صدا یا متن.</span><a class="btn line" href="#feedback">💡 نظرم را می‌گویم</a></div>
+  <div class="card stack small muted"><b>درباره‌ٔ فناوری</b><span>معلم زنده و محتوا با هوش مصنوعی ساخته می‌شود؛ طرح درس‌ها، سیاست تدریس و دوره‌ها طراحی اختصاصی این برنامه است. متن‌های کتاب‌های صوتی بازنویسی ساده‌شدهٔ آثار آزاد یا داستان‌های اختصاصی‌اند.</span><span>نسخهٔ ${esc((typeof SW_VER !== 'undefined' && SW_VER) || '')} · ساخته‌شده با ❤️ برای فارسی‌زبان‌ها</span></div></div>`;
+};

@@ -474,3 +474,35 @@ body.tl-ar .en:not(.keep-en){direction:rtl;unicode-bidi:plaintext;font-family:"N
 .cd-sec{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:10px;background:var(--card2,rgba(0,0,0,.035))}
 .cd-sec.off{opacity:.45}.cd-min{min-width:34px;text-align:center}
 .mini{width:28px;height:28px;border-radius:50%;border:1px solid var(--line,#ddd);background:var(--card,#fff);font-weight:800}
+.about-hero{align-items:center;text-align:center}
+
+/* ═══ حال‌وهوای عمان در حالت عربی: سبز زیتونی و طلایی کوه و ساحل، نقش هندسی مشربیه، قلم نسخ ═══ */
+body.tl-ar{
+  --hero:#1F3B2E; --hero-ink:#F7F1E3;
+  --bg:#F6F0E4; --surface:#FFFBF3; --sunk:#EDE3CF; --ink:#23301F; --muted:#6B6A58; --line:#E0D5BC;
+  --accent:#8C2F2F; --accent-ink:#FFF8EE; --accent-soft:#F3DCD2; --mark:#C9A227; --mark-ink:#2A2100;
+  --ok:#2F7A4F; --ok-soft:#DFF0E3; --acc:#8C2F2F;
+  --fa:'Vazirmatn',Tahoma,'Segoe UI',system-ui,sans-serif;
+  background-color:var(--bg);
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(140,47,47,.07) 1px, transparent 1.6px),
+    linear-gradient(135deg, rgba(201,162,39,.10) 0 25%, transparent 25% 50%, rgba(31,59,46,.07) 50% 75%, transparent 75%);
+  background-size:18px 18px, 56px 56px;
+}
+@media (prefers-color-scheme:dark){body.tl-ar:not([data-theme="light"]), :root:not([data-theme="light"]) body.tl-ar{
+  --bg:#17201A; --surface:#1F2A22; --sunk:#283529; --ink:#F3EBDC; --muted:#BCB49C; --line:#36432F;
+  --accent:#D9A24A; --accent-ink:#2A1B00; --accent-soft:#3A3120; --mark:#E2B93B; --mark-ink:#241C00; --acc:#D9A24A;
+  background-image:radial-gradient(circle at 1px 1px, rgba(217,162,74,.08) 1px, transparent 1.6px); background-size:18px 18px;
+}}
+:root[data-theme="dark"] body.tl-ar{
+  --bg:#17201A; --surface:#1F2A22; --sunk:#283529; --ink:#F3EBDC; --muted:#BCB49C; --line:#36432F;
+  --accent:#D9A24A; --accent-ink:#2A1B00; --accent-soft:#3A3120; --mark:#E2B93B; --mark-ink:#241C00; --acc:#D9A24A;
+  background-image:radial-gradient(circle at 1px 1px, rgba(217,162,74,.08) 1px, transparent 1.6px); background-size:18px 18px;
+}
+body.tl-ar .live-card{background:linear-gradient(160deg,#1F3B2E,#2E5A43 55%,#8C2F2F 140%)}
+body.tl-ar .today{background:linear-gradient(135deg,#1F3B2E,#2F5C45)}
+body.tl-ar .card{border:1px solid var(--line);box-shadow:0 1px 0 rgba(201,162,39,.25) inset}
+body.tl-ar .sec{color:#8C2F2F;letter-spacing:.3px}
+body.tl-ar .sec::before{content:'۞ ';color:var(--mark)}
+body.tl-ar #top h1{font-family:'Vazirmatn',serif}
+body.tl-ar .tl-card{background:linear-gradient(135deg,rgba(201,162,39,.12),transparent);border-color:var(--mark)}
