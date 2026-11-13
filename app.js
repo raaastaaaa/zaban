@@ -155,7 +155,7 @@ function forgottenFromPrevious(cur) { // واژه‌های درس‌های قب�
 /* ───────── پیشرفت، باز شدن درس‌ها و امتیاز ───────── */
 function unitState(u) { return U.units[u.id] || (U.units[u.id] = { steps: {}, best: {} }); }
 function isMastered(u) { return !!unitState(u).mastered; }
-function isOpen(u) {
+function isOpen(u) { return true; // همهٔ درس‌ها برای همه باز است (قفل برداشته شد)
   { const ul = lsGet('zd:unlock:' + G.active, ''); if (ul === 'all') return true; if (ul && u.idx < 1000) { const order = LEVELS.map(l => l.id); if (order.indexOf(u.level) <= order.indexOf(ul)) return true; } }
   if (u.track === 'ws') return true; // واژگان موضوعی مثل کتاب مرجع؛ همهٔ موضوع‌ها باز
   if (u.idx >= 1000) return true;
