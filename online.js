@@ -13,6 +13,19 @@ const ROOMS = [
   { id: 'lobby', ic: '☕', fa: 'گپ عمومی', en: 'Free Talk', topic: 'free everyday small talk' },
   ...[...ALL_UNITS, ...WS_UNITS].map(u => ({ id: u.id, ic: u.icon, fa: u.fa, en: u.en, topic: `${u.en}: ${u.talk || ''} (grammar: ${u.gram})`, level: u.levelFa }))
 ];
+/* انجمن عربی: اتاق‌های جدا با فضای عمانی/خلیجی؛ معلم ناظر عربی */
+const AR_ROOMS = [
+  { id: 'ar-majlis', ic: '☕', fa: 'مجلس — گپ آزاد', en: 'المجلس', topic: 'free everyday small talk in Gulf/Omani Arabic (greetings, how are you, family, weekend)' },
+  { id: 'ar-souq', ic: '🧺', fa: 'سوق — خرید و چانه‌زنی', en: 'السوق', topic: 'shopping and bargaining in the souq / supermarket (prices, sizes, rial & baisa)' },
+  { id: 'ar-work', ic: '💼', fa: 'شغل و اداره', en: 'الشغل والدوائر', topic: 'work, office, ministries, residence/visa paperwork in Oman' },
+  { id: 'ar-trade', ic: '🚢', fa: 'تجارت، گمرک و مناطق آزاد', en: 'التجارة والجمارك', topic: 'trade, customs clearance, shipping, free zones, negotiation with suppliers' },
+  { id: 'ar-travel', ic: '🧭', fa: 'سفر در عمان', en: 'السفر في عُمان', topic: 'travelling in Oman: Muscat, Salalah khareef, wadis, hotels, taxi, directions' },
+  { id: 'ar-food', ic: '🍛', fa: 'غذا و رستوران', en: 'الأكل والمطاعم', topic: 'food, Omani dishes, ordering in restaurants and cafés, coffee and dates etiquette' },
+  { id: 'ar-health', ic: '🏥', fa: 'دکتر و سلامتی', en: 'الصحة', topic: 'doctor, pharmacy, hospital, describing symptoms, insurance' },
+  { id: 'ar-culture', ic: '🕌', fa: 'فرهنگ و مناسبت‌ها', en: 'الثقافة والمناسبات', topic: 'Omani culture, hospitality, Ramadan and Eid, weddings, condolences, what to say on each occasion' },
+  { id: 'ar-fusha', ic: '📰', fa: 'فصحی — اخبار و متن رسمی', en: 'الفصحى', topic: 'Modern Standard Arabic: news, formal emails, official letters (contrast with the dialect)' },
+  { id: 'ar-dialects', ic: '🗺️', fa: 'لهجه‌ها — همان جمله در هر لهجه', en: 'اللهجات', topic: 'the same sentences in Omani, Emirati, Saudi, Egyptian and Levantine; differences and fun comparisons' } ];
+const roomsNow = () => tl() === 'ar' ? AR_ROOMS : ROOMS;
 const BAD_WORDS = { test: t => { const toks = String(t).toLowerCase().split(/[\s.,!?؟،؛:;"'()\[\]{}«»\-_/\\*]+/).filter(Boolean); const en = /^(f+u+c+k\w*|sh[i1]t\w*|b[i1]tch\w*|d[i1]ck|d[i1]cks|pussy|porn\w*|n[i1]gg\w*|asshole\w*|bastards?|sluts?|whores?)$/; const fa = /^(کیر\S*|کسکش\S*|جنده\S*|کون|کونی|سکس\S*|لاشی|حرومزاده\S*|گاییدم|گاییدی)$/; return toks.some(w => en.test(w) || fa.test(w)) || /کس\s+کش/.test(t); } };
 
 let _sb = null, _sbFor = null, OP = null; // OP = پروفایل آنلاین کاربر فعال
@@ -120,14 +133,14 @@ routes.u = async (username) => {
 /* ───── انجمن و چت‌روم با معلم ناظر ───── */
 routes.rooms = async (id) => {
   if (!id) {
-    setTop('انجمن', true); const v = view();
-    v.innerHTML = `<div class="stack"><div class="today"><b style="font-size:18px">🗣️ انجمن «زبان رستا»</b><span class="muted">با بقیهٔ زبان‌آموزها انگلیسی گپ بزن. ${esc(G.settings.teacher)}، معلم ناظر، موضوع و نقش می‌دهد و اشتباه‌ها را همان لحظه درست می‌کند.</span></div>
-    <input id="rq" class="in" placeholder="جستجوی موضوع…"><div class="tools" id="rl">${ROOMS.map(r => `<a class="tool" data-q="${esc(r.fa + ' ' + r.en)}" href="#rooms/${r.id}"><span class="ic">${r.ic}</span><b>${esc(r.fa)}</b><span class="en">${esc(r.en)}</span>${r.level ? `<span>${esc(r.level)}</span>` : ''}</a>`).join('')}</div>
+    setTop(tl() === 'ar' ? 'انجمن عربی' : 'انجمن', true); const v = view();
+    v.innerHTML = `<div class="stack"><div class="today"><b style="font-size:18px">${tl() === 'ar' ? '🕌 انجمن عربی «زبان رستا» — المجلس' : '🗣️ انجمن «زبان رستا»'}</b><span class="muted">با بقیهٔ زبان‌آموزها ${tl() === 'ar' ? 'عربی (' + esc(tlDia()[1]) + ')' : 'انگلیسی'} گپ بزن. ${esc(G.settings.teacher)}، معلم ناظر، موضوع و نقش می‌دهد و اشتباه‌ها را همان لحظه درست می‌کند.</span></div>
+    <input id="rq" class="in" placeholder="جستجوی موضوع…"><div class="tools" id="rl">${roomsNow().map(r => `<a class="tool" data-q="${esc(r.fa + ' ' + r.en)}" href="#rooms/${r.id}"><span class="ic">${r.ic}</span><b>${esc(r.fa)}</b><span class="en">${esc(r.en)}</span>${r.level ? `<span>${esc(r.level)}</span>` : ''}</a>`).join('')}</div>
     <details class="card"><summary>قوانین انجمن</summary><ul class="list small">${FORUM_RULES.map(r => `<li>${esc(r)}</li>`).join('')}</ul></details></div>`;
     $('#rq').oninput = e => { const q = e.target.value.trim().toLowerCase(); $$('#rl .tool').forEach(a => a.hidden = q && !a.dataset.q.toLowerCase().includes(q)); };
     return;
   }
-  const room = ROOMS.find(r => r.id === id) || ROOMS[0]; const topic = room.topic;
+  const room = roomsNow().find(r => r.id === id) || roomsNow()[0]; const topic = room.topic + (tl() === 'ar' ? ` — LANGUAGE OF THE ROOM: ${tlDia()[0]} (Arabic script; Persian-script pronunciation for new words)` : '');
   setTop(room.fa, true); const v = view();
   const p = await myProfile(); if (!p) { v.innerHTML = '<div class="card stack"><b>برای ورود به انجمن، اول وارد حساب آنلاین شو.</b><button class="btn" id="lg">ورود با ایمیل</button></div>'; $('#lg').onclick = () => loginSheet(() => routes.rooms(id)); return; }
   if (p.banned) { v.innerHTML = '<div class="card">به‌خاطر رعایت نکردن قوانین، دسترسی‌ات به انجمن بسته شده است.</div>'; return; }

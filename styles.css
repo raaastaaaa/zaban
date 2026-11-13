@@ -8,9 +8,9 @@
 @font-face{font-family:'Lexend';font-weight:600;font-display:swap;src:url(lexend-600.woff2) format('woff2')}
 /* زبان رستا — ستونی تک‌ستونه با ناوبری پایین؛ جوهر سرمه‌ای، فیروزه‌ای برای کنش، زرد ماژیکی برای «یادگرفته» */
 :root{
-  --hero:#152036; --hero-ink:#F2F5F9;
-  --bg:#F2F5F9; --surface:#FFFFFF; --sunk:#E8EDF4; --ink:#152036; --muted:#5B6980; --line:#D9E0EA;
-  --accent:#0C7A78; --accent-ink:#FFFFFF; --accent-soft:#D7EFEE; --mark:#FFD23F; --mark-ink:#3A2E00;
+  --hero:#0F2A2E; --hero-ink:#F4EFE6;
+  --bg:#F5F2EC; --surface:#FFFDF9; --sunk:#ECE7DD; --ink:#15232A; --muted:#67707A; --line:#E2DCD0;
+  --accent:#0E6B66; --accent-ink:#FFFFFF; --accent-soft:#DDEDE9; --mark:#C9A227; --mark-ink:#2A2100;
   --ok:#1C8F52; --ok-soft:#DDF3E6; --bad:#C93C3C; --bad-soft:#FBE3E3; --warn:#B9770E;
   --tile-l:90%; --tile-s:70%;
   --fa:'Vazirmatn',Tahoma,'Segoe UI',system-ui,sans-serif;
@@ -19,15 +19,15 @@
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#121A2B; --surface:#1B2539; --sunk:#243049; --ink:#F1F4FA; --muted:#AEB9CC; --line:#34405C;
-  --accent:#3EC2BC; --accent-ink:#06201F; --accent-soft:#163A3B; --mark:#E8C443; --mark-ink:#241C00;
+  --bg:#0F1419; --surface:#171E26; --sunk:#1F2831; --ink:#F2EEE6; --muted:#A9B0B8; --line:#2A343E;
+  --accent:#3FB7A9; --accent-ink:#06201F; --accent-soft:#17353A; --mark:#D7B45A; --mark-ink:#241C00;
   --ok:#45C982; --ok-soft:#153526; --bad:#F07474; --bad-soft:#3A1C1F; --warn:#E6B04A;
-  --tile-l:26%; --tile-s:45%; --hero:#16324A; --hero-ink:#E6EBF4; color-scheme:dark }}
+  --tile-l:26%; --tile-s:45%; --hero:#102A33; --hero-ink:#F2EEE6; color-scheme:dark }}
 :root[data-theme="dark"]{
-  --bg:#121A2B; --surface:#1B2539; --sunk:#243049; --ink:#F1F4FA; --muted:#AEB9CC; --line:#34405C;
-  --accent:#3EC2BC; --accent-ink:#06201F; --accent-soft:#163A3B; --mark:#E8C443; --mark-ink:#241C00;
+  --bg:#0F1419; --surface:#171E26; --sunk:#1F2831; --ink:#F2EEE6; --muted:#A9B0B8; --line:#2A343E;
+  --accent:#3FB7A9; --accent-ink:#06201F; --accent-soft:#17353A; --mark:#D7B45A; --mark-ink:#241C00;
   --ok:#45C982; --ok-soft:#153526; --bad:#F07474; --bad-soft:#3A1C1F; --warn:#E6B04A;
-  --tile-l:26%; --tile-s:45%; --hero:#16324A; --hero-ink:#E6EBF4; color-scheme:dark }
+  --tile-l:26%; --tile-s:45%; --hero:#102A33; --hero-ink:#F2EEE6; color-scheme:dark }
 
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink)}
@@ -55,7 +55,7 @@ nav.bottom a.on{color:var(--accent)}
 .stack{display:flex;flex-direction:column;gap:14px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .grow{flex:1;min-width:0}
-.card{background:var(--surface);border-radius:var(--r);padding:16px;box-shadow:0 0 0 1px var(--line)}
+.card{background:var(--surface);border-radius:var(--r);padding:16px;box-shadow:0 0 0 1px var(--line),0 6px 20px rgba(21,35,42,.05)}
 .card h2,.sec{font-size:16px;margin:0 0 6px;font-weight:800}
 .sec{margin-top:8px;display:flex;align-items:baseline;gap:8px}
 .sec small{color:var(--muted);font-weight:500;font-size:12.5px}
@@ -401,7 +401,7 @@ body:has(#bgp) .mini-play{bottom:calc(var(--nav) + 76px + env(safe-area-inset-bo
 .reading-now .fa-tr,.reading-now .pron{color:inherit}
 
 /* کلاس زنده */
-.live-card{background:linear-gradient(160deg,var(--hero),#0c5f5d);color:var(--hero-ink);border-radius:22px;padding:22px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.live-card{background:linear-gradient(160deg,var(--hero),#0E6B66 70%,#1b8a7f);color:var(--hero-ink);border-radius:22px;padding:22px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
 .live-av{--lv:0;position:relative;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.12);display:grid;place-items:center;font-size:54px;transition:transform .15s}
 .live-av i{position:absolute;inset:-8px;border-radius:50%;border:3px solid rgba(255,255,255,.0);transition:all .1s}
 .live-av.on i{border-color:rgba(255,255,255,.35);transform:scale(calc(1 + var(--lv) * .25))}
@@ -520,3 +520,10 @@ body.tl-ar .fc-t{direction:rtl;font-family:"Noto Naskh Arabic","Amiri","Vazirmat
 .fc-face .spk{font-size:22px;background:rgba(255,255,255,.18);border:0;border-radius:50%;width:46px;height:46px}
 .fc-back .spk{background:var(--accent-soft)}
 .fc-btns .btn{flex:1}.btn.bad{background:var(--bad);color:#fff}.btn.ok{background:var(--ok);color:#fff}
+
+/* ───── لمس لوکس: خط طلایی ظریف روی کارت‌های اصلی، دکمه‌های اصلی با گرادیان و سایهٔ نرم ───── */
+.today,.live-card{box-shadow:0 14px 40px rgba(15,42,46,.22),inset 0 1px 0 rgba(201,162,39,.35)}
+.btn:not(.line):not(.ghost):not(.sm){box-shadow:0 6px 18px rgba(14,107,102,.22)}
+.sec{letter-spacing:.2px}
+.pill.acc,.pill.mark{box-shadow:inset 0 0 0 1px rgba(201,162,39,.45)}
+#top h1{letter-spacing:.2px}
