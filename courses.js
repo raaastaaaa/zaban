@@ -162,7 +162,7 @@ routes.aru = async id => {
   const sec = (t, arr) => arr?.length ? `<div class="card stack"><b>${t}</b>${arr.map(row).join('')}</div>` : '';
   v.innerHTML = `<div class="stack">
   <div class="card stack"><b>درس ${faNum(i + 1)} · سطح ${A[1]} · ${esc(P.title_fa || A[2])}</b><span class="small">${esc(P.goal || '')}</span><span class="small muted">${esc(P.intro || '')}</span>
-    <button class="btn wide tlive-btn" id="arlive">🎓 معلم زنده این درس را کامل درس بدهد</button><a class="btn line sm" href="#wb/${esc(A[0])}">📘 کتاب تمرین این درس</a><button class="btn line sm" id="ardl">⬇ دانلود صدای آفلاین این درس</button></div>
+    <button class="btn wide tlive-btn" id="arlive">🎓 معلم زنده این درس را کامل درس بدهد</button><a class="btn line sm" href="#story/${esc(A[0])}">🎧 داستان صوتی این درس</a><a class="btn line sm" href="#wb/${esc(A[0])}">📘 کتاب تمرین این درس</a><button class="btn line sm" id="ardl">⬇ دانلود صدای آفلاین این درس</button></div>
   ${(P.bank || []).map(g => sec('📚 ' + esc(g.g), g.items)).join('')}
   ${sec('🔤 افعال کاربردی', P.verbs)}${sec('💬 جمله‌های آماده', P.sentences)}${sec('😎 اصطلاحات محاوره‌ای', P.colloquial)}${sec('🎭 مکالمهٔ نمونه', (P.dialogue || []).map(l => String(l).replace(/^\s*[AB]\s*[:：]\s*/, '')))}
   ${P.grammar?.point ? `<div class="card stack"><b>📐 گرامر: ${esc(P.grammar.point)}</b><span class="small">${esc(P.grammar.rule || '')}</span>${(P.grammar.examples || []).map(row).join('')}</div>` : ''}

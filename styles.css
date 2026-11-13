@@ -583,3 +583,9 @@ body.tl-ar .fc-t{direction:rtl;font-family:"Noto Naskh Arabic","Amiri","Vazirmat
 .wb-ok{color:var(--ok);font-weight:800}
 .wb-bad s{color:var(--bad,#c0392b);text-decoration-thickness:2px}
 .wb-fix{color:var(--ok)}.wb-why{background:var(--accent-soft);border-radius:10px;padding:6px 10px}
+
+/* ───── داستان صوتی ───── */
+.st-line{display:flex;gap:10px;align-items:flex-start;padding:8px;border-radius:12px;cursor:pointer;transition:background .2s}
+.st-line p{margin:0;line-height:1.8}.st-who{font-size:20px;line-height:1.6}
+.st-line.on{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.story .fa-tr{display:none;color:var(--muted)}.story.tr .fa-tr{display:block}
