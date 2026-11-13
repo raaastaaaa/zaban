@@ -322,6 +322,7 @@ routes.live = (mode = 'lesson') => {
     <span class="tiny muted">${mode === 'group' ? 'برای کلاس گروهی: یک نفر ChatGPT را روی بلندگو باز کند و همه کنار هم باشید؛ هر کس قبل از حرف زدن اسمش را بگوید.' : 'برنامهٔ امروز، اشتباه‌های قبلی و حافظهٔ کلاس‌هایت هم به ChatGPT داده می‌شود.'}</span></div>
   <div class="live-card"><div class="live-av" id="lav"><span>👩‍🏫</span><i></i></div><b id="lst">${esc(G.settings.teacher)} آماده است</b><span class="small" id="lclk">${faNum(Math.round(L.live || 0))} دقیقه کلاس زندهٔ امروز</span>
     <div class="seg eng-seg" id="leng">${[['relay', '🎧 بدون فیلترشکن'], ['gemini', '✨ زنده (VPN)'], ['gpt', '🤖 ChatGPT']].map(([k, t]) => `<button data-v="${k}" class="${(G.settings.liveEngine || 'gemini') === k ? 'on' : ''}">${t}</button>`).join('')}</div>
+    <div class="eng-hint tiny" id="lenh"></div>
     <button class="btn line" id="lrmic" hidden>🎤 حرف بزن</button><button class="btn" id="lrgo" hidden>▶ ادامهٔ درس</button>
     <div class="row" style="justify-content:center"><button class="btn live-go" id="lgo">📞 شروع کلاس</button></div>
     <span class="tiny" style="opacity:.8">مثل تماس تلفنی حرف بزن؛ وسط حرف معلم هم می‌توانی بپری. هدفون بهتر است.</span></div>
@@ -443,7 +444,8 @@ routes.live = (mode = 'lesson') => {
     if (typedToTeacher(n, msg)) i.value = ''; };
   $('#ltb').onclick = sendTyped; $('#lti').onkeydown = e => { if (e.key === 'Enter') sendTyped(); };
   const engine = () => G.settings.liveEngine || 'relay';
-  const drawEng = () => { $$('#leng button').forEach(b => b.classList.toggle('on', b.dataset.v === engine())); $('#lgpt').hidden = engine() !== 'gpt'; if (!Live.on && !Relay.on) $('#lgo').textContent = engine() === 'gpt' ? '🤖 شروع کلاس با ChatGPT' : '📞 شروع کلاس'; };
+  const ENG_HINT = { relay: '🇮🇷 مخصوص داخل ایران: بدون فیلترشکن کار می‌کند؛ صدای طبیعی فارسی، نوبتی (بعد از هر حرف چند ثانیه مکث).', gemini: '🌍 مخصوص خارج از ایران (یا داخل ایران با فیلترشکن Global): تماس صوتی واقعاً هم‌زمان و بی‌مکث؛ کلاس گروهی از راه دور هم فقط با این است.', gpt: '🤖 در اپ ChatGPT (رایگان، هر جای دنیا که ChatGPT باز شود)؛ تخته و تصحیح قرمز داخل برنامه را ندارد.' };
+  const drawEng = () => { $('#lenh') && ($('#lenh').innerHTML = `${ENG_HINT[engine()] || ''}<br><span class="muted">${inIran() ? 'به نظر می‌رسد در ایران هستی → «🎧 بدون فیلترشکن» پیشنهاد می‌شود.' : 'به نظر می‌رسد خارج از ایران هستی → «✨ زنده» پیشنهاد می‌شود.'}</span>`); $$('#leng button').forEach(b => b.classList.toggle('on', b.dataset.v === engine())); $('#lgpt').hidden = engine() !== 'gpt'; if (!Live.on && !Relay.on) $('#lgo').textContent = engine() === 'gpt' ? '🤖 شروع کلاس با ChatGPT' : '📞 شروع کلاس'; };
   $('#leng').onclick = e => { const b = e.target.closest('button'); if (!b || Live.on || Live.starting || Relay.on) return; G.settings.liveEngine = b.dataset.v; saveG('settings'); drawEng(); };
   drawEng(); const idle0 = ui.idle; ui.idle = () => { idle0(); drawEng(); };
   $('#lrmic').onclick = relayMicClick; $('#lrgo').onclick = () => { if (!Relay.on || Relay.busy) return; Relay.phase = 'teach'; Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); try { Relay.mr?.state === 'recording' && (Relay.mr.onstop = null, Relay.mr.stop()); } catch { } clearInterval(Relay.vad); $('#lrgo').hidden = true; relayTeach('(The student\'s question was answered. Continue PHASE 1 from exactly where you stopped — the next items not taught yet.)'); };
@@ -496,7 +498,8 @@ async function sendToGPT(p, how) {
    از راه سرور برنامه به Gemini می‌رسد، جواب معلم با صدای طبیعی «Kore» خوانده می‌شود و دوباره گوش می‌دهد.
    همهٔ ارتباط از سرور خود برنامه است، پس در ایران بدون VPN هم کار می‌کند. */
 const Relay = { on: false, hist: [], busy: false };
-if (!G.settings.relayMig) { G.settings.liveEngine = 'relay'; G.settings.relayMig = 1; try { saveG('settings'); } catch { } }
+const inIran = () => { try { return /Tehran/i.test(Intl.DateTimeFormat().resolvedOptions().timeZone || ''); } catch { return false; } };
+if (G.settings.relayMig !== 2) { G.settings.liveEngine = inIran() ? 'relay' : 'gemini'; G.settings.relayMig = 2; try { saveG('settings'); } catch { } }
 const RELAY_ADAPT = `
 === THIS CLASS RUNS AS A TURN-BASED VOICE CALL (no tools available) ===
 Each turn you receive the student's voice (audio) or a typed message. Reply ONLY with JSON:
@@ -519,11 +522,18 @@ const RELAY_TEACH_NEXT = '(PHASE 1: continue teaching the next items.)';
 const RELAY_QA_START = '(PHASE 1 is finished. Start PHASE 2: tell the student warmly that now it is their turn — they can ask any question, then you will practise together. Ask your first short question.)';
 const relayQaHint = () => `(PHASE 2. ${RELAY_TIME()}${langHint()} Keep practising with varied activities until the class time is used; in the last 3 minutes do the quiz recap and say goodbye.)`;
 function relayB64(blob) { return new Promise(r => { const f = new FileReader(); f.onload = () => r(String(f.result).split(',')[1]); f.readAsDataURL(blob); }); }
+/* گفتار معلم به تکه‌های کوتاه (۱ تا ۳ جمله) تقسیم می‌شود: صدای تمیزتر، شروع سریع‌تر، و تکهٔ بعدی هم‌زمان ساخته می‌شود */
+function relayChunks(t) { const ss = String(t || '').split(/(?<=[.!؟?…:])\s+/); const out = []; let cur = ''; for (const x of ss) { if ((cur + ' ' + x).length > 230 && cur) { out.push(cur.trim()); cur = x; } else cur += ' ' + x; } if (cur.trim()) out.push(cur.trim()); return out; }
+async function relaySpeak(text) {
+  const my = Relay.turnId; const parts = relayChunks(text); const pre = p => (G.settings.voiceFa !== 'browser' ? cloudTTS(G.settings.voiceFa, p, 'fa', 'cheerful').catch(() => null) : Promise.resolve(null));
+  const jobs = parts.map(() => null); jobs[0] = pre(parts[0]); if (parts[1]) jobs[1] = pre(parts[1]);
+  for (let i = 0; i < parts.length; i++) { if (!Relay.on || Relay.turnId !== my) return false; await jobs[i]; if (parts[i + 2]) jobs[i + 2] = pre(parts[i + 2]); await say(parts[i], 'fa', 'cheerful'); }
+  return Relay.turnId === my; }
 async function relayStart(mode, ui) {
   if (Relay.on || Relay.starting) return; Relay.starting = true; ui.connecting?.();
   try {
     if (!gemKey()) { toast('برای کلاس صوتی باید اینترنت وصل باشد.'); return ui.idle(); }
-    Relay.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    const st0 = await navigator.mediaDevices.getUserMedia({ audio: true }); st0.getTracks().forEach(t => t.stop()); // فقط اجازه؛ میکروفون موقع حرف زدن معلم بسته می‌ماند تا صدا خش و پرش نداشته باشد
   } catch { Relay.starting = false; ui.idle(); return toast('اجازهٔ میکروفون داده نشده؛ از تنظیمات مرورگر اجازه بده.'); }
   const C = window.AudioContext || window.webkitAudioContext; Relay.ctx = new C(); try { await Relay.ctx.resume(); } catch { }
   if (mode === 'lesson' || mode === 'group') { try { LIVE_LESSON = await liveLessonText(); } catch { } }
@@ -546,7 +556,7 @@ async function relayAsk(text) { // یک درخواست متنی به مغز (ب�
   let r; try { r = JSON.parse(raw.replace(/^```json|```$/g, '')); } catch { r = { say: raw.replace(/[{}"]/g, '').slice(0, 1200) }; }
   r.__q = text; return r; }
 const relayNoAsk = r => { if (!r?.say || r.done || Relay.phase !== 'teach') return r; const ps = r.say.split(/(?<=[.!؟?…])\s+/); while (ps.length > 1) { const last = ps[ps.length - 1].trim(); if (/؟\s*$/.test(last) || (/\?\s*$/.test(last) && /[\u0600-\u06FF]/.test(last))) ps.pop(); else break; } r.say = ps.join(' '); return r; };
-const relayPre = r => { relayNoAsk(r); if (r?.say && G.settings.voiceFa !== 'browser') cloudTTS(G.settings.voiceFa, r.say, 'fa', 'cheerful').catch(() => { }); return r; };
+const relayPre = r => { relayNoAsk(r); if (r?.say && G.settings.voiceFa !== 'browser') relayChunks(r.say).slice(0, 2).forEach(p => cloudTTS(G.settings.voiceFa, p, 'fa', 'cheerful').catch(() => { })); return r; };
 async function relayTeach(first) {
   const ui = Relay.ui; Relay.paused = false; relayMicBtn(true, 'teach'); ui.status('📖 معلم دارد درس را کامل توضیح می‌دهد… (سؤال داشتی «✋ سؤال دارم» را بزن)');
   let next = relayAsk(first).then(relayPre); let n = 0;
@@ -556,7 +566,7 @@ async function relayTeach(first) {
     Relay.hist.push({ role: 'user', parts: [{ text: r.__q }] }, { role: 'model', parts: [{ text: r.say || '' }] }); if (Relay.hist.length > 60) Relay.hist = Relay.hist.slice(-60);
     if (r.board?.items?.length) ui.board(r.board.title || '', r.board.items);
     if (!r.done) next = relayAsk(relayTeachNext()).then(relayPre); // بخش بعدی هم‌زمان آماده می‌شود
-    if (r.say) { ui.say('t', r.say); ui.say('end'); liveLog('T', r.say + ' '); const my = Relay.turnId = (Relay.turnId || 0) + 1; await say(r.say, 'fa', 'cheerful'); if (Relay.turnId !== my) break; }
+    if (r.say) { ui.say('t', r.say); ui.say('end'); liveLog('T', r.say + ' '); Relay.turnId = (Relay.turnId || 0) + 1; if (!(await relaySpeak(r.say))) break; }
     if (r.done) { Relay.phase = 'qa'; break; }
     if (Relay.paused) return;
     if (Relay.queued) { const q = Relay.queued; Relay.queued = null; Relay.phase = 'pause'; Relay.paused = true; return relayTurn(q); }
@@ -587,7 +597,7 @@ async function relayTurn(input) {
     if (r.board?.items?.length) ui.board(r.board.title || '', r.board.items);
     if (r.fix?.wrong && r.fix?.right) { ui.fix?.('', r.fix.wrong, r.fix.right, r.fix.why || ''); logMistakes?.([r.fix], 'live'); }
     if (r.new_topic && String(r.new_topic).trim().length > 1) { if (r.say) { ui.say('t', r.say); ui.say('end'); say(r.say, 'fa', 'cheerful'); } return relayNewTopic(String(r.new_topic).trim()); }
-    if (r.say) { ui.say('t', r.say); ui.say('end'); liveLog('T', r.say + ' '); ui.status('🔊 معلم حرف می‌زند… (برای حرف زدن، 🎤 را بزن)'); relayMicBtn(true, 'speak'); Relay.busy = false; const myTurn = Relay.turnId = (Relay.turnId || 0) + 1; await say(r.say, 'fa', 'cheerful'); if (Relay.turnId !== myTurn) return; }
+    if (r.say) { ui.say('t', r.say); ui.say('end'); liveLog('T', r.say + ' '); ui.status('🔊 معلم حرف می‌زند… (برای حرف زدن، 🎤 را بزن)'); relayMicBtn(true, 'speak'); Relay.busy = false; Relay.turnId = (Relay.turnId || 0) + 1; if (!(await relaySpeak(r.say))) return; }
   } catch (e) { console.warn(e); if (Relay.on) { ui.status('اینترنت کند بود؛ دوباره حرف بزن یا بنویس.'); } }
   finally { Relay.busy = false; }
   if (Relay.on && Relay.queued) { const q = Relay.queued; Relay.queued = null; Relay.turnId = (Relay.turnId || 0) + 1; stopSpeak(); return relayTurn(q); }
@@ -595,12 +605,14 @@ async function relayTurn(input) {
 }
 async function relayListen() {
   if (!Relay.on || Relay.busy) return; const ui = Relay.ui; stopSpeak();
+  try { Relay.stream?.getTracks().forEach(t => t.stop()); Relay.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); } catch { ui.status('میکروفون در دسترس نیست؛ بنویس.'); return; }
+  if (!Relay.on) { Relay.stream.getTracks().forEach(t => t.stop()); return; }
   const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac'].find(m => window.MediaRecorder?.isTypeSupported?.(m)) || '';
   let mr; try { mr = Relay.mr = new MediaRecorder(Relay.stream, mime ? { mimeType: mime } : undefined); } catch { ui.status('ضبط صدا روی این مرورگر نیست؛ بنویس.'); return; }
   const chunks = []; mr.ondataavailable = e => e.data.size && chunks.push(e.data);
   const an = Relay.ctx.createAnalyser(); an.fftSize = 1024; const src = Relay.ctx.createMediaStreamSource(Relay.stream); src.connect(an); const buf = new Float32Array(an.fftSize);
   let spoke = false, loudAt = 0, floor = 0.01, n = 0; const t0 = Date.now();
-  mr.onstop = () => { clearInterval(Relay.vad); try { src.disconnect(); } catch { } if (!Relay.on) return;
+  mr.onstop = () => { clearInterval(Relay.vad); try { src.disconnect(); } catch { } try { Relay.stream?.getTracks().forEach(t => t.stop()); } catch { } Relay.stream = null; if (!Relay.on) return;
     if (!spoke) { ui.status('🎤 هر وقت آماده بودی دکمهٔ «حرف بزن» را بزن یا بنویس.'); relayMicBtn(true, 'idle'); return; }
     relayTurn({ audio: new Blob(chunks, { type: mr.mimeType || 'audio/webm' }) }); };
   mr.start(250); ui.status('🎤 گوش می‌دهم… حرف بزن (وقتی ساکت شدی، خودش می‌فرستد)'); relayMicBtn(true, 'rec');

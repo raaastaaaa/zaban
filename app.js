@@ -344,7 +344,9 @@ function pcmToWav(b64, rate = 24000) {
   return new Blob([buf], { type: 'audio/wav' });
 }
 const EMO = { cheerful: 'cheerful and warm', calm: 'calm and gentle', excited: 'excited and energetic', encouraging: 'encouraging and supportive', empathetic: 'kind and empathetic', proud: 'proud and happy', surprised: 'playfully surprised', serious: 'clear and serious' };
-async function cloudTTS(engine, text, lang, emotion) {
+const TTS_INFLIGHT = new Map(); // درخواست تکراری برای یک متن، یک بار ساخته می‌شود
+function cloudTTS(engine, text, lang, emotion) { const k = [engine, lang, emotion, G.settings.accent, text].join('|'); if (TTS_INFLIGHT.has(k)) return TTS_INFLIGHT.get(k); const p = cloudTTS0(engine, text, lang, emotion).finally(() => setTimeout(() => TTS_INFLIGHT.delete(k), 50)); TTS_INFLIGHT.set(k, p); return p; }
+async function cloudTTS0(engine, text, lang, emotion) {
   const acc = G.settings.accent === 'UK' ? 'British (Received Pronunciation)' : 'General American';
   const style = lang === 'fa'
     ? `Say the following in a ${EMO[emotion] || 'warm'} voice, like a friendly Iranian teacher speaking natural, fluent Tehrani Persian; pronounce any English words with a clear ${acc} accent`
