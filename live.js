@@ -168,6 +168,9 @@ ${learnerContext()}${mode === 'group' ? (LIVE_LESSON || '') + GROUP_POLICY(lsGet
   }[mode];
   return base + '\n' + m;
 }
+function liveReconnect() { return Live.reconnectFn?.(); }
+/* کلاس زندهٔ هم‌زمان از راه سرور خود برنامه (بدون فیلترشکن): مرورگر ← Supabase ← گوگل */
+async function liveProxyAuth() { try { const c = typeof sb === 'function' ? sb() : null; const t = c && (await c.auth.getSession()).data.session?.access_token; return t ? { proxy: t } : null; } catch { return null; } }
 async function liveToken() {
   if (G.settings.prov.gemini.key) return { key: G.settings.prov.gemini.key };
   const d = await serverGem(LIVE_MODELS, 'liveToken', {});
@@ -194,11 +197,12 @@ async function liveStart(mode, ui) {
   if (G.settings.spatial !== '0' && G.settings.spatial !== 0) { try { const pn = Live.ctx.createPanner(); pn.panningModel = 'HRTF'; pn.distanceModel = 'inverse'; pn.refDistance = 1; pn.rolloffFactor = 0.6; pn.connect(Live.ctx.destination); Live.out = pn; const t0 = Date.now();
     const mv = () => { if (Live.ctx?.state === 'closed') return; const t = (Date.now() - t0) / 1000; const x = Math.sin(t / 7) * 1.1, z = -1.3 - Math.sin(t / 11) * 0.4; try { if (pn.positionX) { pn.positionX.value = x; pn.positionY.value = 0; pn.positionZ.value = z; } else pn.setPosition(x, 0, z); } catch { } Live.mvT = setTimeout(mv, 120); }; mv(); } catch { Live.out = Live.ctx.destination; } }
   const tryModel = (i, auth) => new Promise((res, rej) => {
-    const url = auth.key ? `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${encodeURIComponent(auth.key)}`
+    const url = auth.proxy ? `${SB_URL.replace(/^http/, 'ws')}/functions/v1/live?jwt=${encodeURIComponent(auth.proxy)}` : auth.key ? `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${encodeURIComponent(auth.key)}`
       : `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained?access_token=${encodeURIComponent(auth.token)}`;
     const ws = new WebSocket(url); let ok = false;
     ws.onopen = () => ws.send(JSON.stringify({ setup: { model: 'models/' + LIVE_MODELS[i], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: G.settings.geminiVoice || 'Kore' } } } },
       systemInstruction: { parts: [{ text: livePrompt(mode) + TL_OVERRIDE() }] }, inputAudioTranscription: {}, outputAudioTranscription: {},
+      sessionResumption: Live.resume ? { handle: Live.resume } : {}, contextWindowCompression: { slidingWindow: {} },
       tools: [{ functionDeclarations: [
         { name: 'play_conversation', description: 'Play today\'s lesson conversation audio (two native speakers) to the student. Returns when it finished playing.', parameters: { type: 'OBJECT', properties: {} } },
         { name: 'show_board', description: 'Show the current lesson step on the student\'s screen like a whiteboard.', parameters: { type: 'OBJECT', properties: { title: { type: 'STRING', description: 'Persian step title' }, items: { type: 'ARRAY', items: { type: 'OBJECT', properties: { en: { type: 'STRING' }, fa: { type: 'STRING' }, note: { type: 'STRING', description: 'Persian: register / when to use' } } } } }, required: ['title'] } },
@@ -210,15 +214,22 @@ async function liveStart(mode, ui) {
         { name: 'ask_brain', description: 'Ask the expert planning brain a question that needs deep thinking, complete lists or planning. Returns notes to explain in your own words.', parameters: { type: 'OBJECT', properties: { question: { type: 'STRING' } }, required: ['question'] } },
         { name: 'correct_writing', description: 'Show a correction on the shared board: the wrong text struck through in red, the correct version, and a short Persian reason. Use for EVERY typed message with a mistake, and for important spoken mistakes.', parameters: { type: 'OBJECT', properties: { name: { type: 'STRING', description: 'student name' }, wrong: { type: 'STRING' }, right: { type: 'STRING' }, why: { type: 'STRING', description: 'short Persian explanation of why' } }, required: ['wrong', 'right', 'why'] } },
         { name: 'mark_done', description: 'Mark one of today\'s planned tasks as done when the student finished it in this session.', parameters: { type: 'OBJECT', properties: { task: { type: 'STRING', description: 'task text' } }, required: ['task'] } }] }] } }));
-    ws.onmessage = async ev => { const m = JSON.parse(typeof ev.data === 'string' ? ev.data : await ev.data.text()); if (m.setupComplete && !ok) { ok = true; res(ws); } else liveMsg(m, ui); };
+    ws.onmessage = async ev => { const m = JSON.parse(typeof ev.data === 'string' ? ev.data : await (ev.data.text ? ev.data.text() : new TextDecoder().decode(ev.data))); if (m.sessionResumptionUpdate?.newHandle) Live.resume = m.sessionResumptionUpdate.newHandle; if (m.setupComplete && !ok) { ok = true; res(ws); } else if (!m.sessionResumptionUpdate) liveMsg(m, ui); };
     ws.onerror = () => { if (!ok) setTimeout(() => rej(new Error(ws.__why || 'ws-error')), 400); };
-    ws.onclose = e => { ws.__why = (e.code || '') + ' ' + (e.reason || ''); if (!ok) rej(new Error(ws.__why.trim() || 'closed')); else if (Live.ws === ws) { ui.status(e.reason && /quota|exceed/i.test(e.reason) ? 'سهمیهٔ رایگان امروز کلاس زنده تمام شد؛ فردا دوباره.' : 'تماس تمام شد.'); liveStop(ui, true); } };
+    ws.onclose = e => { ws.__why = (e.code || '') + ' ' + (e.reason || ''); if (!ok) rej(new Error(ws.__why.trim() || 'closed')); else if (Live.ws === ws) { if (Live.on && Live.resume && !/quota|exceed/i.test(e.reason || '') && (Live.reconn || 0) < 30) return liveReconnect(); ui.status(e.reason && /quota|exceed/i.test(e.reason) ? 'سهمیهٔ رایگان امروز کلاس زنده تمام شد؛ فردا دوباره.' : 'تماس تمام شد.'); liveStop(ui, true); } };
   });
-  let ws, why = '';
-  for (const [i, fresh] of [[0, false], [1, true], [0, true]]) {
+  let ws, why = ''; Live.resume = null; Live.reconn = 0;
+  // اول از راه سرور خود برنامه (بدون فیلترشکن)، بعد مستقیم به گوگل
+  const px = auth.key ? null : await liveProxyAuth();
+  const tries = [...(px ? [[0, 'px'], [1, 'px']] : []), [0, false], [1, true], [0, true]];
+  for (const [i, fresh] of tries) {
     if (left()) break;
-    try { const a = fresh && !auth.key ? await liveToken() : auth; ws = await tryModel(i, a); break; } catch (e) { why = String(e?.message || e); console.warn('live connect', i, why); }
+    try { const a = fresh === 'px' ? px : fresh && !auth.key ? await liveToken() : auth; ws = await tryModel(i, a); Live.auth = a; Live.mi = i; break; } catch (e) { why = String(e?.message || e); console.warn('live connect', i, fresh, why); }
   }
+  // اتصال دوباره بی‌صدا (هر چند دقیقه سرور اتصال را تازه می‌کند؛ گفتگو با «ادامهٔ جلسه» از همان‌جا ادامه می‌یابد)
+  Live.reconnectFn = async () => { Live.reconn = (Live.reconn || 0) + 1; ui.status('🔄 ادامهٔ تماس…');
+    for (const k of [0, 1, 2]) { try { let a = Live.auth; if (a?.proxy) a = (await liveProxyAuth()) || a; else if (!a?.key) a = await liveToken(); const w = await tryModel(Live.mi || 0, a); Live.ws = w; ui.status('حرف بزن 🙂'); return; } catch (e) { await new Promise(r => setTimeout(r, 600 * (k + 1))); } }
+    ui.status('تماس قطع شد.'); liveStop(ui, true); };
   if (!ws) { clearTimeout(Live.mvT);
     const loc = /location|region|not supported|unsupported|1007|PERMISSION/i.test(why);
     return abort(loc ? 'سرور گوگل لوکیشن فیلترشکنت را قبول نکرد. لوکیشن فیلترشکن را روی آلمان، هلند، انگلیس یا آمریکا بگذار و دوباره بزن. (ایران، روسیه، چین و هنگ‌کنگ کار نمی‌کند)'
@@ -311,7 +322,7 @@ function liveMsg(m, ui) {
     send(res);
   }
   if (m.toolCallCancellation?.ids) { Live.cancel = Live.cancel || new Set(); m.toolCallCancellation.ids.forEach(i => Live.cancel.add(i)); }
-  if (m.goAway) ui.status('جلسه رو به پایان است؛ بعد از قطع، دوباره وصل شو.');
+  if (m.goAway && !Live.resume) ui.status('جلسه رو به پایان است…');
 }
 function liveStop(ui, silent) {
   const was = Live.on; if (was) VR_hostSend({ k: 'class', on: false }); try { (Live.rsrc || []).forEach(n => n.disconnect()); } catch { } Live.rsrc = []; Live.rIds = null; Live.proc = null; if (Live.tdest && window.VR?.on) vrSetTeacherTrack(null); Live.tdest = null; Live.on = false; Live.starting = false; Live.busyN = 0; Live.cancel = null; clearInterval(Live.timer); clearTimeout(Live.mvT); try { Live.node?.disconnect(); Live.src?.disconnect(); } catch { } Live.mic?.getTracks().forEach(t => t.stop());
@@ -532,7 +543,7 @@ const RELAY_QA_START = '(PHASE 1 is finished. Start PHASE 2: tell the student wa
 const relayQaHint = () => `(PHASE 2. ${RELAY_TIME()}${langHint()} Keep practising with varied activities until the class time is used; in the last 3 minutes do the quiz recap and say goodbye.)`;
 function relayB64(blob) { return new Promise(r => { const f = new FileReader(); f.onload = () => r(String(f.result).split(',')[1]); f.readAsDataURL(blob); }); }
 /* گفتار معلم به تکه‌های کوتاه (۱ تا ۳ جمله) تقسیم می‌شود: صدای تمیزتر، شروع سریع‌تر، و تکهٔ بعدی هم‌زمان ساخته می‌شود */
-function relayChunks(t) { const ss = String(t || '').split(/(?<=[.!؟?…:])\s+/); const out = []; let cur = ''; for (const x of ss) { if ((cur + ' ' + x).length > 230 && cur) { out.push(cur.trim()); cur = x; } else cur += ' ' + x; } if (cur.trim()) out.push(cur.trim()); return out; }
+function relayChunks(t) { const ss = String(t || '').split(/(?<=[.!؟?…:،])\s+/); const out = []; let cur = ''; for (const x of ss) { const lim = out.length === 0 ? 80 : 230; if ((cur + ' ' + x).length > lim && cur) { out.push(cur.trim()); cur = x; } else cur += ' ' + x; } if (cur.trim()) out.push(cur.trim()); return out; } // تکهٔ اول کوتاه تا صدا فوراً شروع شود
 async function relaySpeak(text) {
   const my = Relay.turnId; const parts = relayChunks(text); const pre = p => (G.settings.voiceFa !== 'browser' ? cloudTTS(G.settings.voiceFa, p, 'fa', 'cheerful').catch(() => null) : Promise.resolve(null));
   const jobs = parts.map(() => null); jobs[0] = pre(parts[0]); if (parts[1]) jobs[1] = pre(parts[1]);
