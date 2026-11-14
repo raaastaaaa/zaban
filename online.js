@@ -407,13 +407,14 @@ async function joinCompetition() {
 
 /* ───── انتقادات و پیشنهادات (متن یا صدا) ───── */
 routes.feedback = (k0) => {
-  setTop('انتقادات و پیشنهادات', true); const v = view();
+  setTop('پشتیبانی و پیشنهادات', true); const v = view();
   v.innerHTML = `<div class="stack"><div class="card stack"><b>💡 ایده، درخواست یا انتقادت را بگو</b><span class="small muted">با صدا ضبط کن یا بنویس؛ مستقیم به دست مدیر برنامه می‌رسد.</span>
     <div class="seg" id="fk">${[['idea', '💡 پیشنهاد برای این اپ'], ['startup', '🚀 ایدهٔ استارتاپ'], ['bug', '🐞 ایراد'], ['request', '🙋 درخواست'], ['other', '💬 سایر']].map(([k, t], i) => `<button data-v="${k}" class="${i ? '' : 'on'}">${t}</button>`).join('')}</div>
     <div class="row" style="flex-wrap:nowrap;align-items:stretch"><textarea id="fb" class="in grow" rows="5" placeholder="بنویس یا دکمهٔ 🎙 را بزن و بگو…"></textarea></div>
     <div class="row"><button class="btn ghost" id="frec">🎙 ضبط صدا</button><span id="fst" class="small muted"></span></div><div id="fau"></div>
     <button class="btn" id="fsend">فرستادن</button></div><div id="fmine"></div></div>`;
   let kind = 'idea', audio = null, rec = null, chunks = [], sr = null;
+  if (k0 && k0 !== 'startup' && ['idea', 'bug', 'request', 'other'].includes(k0)) { kind = k0; $$('#fk button').forEach(x => x.classList.toggle('on', x.dataset.v === k0)); }
   if (k0 === 'startup') { kind = 'startup'; $$('#fk button').forEach(x => x.classList.toggle('on', x.dataset.v === 'startup')); $('#fb').placeholder = 'ایده‌ات را بگو: چه مشکلی را حل می‌کند، برای چه کسانی، و چرا الان؟ من می‌خوانم و اگر جذاب بود با هم جلو می‌بریم.'; }
   $('#fk').onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('#fk button').forEach(x => x.classList.toggle('on', x === b)); kind = b.dataset.v; };
   $('#frec').onclick = async () => {
@@ -448,12 +449,26 @@ async function adminFeedback(box) {
 /* ───── دربارهٔ ما ───── */
 routes.about = () => {
   setTop('دربارهٔ ما', true); const v = view();
-  v.innerHTML = `<div class="stack">
-  <div class="card stack about-hero"><img src="logo.svg" alt="" style="width:84px;height:84px;border-radius:22px"><b style="font-size:20px">زبان رستا</b><span class="small">یادگیری زبان مثل یک کلاس خصوصیِ گرم — با معلمی که فارسی توضیح می‌دهد، هر چه بخواهی یادت می‌دهد و هیچ‌وقت خسته نمی‌شود.</span></div>
-  <div class="card stack"><b>👋 من رستا هستم</b>
-    <span class="small" style="line-height:2">طراح این اپلیکیشن و چند استارتاپ دیگر. سال‌هاست در حوزهٔ پژوهش و راهبرد کار می‌کنم و همیشه دنبال این بوده‌ام که فناوری را به ابزاری ساده و در دسترس برای زندگی واقعی آدم‌ها تبدیل کنم. «زبان رستا» از یک نیاز شخصی شروع شد: می‌خواستم زبان را آن‌طور یاد بگیرم که یک معلم خصوصی دلسوز درس می‌دهد — با توضیح فارسی، تلفظ به خط خودمان، مثال‌های واقعی، و بدون اینکه حتی یک کلمه از قلم بیفتد. بعد فکر کردم چرا این امکان برای همه نباشد؟</span>
-    <span class="small" style="line-height:2">این برنامه هر روز بهتر می‌شود، و بخش بزرگی از این بهتر شدن از نظرها و ایده‌های شما می‌آید.</span></div>
-  <div class="card stack"><b>🚀 ایده‌ای برای یک استارتاپ داری؟</b><span class="small">اگر ایده‌ای در سر داری — هر حوزه‌ای — یا دنبال هم‌تیمی هستی، برایم بنویس یا با صدا بگو. همهٔ پیام‌ها را خودم می‌خوانم.</span><a class="btn" href="#feedback/startup">🚀 ایده‌ام را می‌گویم</a></div>
-  <div class="card stack"><b>💡 نظری برای بهتر شدن این اپ داری؟</b><span class="small">پیشنهاد، درخواست یا ایراد — با صدا یا متن.</span><a class="btn line" href="#feedback">💡 نظرم را می‌گویم</a></div>
-  <div class="card stack small muted"><b>درباره‌ٔ فناوری</b><span>معلم زنده و محتوا با هوش مصنوعی ساخته می‌شود؛ طرح درس‌ها، سیاست تدریس و دوره‌ها طراحی اختصاصی این برنامه است. متن‌های کتاب‌های صوتی بازنویسی ساده‌شدهٔ آثار آزاد یا داستان‌های اختصاصی‌اند.</span><span>نسخهٔ ${esc((typeof SW_VER !== 'undefined' && SW_VER) || '')} · ساخته‌شده با ❤️ برای فارسی‌زبان‌ها</span></div></div>`;
+  v.innerHTML = `<div class="stack about">
+  <div class="card stack about-hero" style="align-items:center;text-align:center"><img src="logo.svg" alt="" style="width:84px;height:84px;border-radius:22px"><b style="font-size:22px">زبان رستا</b><span class="muted">یادگیری زبان، با معلمی که فارسی حرف می‌زند.</span></div>
+  <div class="card stack"><span style="line-height:2.1">«زبان رستا» یک کلاس خصوصی در جیب شماست: دوره‌های کامل <b>انگلیسی، عربی، آلمانی، ترکی استانبولی و چینی</b> از سطح صفر تا پیشرفته، با معلم زندهٔ هوشمند، داستان‌های صوتی، کتاب تمرین و صدای بومی — حتی بدون اینترنت.</span>
+    <div class="grid2 small"><span>🎯 طراحی آموزشی دقیق و سطح‌بندی‌شده</span><span>🗣️ معلم زنده با توضیح فارسی</span><span>📴 درس و صدای آفلاین</span><span>🔒 احترام به حریم خصوصی کاربران</span></div></div>
+  <div class="card row" style="flex-wrap:nowrap;align-items:flex-start"><span style="font-size:34px">👩‍💻</span><span class="stack" style="gap:4px"><b>رستا — بنیان‌گذار و طراح محصول</b><span class="small" style="line-height:2">طراح اپلیکیشن و استارتاپ‌های مختلف؛ با یک باور ساده: فناوری خوب باید آموزش باکیفیت را برای همه در دسترس کند.</span></span></div>
+  <div class="card stack"><b>📬 ارتباط با ما</b><span class="small muted">پیام، درخواست، ایراد یا پیشنهاد — مستقیم به دست خودم می‌رسد.</span>
+    <div class="row"><a class="btn" href="#support">💬 پشتیبانی و ارتباط مستقیم</a><a class="btn line" href="#feedback/startup">🚀 ایدهٔ استارتاپ دارم</a></div></div>
+  <p class="tiny muted" style="text-align:center">طرح درس‌ها، سیاست تدریس و دوره‌ها طراحی اختصاصی «زبان رستا» است؛ معلم زنده و بخشی از محتوا با هوش مصنوعی تولید می‌شود.</p></div>`;
+};
+/* ───── مرکز پشتیبانی: همیشه در دسترس از صفحهٔ اول ───── */
+const supportCard = () => `<a class="card row support-card" href="#support" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span style="font-size:26px">💬</span><span class="grow"><b>پشتیبانی</b><br><span class="tiny muted">پیام، درخواست یا ایراد؟ مستقیم با رستا در ارتباط باش</span></span><span class="pill">پیام ›</span></a>`;
+routes.support = async () => {
+  setTop('پشتیبانی', true); const v = view();
+  v.innerHTML = `<div class="stack"><div class="today"><b style="font-size:18px">💬 پشتیبانی «زبان رستا»</b><span class="small">هر پیامی اینجا بفرستی مستقیم به دست رستا می‌رسد. جواب را در «پیام‌ها» می‌بینی.</span></div>
+    <a class="card row" id="sdm" href="#support" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span style="font-size:28px">🗨️</span><span class="grow"><b>گفتگوی مستقیم با رستا</b><br><span class="small muted">مثل پیام‌رسان؛ سؤال بپرس و جواب بگیر</span></span><span class="pill acc">شروع ›</span></a>
+    <div class="sec">یا فرم بفرست</div>
+    <div class="grid2">${[['bug', '🐞', 'گزارش ایراد', 'چیزی کار نمی‌کند'], ['request', '🙋', 'درخواست', 'امکان یا درس تازه'], ['idea', '💡', 'پیشنهاد', 'برای بهتر شدن اپ'], ['other', '✉️', 'پیام', 'هر حرف دیگری']].map(([k, ic, t, d]) => `<a class="card stack" href="#feedback/${k}" style="text-decoration:none;color:inherit;align-items:center;text-align:center"><span style="font-size:26px">${ic}</span><b>${t}</b><span class="tiny muted">${d}</span></a>`).join('')}</div>
+    <div class="card small muted">برای گزارش ایراد بنویس <b>کدام صفحه</b> و <b>چه کاری کردی</b> و چه اتفاقی افتاد؛ اگر اسکرین‌شات داری در گفتگوی مستقیم بفرست.</div></div>`;
+  $('#sdm').onclick = async e => { e.preventDefault();
+    if (!(await session())) return loginSheet(() => routes.support());
+    const { data } = await sb().from('profiles').select('username').eq('is_admin', true).limit(1);
+    const me = await myProfile(); if (data?.[0] && data[0].username !== me?.username) go('dm/' + data[0].username); else go('feedback/other'); };
 };

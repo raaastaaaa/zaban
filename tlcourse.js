@@ -141,3 +141,56 @@ async function tlDownload(A, b) {
   for (const u of urls) { if (!(await c.match(u))) { try { const r = await fetch(u); if (r.ok) await c.put(u, r); } catch { return toast('اینترنت قطع شد؛ دوباره بزن.'); } } lab.textContent = `${faNum(++n)}/${faNum(urls.length)}`; }
   lab.textContent = '✓ آفلاین'; toast('صدای این درس (و داستانش) آفلاین ذخیره شد ✓');
 }
+
+/* ───── تقویم و برنامهٔ مطالعه — برای هر زبان جدا (عربی، آلمانی، ترکی، چینی) ───── */
+const tlPlanGet = () => (U.tplan || {})[tl() + ':' + tlDia()[2]] || null;
+const tlPlanSet = p => { U.tplan = U.tplan || {}; U.tplan[tl() + ':' + tlDia()[2]] = p; saveU(); };
+function tlBuildPlan({ start = isoDay(), end, target, minutes, reminder, review }) {
+  const all = curUnits(); const lastIdx = all.map(a => a[1]).lastIndexOf(target); const from = curIdx();
+  const units = all.slice(from, lastIdx + 1).filter(a => !tlDone(a[0]));
+  const days = {}; const list = []; for (let d = start; d <= end; d = addDays(d, 1)) list.push(d);
+  const study = list.filter(d => weekdayIdx(d) !== review); let j = 0, prev = -1;
+  for (const d of list) {
+    if (weekdayIdx(d) === review) { days[d] = { review: true, tasks: ['مرور فلش‌کارت‌های هفته', 'گوش دادن دوباره به داستان‌های صوتی هفته', 'کلاس مرور با معلم زنده'] }; continue; }
+    const n = units.length ? Math.min(units.length - 1, Math.floor(j * units.length / Math.max(1, study.length))) : -1; j++;
+    const u = units[n]; const firstDay = n !== prev; prev = n;
+    days[d] = u ? { unit: u[0], tasks: firstDay ? ['واژه‌ها و افعال درس (با صدا)', 'مکالمه و جمله‌های کاربردی', 'داستان صوتی درس'] : ['گرامر و محاوره', 'کتاب تمرین درس', 'فلش‌کارت و تمرین گفتاری با معلم زنده'] } : { tasks: ['مرور آزاد و فلش‌کارت'] };
+  }
+  return { start, end, target, minutes, reminder, review, days, created: isoDay(), lang: tl() };
+}
+function tlPlanPage(mOffset = '0') {
+  setTop(`تقویم ${tlInfo().fa}`); const v = view(); const P = tlPlanGet(); const lv = tlLevels(); const lg = tl();
+  const WD = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'];
+  if (!P) {
+    const cur = curUnits()[curIdx()]?.[1];
+    v.innerHTML = `<div class="stack"><div class="card stack"><div class="big-ic">🗓️</div><b>برنامهٔ مطالعهٔ ${esc(tlInfo().fa)}</b><span class="small muted">بر اساس درس فعلی‌ات، وقت روزانه و سطحی که می‌خواهی به آن برسی، روزبه‌روز برایت برنامه می‌چینیم: کدام درس، کدام بخش، کی مرور. (برنامهٔ هر زبان جداست.)</span>
+      <label class="f">هدف<select id="tg" class="in">${lv.filter(x => lv.indexOf(x) >= lv.indexOf(cur)).map(x => `<option value="${x}">پایان ${esc(tlInfo().fa)} ${esc(TL_LV[x]?.[0] || x)} (${x}) — تا درس ${faNum(curUnits().map(a => a[1]).lastIndexOf(x) + 1)}</option>`).join('')}</select></label>
+      <div class="grid2"><label class="f">مدت (روز)<input id="dy" class="in" type="number" min="14" max="365" value="90"></label><label class="f">وقت روزانه (دقیقه)<input id="mn" class="in" type="number" min="15" max="240" value="45"></label></div>
+      <div class="grid2"><label class="f">ساعت یادآور<input id="rm" class="in" type="time" value="20:00"></label><label class="f">روز مرور هفتگی<select id="rv" class="in">${WD.map((w, i) => `<option value="${i}" ${i === 6 ? 'selected' : ''}>${w}</option>`).join('')}</select></label></div>
+      <div class="notice soft small" id="est"></div><button class="btn" id="mk">ساخت برنامه</button></div></div>`;
+    const est = () => { const n = curUnits().map(a => a[1]).lastIndexOf($('#tg').value) + 1 - curIdx(); const d = +$('#dy').value * 6 / 7; $('#est').textContent = `${faNum(n)} درس در ${faNum(Math.round(d))} روز مطالعه ← هر درس حدود ${faNum(Math.max(1, Math.round(d / Math.max(1, n))))} روز.`; };
+    ['tg', 'dy'].forEach(i => $('#' + i).oninput = est); est();
+    $('#mk').onclick = () => { tlPlanSet(tlBuildPlan({ end: addDays(isoDay(), clamp(+$('#dy').value || 90, 14, 365) - 1), target: $('#tg').value, minutes: clamp(+$('#mn').value || 45, 15, 240), reminder: $('#rm').value, review: +$('#rv').value })); addXP(10); tlPlanPage(); };
+    return;
+  }
+  const off = +mOffset; let first = addDays(isoDay(), -(toJ(isoDay()).d - 1));
+  for (let i = 0; i < Math.abs(off); i++) { first = off > 0 ? addDays(first, 32 - toJ(addDays(first, 31)).d) : addDays(first, -1); first = addDays(first, -(toJ(first).d - 1)); }
+  const jm = toJ(first); const cells = []; for (let d = first; toJ(d).m === jm.m; d = addDays(d, 1)) cells.push(d);
+  const status = day => { const p = P.days[day]; if (!p) return ''; if (day > isoDay()) return p.review ? 'rev' : ''; return langMinOf(day, lg) >= P.minutes * 0.5 ? 'done' : day < isoDay() ? 'miss' : ''; };
+  const ix = id => curUnits().findIndex(a => a[0] === id); const nm = id => curUnits()[ix(id)]?.[2] || '';
+  const planned = P.days[isoDay()]?.unit || Object.keys(P.days).filter(d => d <= isoDay() && P.days[d].unit).sort().map(d => P.days[d].unit).pop(); const gap = planned ? ix(planned) - curIdx() : 0;
+  v.innerHTML = `<div class="stack"><div class="card stack"><div class="row"><b class="grow">هدف: پایان ${esc(tlInfo().fa)} ${esc(TL_LV[P.target]?.[0] || P.target)} تا ${jLabel(P.end, true)}</b><span class="pill">${faNum(P.minutes)} دقیقه در روز</span></div>
+    <div class="small">${gap > 0 ? `<span class="pill bad">${faNum(gap)} درس عقب‌تر از برنامه</span>` : gap < 0 ? `<span class="pill ok">${faNum(-gap)} درس جلوتر از برنامه 👏</span>` : '<span class="pill ok">طبق برنامه</span>'}</div>
+    <div class="row"><button class="btn sm" id="upd">${gap > 0 ? 'برنامهٔ جبرانی (همان تاریخ هدف)' : 'به‌روزرسانی برنامه از امروز'}</button><button class="btn ghost sm" id="ics">افزودن به تقویم گوشی</button><button class="btn ghost sm" id="rst">برنامهٔ تازه</button></div></div>
+    <div class="card stack"><div class="row"><button class="icon-btn" id="pm">${I.back}</button><b class="grow" style="text-align:center">${J_MONTHS[jm.m - 1]} ${faNum(jm.y)}</b><button class="icon-btn" style="transform:scaleX(-1)" id="nm">${I.back}</button></div>
+    <div class="cal">${J_WEEK.map(w => `<span class="h">${w}</span>`).join('')}${Array(weekdayIdx(first)).fill('<span class="d empty"></span>').join('')}${cells.map(c => { const p = P.days[c]; return `<button class="d ${status(c)} ${p?.review ? 'rev' : ''} ${c === isoDay() ? 'today' : ''}" data-d="${c}"><b>${faNum(toJ(c).d)}</b>${p?.unit ? `<i>${faNum(ix(p.unit) + 1)}</i>` : p?.review ? '<i>↻</i>' : ''}</button>`; }).join('')}</div>
+    <div class="row tiny muted"><span class="pill ok">انجام شد</span><span class="pill bad">جا ماند</span><span class="pill acc">روز مرور</span><span>عدد هر روز = شمارهٔ درس</span></div></div><div id="dd"></div></div>`;
+  const showDay = day => { const p = P.days[day]; $$('.cal .d').forEach(b => b.classList.toggle('sel', b.dataset.d === day)); $('#dd').innerHTML = p ? `<div class="card stack"><b>${jLabel(day, true)}${p.unit ? ' · درس ' + faNum(ix(p.unit) + 1) + ': ' + esc(nm(p.unit)) : ' · روز مرور'}</b>${p.tasks.map(t => `<div class="small">☐ ${esc(t)}</div>`).join('')}${p.unit ? `<div class="row"><a class="btn sm" href="#aru/${esc(p.unit)}">باز کردن درس</a><a class="btn ghost sm" href="#story/${esc(p.unit)}">🎧 داستان</a><a class="btn ghost sm" href="#wb/${esc(p.unit)}">📘 تمرین</a></div>` : '<a class="btn sm" href="#flash">🃏 مرور فلش‌کارت</a>'}<span class="tiny muted">مطالعهٔ ${esc(tlInfo().fa)} در این روز: ${fmtMin(Math.round(langMinOf(day, lg)))}</span></div>` : ''; };
+  $$('.cal .d[data-d]').forEach(b => b.onclick = () => showDay(b.dataset.d)); showDay(isoDay());
+  $('#pm').onclick = () => tlPlanPage(off - 1); $('#nm').onclick = () => tlPlanPage(off + 1);
+  $('#upd').onclick = () => { tlPlanSet(tlBuildPlan({ ...P, start: isoDay(), end: P.end > isoDay() ? P.end : addDays(isoDay(), 30) })); toast('برنامه از امروز تا همان تاریخ هدف دوباره چیده شد.'); tlPlanPage(); };
+  $('#rst').onclick = () => { tlPlanSet(null); tlPlanPage(); };
+  $('#ics').onclick = () => { const ev = Object.entries(P.days).filter(([d]) => d >= isoDay()).slice(0, 120).map(([d, p]) => { const t = (P.reminder || '20:00').replace(':', '') + '00'; return `BEGIN:VEVENT\r\nUID:${d}-${tl()}@zaban-rasta\r\nDTSTART:${d.replace(/-/g, '')}T${t}\r\nDURATION:PT${P.minutes}M\r\nSUMMARY:${tlInfo().fa} — ${p.unit ? 'درس ' + (ix(p.unit) + 1) + ': ' + nm(p.unit) : 'مرور هفته'}\r\nBEGIN:VALARM\r\nTRIGGER:-PT5M\r\nACTION:DISPLAY\r\nDESCRIPTION:وقت مطالعه\r\nEND:VALARM\r\nEND:VEVENT`; }).join('\r\n');
+    const blob = new Blob([`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//zaban-rasta//FA\r\n${ev}\r\nEND:VCALENDAR`], { type: 'text/calendar' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `zaban-${tl()}.ics`; a.click(); };
+}
+const _planR = routes.plan; routes.plan = (m) => tl() === 'en' ? _planR(m) : tlPlanPage(m);

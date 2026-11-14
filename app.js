@@ -813,6 +813,7 @@ routes.home = () => {
     ${tl() !== 'en' ? `<div class="row" style="gap:6px;flex-wrap:wrap"><span class="small">لهجه/گونه:</span>${Object.entries(tlInfo().v).map(([k, d]) => `<button class="pill ${tlDia() === d ? 'acc' : ''}" data-tlv="${k}">${d[1]}</button>`).join('')}</div>
     <span class="small muted">معلم زنده، دورهٔ کامل ${esc(tlInfo().fa)} از پایه تا پیشرفته (هر درس با طراح درس کامل)، «بگو چه می‌خواهی یاد بگیری»، واژه‌های موضوعی، افعال، دیکشنری و گفتگو حالا به ${esc(tlFa())} است — توضیح فارسی + تلفظ به خط فارسی.</span>
     <div class="row"><a class="btn" href="#arc">📖 دورهٔ ${esc(tlInfo().fa)}</a><a class="btn" href="#live/lesson">📞 کلاس زنده</a><a class="btn line" href="#wtopics">📚 واژه‌های موضوعی</a><a class="btn line" href="#verbs">🔤 افعال</a></div>` : ''}</div>
+  ${typeof supportCard === 'function' ? supportCard() : ''}
   <div id="install-box">${installHTML()}</div>
   <div id="online-home"></div>
   ${(() => { if (!U.plan) return ''; const md = U.plan.lastCatch === isoDay() ? U.plan.missedNote || 0 : 0; if (!md) return ''; const end = addDays(U.plan.start, U.plan.dayCount - 1); return `<div class="notice stack"><b>⏰ ${faNum(md)} روز است که طبق برنامه درس نخوانده‌ای</b><span class="small">برای اینکه باز هم تا <b>${jLabel(end, true)}</b> به هدفت برسی، برنامه خودکار جبرانی شد: از امروز روزی <b>${faNum(U.plan.minutes)} دقیقه</b> لازم است. کارهای جامانده به روزهای بعد پخش شد.</span><div class="row"><a class="btn sm" href="#coach/advisor">🧭 مشورت با مشاور</a><a class="btn ghost sm" href="#plan">دیدن تقویم</a></div></div>`; })()}
@@ -1598,7 +1599,7 @@ routes.me = () => {
   <div class="row"><input id="nm" class="in grow" placeholder="چیزی که معلم باید بداند (مثلاً: هدفم مصاحبهٔ کاری است)"><button class="btn sm" id="am">افزودن</button></div></div>
   <div class="card stack"><b>آخرین اشتباه‌ها</b>${U.mistakes.slice(-12).reverse().map(m => `<div class="small"><s class="en">${esc(m.wrong)}</s> ← <b class="en">${esc(m.right)}</b> <span class="muted">${esc(m.why)}</span></div>`).join('') || '<span class="small muted">فعلاً اشتباهی ثبت نشده.</span>'}<a class="btn ghost sm" href="#tool/mistakes">تحلیل و تمرین</a></div>
   <a class="btn ghost wide" href="#feedback">💡 انتقادات و پیشنهادات (با صدا یا متن)</a>
-  <a class="btn ghost wide" href="#about">ℹ️ دربارهٔ ما · ایدهٔ استارتاپ داری؟</a>
+  <a class="btn ghost wide" href="#support">💬 پشتیبانی و ارتباط مستقیم</a><a class="btn ghost wide" href="#about">ℹ️ دربارهٔ ما</a>
   <div class="card stack"><b>پشتیبان و انتقال</b><span class="small muted">برای بردن پیشرفت به گوشی یا کامپیوتر دیگر: پشتیبان بگیر و در دستگاه دیگر بازیابی کن.</span><div class="row"><button class="btn ghost sm" id="bk">گرفتن پشتیبان</button><label class="btn ghost sm">بازیابی<input type="file" hidden accept=".json" id="rs"></label><a class="btn ghost sm" href="#settings">تنظیمات</a></div></div></div>`;
   window.meOnline && meOnline();
   $$('[data-dm]').forEach(b => b.onclick = () => { U.mem.splice(+b.dataset.dm, 1); saveU(); routes.me(); });
