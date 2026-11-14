@@ -78,17 +78,22 @@ routes.aru = async (id, sec) => {
   const has = { conv: P.dialogue?.length, words: P.bank?.length, verbs: P.verbs?.length, sent: P.sentences?.length, gram: P.grammar?.point, coll: P.colloquial?.length, dia: P.us_uk?.length, speak: (P.roleplay || P.personal || P.checks || P.quiz)?.length };
   if (sec && !has[sec]) return go('aru/' + id);
   const L = tlLang(), D = tlDir();
-  const line = (x, k, who) => { const { t, fa } = tlSplit(x); const sp = tlSpeakable(t); return `<div class="bk-line" data-k="${k}"><button class="icon-btn" data-play="${esc(sp)}" aria-label="پخش">🔊</button><div class="grow"><p class="tl-t" dir="${D}" lang="${L}">${who ? `<span class="who">${esc(who)}:</span> ` : ''}${esc(t)}</p>${fa ? `<p class="fa-tr">${esc(fa)}</p>` : ''}</div></div>`; };
+  const line = (x, k, who) => { const { t, fa } = tlSplit(x); const sp = tlSpeakable(t); return `<div class="bk-line" data-k="${k}"><button class="icon-btn" data-play="${esc(sp)}" aria-label="پخش">🔊</button><div class="grow"><p class="tl-t" dir="${D}" lang="${L}">${who ? `<span class="who">${esc(who)}:</span> ` : ''}${esc(t)}</p><p class="pron" data-pron="${esc(sp)}" hidden></p>${fa ? `<p class="fa-tr">${esc(fa)}</p>` : ''}</div></div>`; };
   const dlg = (x, k) => { const s = String(x); const m = s.match(/^\s*([^:：]{1,24})\s*[:：]\s*(.+)$/); return m ? line(m[2], k, m[1]) : line(s, k); };
   const tiles = Object.entries(TL_SEC).filter(([k]) => has[k]);
+  const dias = Object.entries(tlInfo().v || {}); const curDia = (U.tlv || {})[tl()] || tlInfo().def;
+  const diaSeg = () => dias.length > 1 ? `<div class="seg acc-seg" role="group" aria-label="لهجه">${dias.map(([k, d]) => `<button data-dia="${k}" class="${curDia === k ? 'on' : ''}">${esc(d[1])}</button>`).join('')}</div>` : '';
   v.innerHTML = `<div class="book-bar" role="toolbar">
     <button data-b="menu" aria-label="فهرست درس‌ها">☰<small>درس‌ها</small></button>
+    <button data-b="words" aria-label="واژه‌ها"><b>${esc(TL_WCHIP[tl()] || 'W')}</b><small>واژه‌ها</small></button>
     <button data-b="tr" class="${bookTr() ? 'on' : ''}" aria-label="ترجمه"><b>文A</b><small>ترجمه</small></button>
-    <button data-b="live" aria-label="معلم زنده">🎓<small>معلم زنده</small></button>
-    <button data-b="dl" aria-label="صوت آفلاین">⬇<small>آفلاین</small></button></div>
+    <button data-b="pron" class="${lsGet('zd:showPron', true) ? 'on' : ''}" aria-label="تلفظ فارسی"><b>🗣</b><small>تلفظ</small></button>
+    <button data-b="audio" aria-label="صوت"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/></svg><small>صوت</small></button>
+    <button data-b="more" aria-label="منو">⋮<small>بیشتر</small></button></div>
   <button class="mini-play" id="mp" aria-label="پخش همه">▶</button>
   <article class="book${bookTr() ? ' tr' : ''}" id="bk">
     <div class="bk-head"><span class="small muted">${esc(tlInfo().fa)} ${esc(TL_LV[A[1]]?.[0] || '')} · ${esc(A[1])} · ${esc(tlDia()[1] || '')}</span>
+      ${diaSeg()}
       <h2 class="en keep-en">${esc((TL_UNITWORD[tl()] || (n => 'Unit ' + n))(i + 1))}</h2><div class="bk-title">${esc(P.title_fa || A[2])}</div><div class="fa-tr en keep-en">${esc(P.title_en || '')}</div></div>
     ${!sec ? `<div class="card stack" style="margin:8px 0"><span class="small"><b>🎯 هدف:</b> ${esc(P.goal || '')}</span><span class="small muted">${esc(P.intro || '')}</span></div>
     <button class="btn wide teach-cta" data-b="live">👩‍🏫 آموزش کامل این درس با معلم زنده<small>به فارسی؛ همهٔ واژه‌ها، جمله‌ها و گرامر — با صدای بومی</small></button>
@@ -124,12 +129,37 @@ routes.aru = async (id, sec) => {
   mp.onclick = () => { if (mp.textContent === '⏸') { run++; stopSpeak(); mp.textContent = '▶'; return; } playAll(); };
   v.onclick = e => {
     const p = e.target.closest('[data-play]'); if (p) { run++; mp.textContent = '▶'; return say(p.dataset.play, 'en', 'calm', p); }
-    const b = e.target.closest('[data-b]'); if (!b) return; const k = b.dataset.b;
+    const dz = e.target.closest('[data-dia]'); if (dz) { U.tlv = U.tlv || {}; U.tlv[tl()] = dz.dataset.dia; saveU(); PACKS && Object.keys(PACKS).forEach(x => delete PACKS[x]); return routes.aru(id, sec); }
+    const b = e.target.closest('[data-b]'); if (!b) return; const k = b.dataset.b; $('.bk-menu')?.remove();
     if (k === 'menu') return go('tlc/' + A[1]);
+    if (k === 'words') return go('aru/' + id + '/words');
+    if (k === 'pron') { const on = !lsGet('zd:showPron', true); lsSet('zd:showPron', on); document.body.classList.toggle('nopron', !on); b.classList.toggle('on', on); toast(on ? 'تلفظ به خط فارسی نمایش داده می‌شود' : 'تلفظ فارسی پنهان شد'); if (on) tlFillPron(v); return; }
+    if (k === 'audio') return tlAudioSheet();
+    if (k === 'more') return tlMoreMenu();
+    if (k === 'note') return noteSheet({ id: 'tl:' + A[0], fa: P.title_fa || A[2] });
+    if (k === 'playsec') { if (!$$('.bk-line', v).length) return toast('یکی از بخش‌ها را باز کن تا پشت‌سرهم پخش شود.'); return playAll(); }
     if (k === 'tr') { const on = !bookTr(); lsSet('zd:bookTr', on); bk.classList.toggle('tr', on); $$('[data-b="tr"]', v).forEach(x => x.classList.toggle('on', on)); return; }
     if (k === 'live') { U.cIdx = U.cIdx || {}; U.cIdx[tl()] = i; saveU(); return teachThis({ custom: `${tl()}:${A[0]}:${tlDia()[2]}` }, P.title_fa || A[2]); }
     if (k === 'dl') return tlDownload(A, b);
   };
+  const tlAudioSheet = () => { const bg = sheet(`<div class="stack"><b>🎧 صوت درس</b>${diaSeg()}
+    <button class="btn" data-b="live">👩‍🏫 آموزش کامل درس به فارسی با معلم زنده</button>
+    ${has.conv ? `<button class="btn ghost" id="pc">▶ پخش کل مکالمه</button>` : ''}
+    ${has.words ? `<button class="btn ghost" id="pw">▶ پخش همهٔ واژه‌ها</button>` : ''}
+    ${sec ? `<button class="btn ghost" id="ps">▶ پخش همین بخش</button>` : ''}
+    <a class="btn ghost" href="#story/${esc(id)}">🎧 داستان صوتی این درس</a>
+    <button class="btn line" id="dl">⬇ دانلود همهٔ صداهای این درس برای آفلاین</button></div>`);
+    const jump = s2 => { bg.remove(); if (sec === s2) return playAll(); go('aru/' + id + '/' + s2); setTimeout(() => $('#mp')?.click(), 1200); };
+    bg.addEventListener('click', ev => { const t = ev.target; if (t === bg || t.closest('a')) return bg.remove();
+      if (t.closest('[data-dia]')) { U.tlv = U.tlv || {}; U.tlv[tl()] = t.closest('[data-dia]').dataset.dia; saveU(); Object.keys(PACKS).forEach(x => delete PACKS[x]); bg.remove(); return routes.aru(id, sec); }
+      if (t.closest('[data-b="live"]')) { bg.remove(); U.cIdx = U.cIdx || {}; U.cIdx[tl()] = i; saveU(); return teachThis({ custom: `${tl()}:${A[0]}:${tlDia()[2]}` }, P.title_fa || A[2]); }
+      if (t.id === 'pc') return jump('conv'); if (t.id === 'pw') return jump('words'); if (t.id === 'ps') { bg.remove(); return playAll(); }
+      if (t.id === 'dl') return tlDownload(A, t); }); };
+  const tlMoreMenu = () => { const m = document.createElement('div'); m.className = 'bk-menu'; m.setAttribute('role', 'menu');
+    const items = [['live', '📞 کلاس زنده با معلم (صوتی)'], ['dl', '⬇ دانلود همهٔ فایل‌های صوتی درس'], ['audio', '▶ پخش صوتی درس'], ['#story/' + id, '🎧 داستان صوتی'], ['#dict', '🔍 جستجو در دیکشنری'], ['note', '📝 یادداشت‌ها و نشانه‌ها'], ['#wb/' + id, '📘 کتاب تمرین'], ['#flash', '🃏 فلش‌کارت'], ['#leitner', '🗃️ جعبهٔ لایتنر'], ['#settings', '⚙️ تنظیمات']];
+    m.innerHTML = items.map(([k, t]) => k[0] === '#' ? `<a href="${k}" role="menuitem">${t}</a>` : `<button data-b="${k}" role="menuitem">${t}</button>`).join('');
+    v.appendChild(m); const close = ev => { if (!ev.target.closest('[data-b="more"]') && !m.contains(ev.target)) { m.remove(); document.removeEventListener('click', close, true); } }; setTimeout(() => document.addEventListener('click', close, true)); };
+  document.body.classList.toggle('nopron', !lsGet('zd:showPron', true)); tlFillPron(v);
   $('#ardone', v) && ($('#ardone', v).onclick = () => { (U.arDone = U.arDone || {})[A[0]] = isoDay(); U.cIdx = U.cIdx || {}; U.cIdx[tl()] = Math.min(all.length - 1, i + 1); addXP(20); saveU(); toast('آفرین! برو سراغ درس بعد 🎉'); all[i + 1] ? go('aru/' + all[i + 1][0]) : go('arc'); });
   addEventListener('hashchange', () => { run++; }, { once: true });
 };
@@ -194,3 +224,16 @@ function tlPlanPage(mOffset = '0') {
     const blob = new Blob([`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//zaban-rasta//FA\r\n${ev}\r\nEND:VCALENDAR`], { type: 'text/calendar' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `zaban-${tl()}.ics`; a.click(); };
 }
 const _planR = routes.plan; routes.plan = (m) => tl() === 'en' ? _planR(m) : tlPlanPage(m);
+
+const TL_WCHIP = { ar: 'ك', de: 'W', tr: 'K', zh: '字' };
+/* تلفظ به خط فارسی برای هر جمله/واژه (مثل نسخهٔ انگلیسی) — یک بار ساخته و برای همیشه ذخیره می‌شود */
+async function tlFillPron(v) {
+  if (!lsGet('zd:showPron', true)) return; const els = $$('[data-pron]', v); if (!els.length) return;
+  const dia = tlDia()[2], key = t => 'pr:' + dia + ':' + hashStr(t), show = (el, p) => { if (p) { el.textContent = `🗣 «${p}»`; el.hidden = false; } };
+  const miss = []; for (const el of els) { const p = await idb.get(key(el.dataset.pron)); if (p) show(el, p); else miss.push(el); }
+  const texts = [...new Set(miss.map(el => el.dataset.pron))]; if (!texts.length || !hasAI() && !firstKeyed()) return;
+  for (let o = 0; o < texts.length; o += 25) { const chunk = texts.slice(o, o + 25);
+    try { const r = await ai({ temp: 0.1, max: 3000, system: `You transliterate ${tlDia()[0]} into PERSIAN SCRIPT exactly as natives pronounce it, for Persian speakers (use Persian vowel marks َ ِ ُ where they help, no Latin letters, no meaning, no explanation).`, messages: [{ role: 'user', content: `Give the Persian-script pronunciation of each item, same order. JSON: {"p":["..."]}\n${JSON.stringify(chunk)}` }] });
+      const arr = (typeof r === 'string' ? JSON.parse(r) : r)?.p || []; for (let n = 0; n < chunk.length; n++) { const p = String(arr[n] || '').trim(); if (!p) continue; idb.set(key(chunk[n]), p); miss.filter(el => el.dataset.pron === chunk[n]).forEach(el => show(el, p)); }
+    } catch (e) { console.warn(e); return; } }
+}

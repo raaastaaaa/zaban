@@ -201,7 +201,7 @@ async function liveStart(mode, ui) {
       : `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained?access_token=${encodeURIComponent(auth.token)}`;
     const ws = new WebSocket(url); let ok = false;
     ws.onopen = () => ws.send(JSON.stringify({ setup: { model: 'models/' + LIVE_MODELS[i], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: G.settings.geminiVoice || 'Kore' } } } },
-      systemInstruction: { parts: [{ text: livePrompt(mode) + TL_OVERRIDE() }] }, inputAudioTranscription: {}, outputAudioTranscription: {},
+      systemInstruction: { parts: [{ text: livePrompt(mode) + TL_OVERRIDE() + '\nPronunciation: the name رستا is pronounced "Rasta" (رَستا, with the vowel a, like in Tehran), never "Resta".' }] }, inputAudioTranscription: {}, outputAudioTranscription: {},
       sessionResumption: Live.resume ? { handle: Live.resume } : {}, contextWindowCompression: { slidingWindow: {} },
       tools: [{ functionDeclarations: [
         { name: 'play_conversation', description: 'Play today\'s lesson conversation audio (two native speakers) to the student. Returns when it finished playing.', parameters: { type: 'OBJECT', properties: {} } },

@@ -41,6 +41,14 @@
 <script src="leitner.js"></script><script src="news.js"></script><script src="audio.js"></script><script src="lessons.js"></script><script src="book.js"></script><script src="courses.js"></script><script src="listen.js"></script><script src="flash.js"></script><script src="workbook.js"></script><script src="story.js"></script><script src="tlcourse.js"></script><script src="vroom.js"></script><script src="live.js"></script>
 <script src="supabase.js"></script>
 <script src="online.js"></script>
-<script>router();</script>
+<script>
+/* اگر روی اینترنت کند بخشی از برنامه نرسید، به‌جای صفحهٔ خراب، دکمهٔ بارگذاری دوباره نشان بده */
+(function () {
+  var miss = ['router', 'curUnits', 'routes', 'say'].filter(function (n) { try { return typeof eval(n) === 'undefined'; } catch (e) { return true; } });
+  if (!miss.length) { router(); return; }
+  document.getElementById('view').innerHTML = '<div class="card stack" style="margin:16px"><b>بخشی از برنامه کامل دانلود نشد.</b><span class="muted">احتمالاً اینترنت کند بوده. یک بار دیگر بارگذاری کن.</span><button class="btn" id="rl">بارگذاری دوباره</button></div>';
+  document.getElementById('rl').onclick = function () { (window.caches ? caches.keys().then(function (ks) { return Promise.all(ks.filter(function (k) { return k !== 'zd-media'; }).map(function (k) { return caches.delete(k); })); }) : Promise.resolve()).then(function () { location.reload(); }); };
+})();
+</script>
 </body>
 </html>
