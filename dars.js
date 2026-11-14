@@ -31,6 +31,7 @@ routes.dars = async (id) => {
     <div class="card stack"><b class="small">فصل‌های درس</b>${(A.chapters || []).map((c, i) => `<button class="row ds-ch" data-t="${c.t}" style="justify-content:space-between;flex-wrap:nowrap;text-align:right"><span>${faNum(i + 1)}. ${esc(c.h)}</span><span class="tiny muted">${fmtT(c.t)}</span></button>`).join('')}</div>
     ${D.chapters.map((ch, ci) => `<section class="card stack ds-sec" id="dc${ci}"><b>${faNum(ci + 1)}. ${esc(ch.h)}</b>${ch.seg.map((s, si) => segHTML(s, ci, si)).join('')}</section>`).join('')}</div>`;
   // پخش‌کننده
+  if (!D.audio) { $('.dars-player', v).innerHTML = `<b style="font-size:18px">👩‍🏫 ${esc(D.title_fa || '')}</b><span class="small">نسخهٔ صوتی این درس به‌زودی اضافه می‌شود؛ فعلاً درس‌نامهٔ نوشتاری‌اش آماده است 👇</span>`; v.querySelectorAll('.ds-ch').forEach(b => b.remove()); v.addEventListener('click', e => { const s = e.target.closest('[data-say]'); if (s) return say(s.dataset.say, 'en', 'calm', s); const a = e.target.closest('[data-ans]'); if (a) a.outerHTML = `<b class="en keep-en" dir="auto">${esc(a.dataset.ans)}</b>`; }); return; }
   if (DARS_AUDIO?.dataset.id !== id) { try { DARS_AUDIO?.pause(); } catch { } DARS_AUDIO = new Audio(); DARS_AUDIO.preload = 'metadata'; DARS_AUDIO.dataset.id = id;
     const off = await idb.get('dars:' + darsDir() + ':' + id).catch(() => null); DARS_AUDIO.src = off ? URL.createObjectURL(off) : darsUrl(id);
     const pos = +lsGet(posKey, 0); if (pos > 5 && pos < (A.dur || 1e9) - 10) DARS_AUDIO.currentTime = pos; }
