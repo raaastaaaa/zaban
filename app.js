@@ -370,7 +370,9 @@ function pcmToWav(b64, rate = 24000) {
 const EMO = { cheerful: 'cheerful and warm', calm: 'calm and gentle', excited: 'excited and energetic', encouraging: 'encouraging and supportive', empathetic: 'kind and empathetic', proud: 'proud and happy', surprised: 'playfully surprised', serious: 'clear and serious' };
 const TTS_INFLIGHT = new Map(); // درخواست تکراری برای یک متن، یک بار ساخته می‌شود
 function cloudTTS(engine, text, lang, emotion) { const k = [engine, lang, emotion, G.settings.accent, text].join('|'); if (TTS_INFLIGHT.has(k)) return TTS_INFLIGHT.get(k); const p = cloudTTS0(engine, text, lang, emotion).finally(() => setTimeout(() => TTS_INFLIGHT.delete(k), 50)); TTS_INFLIGHT.set(k, p); return p; }
-const ttsFix = t => String(t || '').replace(/رستا/g, 'رَستا'); // تلفظ درست نام: رَستا (نه رِستا)
+const ttsFix = (t, lang) => { let s = String(t || '').replace(/رستا/g, 'رَستا'); // تلفظ درست نام: رَستا (نه رِستا)
+  if (lang === 'fa' || tl() === 'en') s = s.replace(/تخت[ ‌]?خواب/g, 'تَختِ خاب').replace(/خوا/g, 'خا'); // «واو معدوله»: خواب = خاب، خواهر = خاهر
+  return s; };
 async function cloudTTS0(engine, text, lang, emotion) {
   const acc = G.settings.accent === 'UK' ? 'British (Received Pronunciation)' : 'General American';
   const style = tl() !== 'en' && lang !== 'fa'
@@ -380,18 +382,18 @@ async function cloudTTS0(engine, text, lang, emotion) {
     : lang === 'fa'
     ? `Say the following in a ${EMO[emotion] || 'warm'} voice, like a friendly Iranian teacher speaking natural, fluent Tehrani Persian; pronounce any English words with a clear ${acc} accent`
     : `Say the following in a clear, natural ${acc} English accent, with a ${EMO[emotion] || 'friendly'} tone, at a learner-friendly pace`;
-  const key = 'a2:' + hashStr([tl() !== 'en' ? tl() + '-' + tlDia()[2] : '', engine, G.settings.geminiVoice, G.settings.openaiVoice, acc, lang, emotion, text].join('|'));
+  const key = 'a3:' + hashStr([tl() !== 'en' ? tl() + '-' + tlDia()[2] : '', engine, G.settings.geminiVoice, G.settings.openaiVoice, acc, lang, emotion, text].join('|'));
   let blob = await idb.get(key);
   if (!blob) {
     budgetGuard();
     if (engine === 'gemini') {
       const c = { key: gemKey() }; if (!c.key) throw new Error('NOKEY');
-      const d = await gemFetch([G.settings.geminiTtsModel, ...TTS_FALLBACK], 'generateContent', { contents: [{ parts: [{ text: ttsFix(text) }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: G.settings.geminiVoice } } } } }, c.key);
+      const d = await gemFetch([G.settings.geminiTtsModel, ...TTS_FALLBACK], 'generateContent', { contents: [{ parts: [{ text: ttsFix(text, lang) }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: G.settings.geminiVoice } } } } }, c.key);
       const part = d.candidates?.[0]?.content?.parts?.find(p => p.inlineData); if (!part) throw new Error('صدا ساخته نشد');
       const m = /rate=(\d+)/.exec(part.inlineData.mimeType || ''); blob = pcmToWav(part.inlineData.data, m ? +m[1] : 24000);
     } else {
       const c = G.settings.prov.openai; if (!c.key) throw new Error('NOKEY');
-      const r = await fetch((G.settings.prov.openai.base || 'https://api.openai.com/v1').replace(/\/$/, '') + '/audio/speech', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + c.key }, body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice: G.settings.openaiVoice, input: ttsFix(text), instructions: style, response_format: 'mp3' }) });
+      const r = await fetch((G.settings.prov.openai.base || 'https://api.openai.com/v1').replace(/\/$/, '') + '/audio/speech', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + c.key }, body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice: G.settings.openaiVoice, input: ttsFix(text, lang), instructions: style, response_format: 'mp3' }) });
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error?.message || r.status);
       blob = await r.blob();
     }

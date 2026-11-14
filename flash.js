@@ -29,10 +29,36 @@ async function fcDecks() {
   for (const [k, P] of Object.entries(U.customPlans || {})) { if (/^(ar|de|tr|zh):/.test(k) || !P?.bank) continue; const words = (P.bank || []).flatMap(g => g.items).map(fcParseItem).filter(c => c.t && c.fa); const sents = [...(P.sentences || []), ...(P.colloquial || [])].map(fcParseItem).filter(c => c.t && c.fa); const verbs = (P.verbs || []).map(fcParseItem).filter(c => c.t && c.fa);
     out.push({ id: 'cp:' + k, title: '✨ ' + (P.title_fa || P.want || 'درس دلخواه'), lvl: '', kinds: { words, sents, verbs, gram: [] } }); }
   const T = lsGet('zd:wtopics:' + G.active, {}); for (const [topic, items] of Object.entries(T)) { const words = (items || []).filter(x => x.en && x.fa).map(x => ({ t: x.en, fa: x.fa, note: x.register || '' })); const sents = (items || []).filter(x => x.ex && x.exFa).map(x => ({ t: x.ex, fa: x.exFa, note: x.en })); if (words.length) out.push({ id: 'wt:' + topic, title: '📚 ' + topic, lvl: '', kinds: { words, sents, verbs: [], gram: [] } }); }
+  const my = fcMy(); if (my.length) out.unshift({ id: fcMyId(), title: '⭐ فلش‌کارت‌های من (انتخاب‌شده از درس‌ها)', lvl: '', kinds: { words: my.filter(c => c.kind !== 'verbs'), sents: [], verbs: my.filter(c => c.kind === 'verbs'), gram: [] } });
   return out;
 }
+/* فلش‌کارت‌های انتخابی خودِ کاربر (برای هر زبان جدا) */
+const fcMyId = () => 'my:' + tl();
+const fcMy = () => ((U.fcMy = U.fcMy || {})[tl()] = U.fcMy[tl()] || []);
+function fcAddMine(items) { const my = fcMy(); const ids = []; for (const it of items) { if (!it.t || !it.fa) continue; const id = hashStr(it.t + '|' + it.fa); ids.push(id); if (!my.some(c => c.id === id)) my.push({ id, t: it.t, fa: it.fa, note: it.note || '', kind: it.kind || 'words' }); } saveU(); return ids; }
+/* نوار «ساخت فلش‌کارت» در صفحهٔ واژه‌ها و افعال: انتخاب، جهت، شروع؛ نابلدها خودکار به مرور روزهای بعد می‌روند */
+function fcPickBar(v, kind) {
+  const lines = $$('.bk-line', v).filter(el => el.querySelector('[data-play]')); if (!lines.length || $('.fc-pick', v)) return;
+  const T = tl() === 'en' ? 'انگلیسی' : tlInfo().fa; const S = U.fcSet || (U.fcSet = { dir: 'fa2t', kind: 'words' });
+  const bar = document.createElement('div'); bar.className = 'card stack fc-pick';
+  bar.innerHTML = `<div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><b>🃏 فلش‌کارت از همین ${kind === 'verbs' ? 'افعال' : 'واژه‌ها'}</b><button class="btn sm" data-fp="on">انتخاب واژه‌ها</button></div>
+    <div class="stack fc-pick-in" hidden><span class="small muted">واژه‌هایی را که می‌خواهی تیک بزن (یا همه را). هر کدام را «نمی‌دونستم» بزنی، خودش در روزهای بعد دوباره برایت می‌آورد.</span>
+      <div class="seg" data-fp="dir">${[['fa2t', `فارسی → ${T}`], ['t2fa', `${T} → فارسی`], ['mix', '🔀 هر دو']].map(([k, t]) => `<button data-v="${k}" class="${S.dir === k ? 'on' : ''}">${t}</button>`).join('')}</div>
+      <div class="row" style="flex-wrap:wrap;gap:8px"><button class="btn ghost sm" data-fp="all">انتخاب همه</button><button class="btn ghost sm" data-fp="none">هیچ‌کدام</button><button class="btn" data-fp="go">▶ شروع فلش‌کارت (<span data-fp="n">۰</span>)</button></div></div>`;
+  const sec = lines[0].closest('section') || v; sec.parentNode.insertBefore(bar, sec);
+  const cnt = () => { $('[data-fp="n"]', bar).textContent = faNum($$('.fc-chk:checked', v).length); };
+  const on = () => { $('.fc-pick-in', bar).hidden = false; $('[data-fp="on"]', bar).hidden = true;
+    lines.forEach(el => { if (el.querySelector('.fc-chk')) return; const c = document.createElement('input'); c.type = 'checkbox'; c.className = 'fc-chk'; c.setAttribute('aria-label', 'انتخاب برای فلش‌کارت'); c.onclick = e => { e.stopPropagation(); cnt(); }; el.prepend(c); }); cnt(); };
+  const item = el => { const t = el.querySelector('[data-play]').dataset.play; const fa = (el.querySelector('.fa-tr')?.textContent || '').trim(); const ipa = el.querySelector('.muted.small')?.textContent || ''; return { t, fa, note: /\//.test(ipa) ? ipa.trim() : '', kind }; };
+  bar.onclick = e => { const b = e.target.closest('[data-fp],[data-v]'); if (!b) return; const k = b.dataset.fp;
+    if (b.dataset.v) { S.dir = b.dataset.v; saveU(); $$('[data-fp="dir"] button', bar).forEach(x => x.classList.toggle('on', x === b)); return; }
+    if (k === 'on') return on(); if (k === 'all' || k === 'none') { $$('.fc-chk', v).forEach(c => c.checked = k === 'all'); return cnt(); }
+    if (k === 'go') { const sel = $$('.bk-line', v).filter(el => el.querySelector('.fc-chk:checked')).map(item).filter(x => x.t && x.fa);
+      if (!sel.length) return toast($$('.fc-chk:checked', v).length ? 'ترجمهٔ این واژه‌ها هنوز آماده نیست؛ چند لحظه بعد دوباره بزن.' : 'اول چند واژه را تیک بزن.');
+      U.fcPick = fcAddMine(sel); saveU(); go(`flash/pick/${kind === 'verbs' ? 'verbs' : 'words'}/${S.dir}`); } };
+}
 const FC_KINDS = { words: ['🗂️', 'واژه‌ها'], sents: ['💬', 'جمله‌ها و اصطلاحات'], verbs: ['🔤', 'افعال'], gram: ['📐', 'گرامر'] };
-const fcDue = (deck, kind, n, dir) => { let d = 0; for (let i = 0; i < n; i++) { const s = fcStore()[fcKey(deck + '/' + kind, i, dir)]; if (!s || s.due <= isoDay()) d++; } return d; };
+const fcDue = (deck, kind, n, dir, items) => { let d = 0; for (let i = 0; i < n; i++) { const s = fcStore()[fcKey(deck + '/' + kind, items?.[i]?.id ?? i, dir)]; if (!s || s.due <= isoDay()) d++; } return d; };
 routes.flash = async (deckId, kind, dir) => {
   setTop('فلش‌کارت', true); const v = view(); const S = U.fcSet || (U.fcSet = { dir: 'fa2t', kind: 'words' });
   if (deckId && kind) return fcSession(decodeURIComponent(deckId), kind, dir || S.dir);
@@ -44,18 +70,18 @@ routes.flash = async (deckId, kind, dir) => {
     <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="small">نوع:</span><div class="seg" id="fck">${Object.entries(FC_KINDS).map(([k, [ic, t]]) => `<button data-v="${k}" class="${S.kind === k ? 'on' : ''}">${ic} ${t}</button>`).join('')}</div></div></div>
   <div id="fcl" class="stack"></div></div>`;
   const draw = () => { const kind = S.kind; const dir = S.dir === 'mix' ? 'fa2t' : S.dir; const L = decks.filter(d => d.kinds[kind]?.length);
-    const dueAll = L.reduce((a, d) => a + fcDue(d.id, kind, d.kinds[kind].length, dir), 0);
+    const dueAll = L.reduce((a, d) => a + fcDue(d.id, kind, d.kinds[kind].length, dir, d.kinds[kind]), 0);
     $('#fcl').innerHTML = `${L.length ? `<a class="btn wide" href="#flash/${encodeURIComponent('all')}/${kind}/${S.dir}">▶ مرور همهٔ موعددارها (${faNum(dueAll)})</a>` : ''}
-      ${L.map(d => { const n = d.kinds[kind].length; const due = fcDue(d.id, kind, n, dir); const done = n - due; return `<a class="card row fc-deck" href="#flash/${encodeURIComponent(d.id)}/${kind}/${S.dir}"><span class="grow"><b>${esc(d.title)}</b> ${d.lvl ? `<span class="pill">${d.lvl}</span>` : ''}<br><span class="tiny muted">${faNum(n)} کارت · ${faNum(due)} برای امروز</span><div class="fc-bar"><i style="width:${Math.round(done / n * 100)}%"></i></div></span><span class="pill ${due ? 'acc' : 'ok'}">${due ? faNum(due) : '✓'}</span></a>`; }).join('') || `<div class="card small muted">برای این نوع هنوز کارتی نیست. ${tl() !== 'en' ? 'یک درس از دوره را باز کن تا کارت‌هایش ساخته شود.' : 'درس‌ها را باز کن یا یک موضوع بساز.'}</div>`}`; };
+      ${L.map(d => { const n = d.kinds[kind].length; const due = fcDue(d.id, kind, n, dir, d.kinds[kind]); const done = n - due; return `<a class="card row fc-deck" href="#flash/${encodeURIComponent(d.id)}/${kind}/${S.dir}"><span class="grow"><b>${esc(d.title)}</b> ${d.lvl ? `<span class="pill">${d.lvl}</span>` : ''}<br><span class="tiny muted">${faNum(n)} کارت · ${faNum(due)} برای امروز</span><div class="fc-bar"><i style="width:${Math.round(done / n * 100)}%"></i></div></span><span class="pill ${due ? 'acc' : 'ok'}">${due ? faNum(due) : '✓'}</span></a>`; }).join('') || `<div class="card small muted">برای این نوع هنوز کارتی نیست. ${tl() !== 'en' ? 'یک درس از دوره را باز کن تا کارت‌هایش ساخته شود.' : 'درس‌ها را باز کن یا یک موضوع بساز.'}</div>`}`; };
   $('#fcd').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.dir = b.dataset.v; saveU(); $$('#fcd button').forEach(x => x.classList.toggle('on', x === b)); draw(); };
   $('#fck').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.kind = b.dataset.v; saveU(); $$('#fck button').forEach(x => x.classList.toggle('on', x === b)); draw(); };
   draw();
 };
 async function fcSession(deckId, kind, dirSet) {
   const v = view(); v.innerHTML = loading('کارت‌ها…'); const decks = await fcDecks(); if (!/^#flash/.test(location.hash)) return;
-  const L = deckId === 'all' ? decks.filter(d => d.kinds[kind]?.length) : decks.filter(d => d.id === deckId);
+  const pick = deckId === 'pick' ? new Set(U.fcPick || []) : null; const L = deckId === 'all' ? decks.filter(d => d.kinds[kind]?.length) : decks.filter(d => d.id === (pick ? fcMyId() : deckId));
   const T = tl() === 'en' ? 'انگلیسی' : tlInfo().fa;
-  let cards = []; for (const d of L) d.kinds[kind].forEach((c, i) => { const dirs = dirSet === 'mix' ? ['fa2t', 't2fa'] : [dirSet]; for (const dir of dirs) { const k = fcKey(d.id + '/' + kind, i, dir); const s = fcStore()[k]; if (!s || s.due <= isoDay()) cards.push({ ...c, k, dir, deck: d.title }); } });
+  let cards = []; for (const d of L) d.kinds[kind].forEach((c, i) => { const dirs = dirSet === 'mix' ? ['fa2t', 't2fa'] : [dirSet]; for (const dir of dirs) { const k = fcKey(d.id + '/' + kind, c.id ?? i, dir); const s = fcStore()[k]; if (pick ? pick.has(c.id) : !s || s.due <= isoDay()) cards.push({ ...c, k, dir, deck: d.title }); } });
   if (deckId === 'all') cards = cards.sort(() => Math.random() - .5).slice(0, 40); else cards = cards.slice(0, 60);
   if (!cards.length) { v.innerHTML = `<div class="stack"><div class="card stack" style="align-items:center;text-align:center"><div style="font-size:54px">🎉</div><b>برای امروز کارتی نمانده</b><span class="small muted">فردا دوباره بیا، یا نوع و جهت دیگری را انتخاب کن.</span><a class="btn" href="#flash">بازگشت</a></div></div>`; return; }
   let i = 0, right = 0, flipped = false; const total = cards.length; const t0 = Date.now();

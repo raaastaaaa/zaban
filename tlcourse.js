@@ -164,7 +164,7 @@ routes.aru = async (id, sec) => {
     const items = [['live', '📞 کلاس زنده با معلم (صوتی)'], ['dl', '⬇ دانلود همهٔ فایل‌های صوتی درس'], ['audio', '▶ پخش صوتی درس'], ['#story/' + id, '🎧 داستان صوتی'], ['#dict', '🔍 جستجو در دیکشنری'], ['note', '📝 یادداشت‌ها و نشانه‌ها'], ['#wb/' + id, '📘 کتاب تمرین'], ['#flash', '🃏 فلش‌کارت'], ['#leitner', '🗃️ جعبهٔ لایتنر'], ['#settings', '⚙️ تنظیمات']];
     m.innerHTML = items.map(([k, t]) => k[0] === '#' ? `<a href="${k}" role="menuitem">${t}</a>` : `<button data-b="${k}" role="menuitem">${t}</button>`).join('');
     v.appendChild(m); const close = ev => { if (!ev.target.closest('[data-b="more"]') && !m.contains(ev.target)) { m.remove(); document.removeEventListener('click', close, true); } }; setTimeout(() => document.addEventListener('click', close, true)); };
-  document.body.classList.toggle('nopron', !lsGet('zd:showPron', true)); tlFillPron(v); tlFillTr(v, P.title_fa || A[2]);
+  if (sec === 'words' || sec === 'verbs') fcPickBar(v, sec); document.body.classList.toggle('nopron', !lsGet('zd:showPron', true)); tlFillPron(v); tlFillTr(v, P.title_fa || A[2]);
   $('#ardone', v) && ($('#ardone', v).onclick = () => { (U.arDone = U.arDone || {})[A[0]] = isoDay(); U.cIdx = U.cIdx || {}; U.cIdx[tl()] = Math.min(all.length - 1, i + 1); addXP(20); saveU(); toast('آفرین! برو سراغ درس بعد 🎉'); all[i + 1] ? go('aru/' + all[i + 1][0]) : go('arc'); });
   addEventListener('hashchange', () => { run++; }, { once: true });
 };

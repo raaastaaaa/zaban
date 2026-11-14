@@ -598,3 +598,6 @@ body.tl-ar .fc-t{direction:rtl;font-family:"Noto Naskh Arabic","Amiri","Vazirmat
 .abc-s{font-size:13px;color:var(--warn);line-height:1.6}
 .abc-w{font-size:17px;direction:ltr;font-weight:600}
 .abc-m{font-size:13px;color:var(--muted)}
+
+.fc-pick{margin-bottom:8px}
+.bk-line .fc-chk{width:22px;height:22px;flex:0 0 auto;margin:10px 0 0 8px;accent-color:var(--accent)}
