@@ -45,6 +45,7 @@ routes.tlc = lv => {
   if (tl() === 'en') return go('path'); const us = curUnits().map((a, i) => [a, i]).filter(([a]) => a[1] === lv); if (!us.length) return go('arc');
   setTop(`${tlInfo().fa} ${TL_LV[lv]?.[0] || lv}`, true);
   view().innerHTML = `<div class="stack"><div class="course-head">${tlCover(lv, true)}</div>
+  ${us[0][1] === 0 && typeof ABC !== 'undefined' && ABC[tl()] ? `<a class="lrow${abcDone() ? '' : ' current'}" href="#abc"><span class="lr-ic">🔤</span><div class="grow"><b>شروع از صفر · الفبا و تلفظ حروف</b><div class="small">${esc(ABC[tl()].title)}</div></div><span class="lr-st">${abcDone() ? '<span class="pill ok">✓</span>' : ''}</span></a>` : ''}
   <div class="lesson-list">${us.map(([a, i], k) => { const m = tlDone(a[0]), cur = i === curIdx();
     return `<a class="lrow${cur ? ' current' : ''}" href="#aru/${esc(a[0])}"><span class="lr-ic" style="--h:${(TL_HUE[tl()] || [200])[0] + k * 13}">${faNum(i + 1)}</span><div class="grow"><b>${esc((TL_UNITWORD[tl()] || (n => 'Unit ' + n))(i + 1))} · درس ${faNum(i + 1)}</b><div class="small">${esc(a[2])}</div><div class="tiny muted en keep-en">${esc(String(a[3]).split(/[:;]/)[0])}</div></div><span class="lr-st">${m ? '<span class="pill ok">✓</span>' : cur ? '<span class="pill acc">ادامه</span>' : ''}</span></a>`; }).join('')}</div></div>`;
   $('.lrow.current')?.scrollIntoView({ block: 'center' });
@@ -78,7 +79,10 @@ routes.aru = async (id, sec) => {
   const has = { conv: P.dialogue?.length, words: P.bank?.length, verbs: P.verbs?.length, sent: P.sentences?.length, gram: P.grammar?.point, coll: P.colloquial?.length, dia: P.us_uk?.length, speak: (P.roleplay || P.personal || P.checks || P.quiz)?.length };
   if (sec && !has[sec]) return go('aru/' + id);
   const L = tlLang(), D = tlDir();
-  const line = (x, k, who) => { const { t, fa } = tlSplit(x); const sp = tlSpeakable(t); return `<div class="bk-line" data-k="${k}"><button class="icon-btn" data-play="${esc(sp)}" aria-label="پخش">🔊</button><div class="grow"><p class="tl-t" dir="${D}" lang="${L}">${who ? `<span class="who">${esc(who)}:</span> ` : ''}${esc(t)}</p><p class="pron" data-pron="${esc(sp)}" hidden></p>${fa ? `<p class="fa-tr">${esc(fa)}</p>` : ''}</div></div>`; };
+  const line = (x, k, who) => { let { t, fa } = tlSplit(x); let pr = '';
+    const bm = t.match(/^(.*?)\s*\[([^\]]*[؀-ۿ][^\]]*)\]\s*$/); if (bm) { t = bm[1]; pr = bm[2]; } // تلفظ آماده داخل [ ]
+    const sp = tlSpeakable(t);
+    return `<div class="bk-line" data-k="${k}"><button class="icon-btn" data-play="${esc(sp)}" aria-label="پخش">🔊</button><div class="grow"><p class="tl-t" dir="${D}" lang="${L}">${who ? `<span class="who">${esc(who)}:</span> ` : ''}${esc(t)}</p>${pr ? `<p class="pron">🗣 «${esc(pr)}»</p>` : `<p class="pron" data-pron="${esc(sp)}" hidden></p>`}${fa ? `<p class="fa-tr">${esc(fa)}</p>` : `<p class="fa-tr" data-tr="${esc(t)}" hidden></p>`}</div></div>`; };
   const dlg = (x, k) => { const s = String(x); const m = s.match(/^\s*([^:：]{1,24})\s*[:：]\s*(.+)$/); return m ? line(m[2], k, m[1]) : line(s, k); };
   const tiles = Object.entries(TL_SEC).filter(([k]) => has[k]);
   const dias = Object.entries(tlInfo().v || {}); const curDia = (U.tlv || {})[tl()] || tlInfo().def;
@@ -96,6 +100,7 @@ routes.aru = async (id, sec) => {
       ${diaSeg()}
       <h2 class="en keep-en">${esc((TL_UNITWORD[tl()] || (n => 'Unit ' + n))(i + 1))}</h2><div class="bk-title">${esc(P.title_fa || A[2])}</div><div class="fa-tr en keep-en">${esc(P.title_en || '')}</div></div>
     ${!sec ? `<div class="card stack" style="margin:8px 0"><span class="small"><b>🎯 هدف:</b> ${esc(P.goal || '')}</span><span class="small muted">${esc(P.intro || '')}</span></div>
+    ${i === 0 && typeof ABC !== 'undefined' && ABC[tl()] ? `<a class="btn wide teach-cta" href="#abc" style="background:var(--ok,#1c7c54)">🔤 ${abcDone() ? 'مرور الفبا و تلفظ حروف' : 'قدم اول: الفبا و صدای حروف را از صفر یاد بگیر'}<small>هر حرف با صدای بومی، تلفظ به خط فارسی و یک واژهٔ نمونه + تمرین شنیداری</small></a>` : ''}
     <button class="btn wide teach-cta" data-b="live">👩‍🏫 آموزش کامل این درس با معلم زنده<small>به فارسی؛ همهٔ واژه‌ها، جمله‌ها و گرامر — با صدای بومی</small></button>
     <div class="sec-grid">${tiles.map(([k, [ic, fa, en]], n) => `<a class="sec-tile" href="#aru/${esc(id)}/${k}"><span class="st-n">${faNum(n + 1)}</span><span class="st-ic">${ic}</span><b>${fa}</b><span class="en tiny muted">${en}</span></a>`).join('')}
       <a class="sec-tile" href="#story/${esc(id)}"><span class="st-ic">🎧</span><b>داستان صوتی</b><span class="en tiny muted">Audio story</span></a>
@@ -159,7 +164,7 @@ routes.aru = async (id, sec) => {
     const items = [['live', '📞 کلاس زنده با معلم (صوتی)'], ['dl', '⬇ دانلود همهٔ فایل‌های صوتی درس'], ['audio', '▶ پخش صوتی درس'], ['#story/' + id, '🎧 داستان صوتی'], ['#dict', '🔍 جستجو در دیکشنری'], ['note', '📝 یادداشت‌ها و نشانه‌ها'], ['#wb/' + id, '📘 کتاب تمرین'], ['#flash', '🃏 فلش‌کارت'], ['#leitner', '🗃️ جعبهٔ لایتنر'], ['#settings', '⚙️ تنظیمات']];
     m.innerHTML = items.map(([k, t]) => k[0] === '#' ? `<a href="${k}" role="menuitem">${t}</a>` : `<button data-b="${k}" role="menuitem">${t}</button>`).join('');
     v.appendChild(m); const close = ev => { if (!ev.target.closest('[data-b="more"]') && !m.contains(ev.target)) { m.remove(); document.removeEventListener('click', close, true); } }; setTimeout(() => document.addEventListener('click', close, true)); };
-  document.body.classList.toggle('nopron', !lsGet('zd:showPron', true)); tlFillPron(v);
+  document.body.classList.toggle('nopron', !lsGet('zd:showPron', true)); tlFillPron(v); tlFillTr(v, P.title_fa || A[2]);
   $('#ardone', v) && ($('#ardone', v).onclick = () => { (U.arDone = U.arDone || {})[A[0]] = isoDay(); U.cIdx = U.cIdx || {}; U.cIdx[tl()] = Math.min(all.length - 1, i + 1); addXP(20); saveU(); toast('آفرین! برو سراغ درس بعد 🎉'); all[i + 1] ? go('aru/' + all[i + 1][0]) : go('arc'); });
   addEventListener('hashchange', () => { run++; }, { once: true });
 };
@@ -235,5 +240,18 @@ async function tlFillPron(v) {
   for (let o = 0; o < texts.length; o += 25) { const chunk = texts.slice(o, o + 25);
     try { const r = await ai({ temp: 0.1, max: 3000, system: `You transliterate ${tlDia()[0]} into PERSIAN SCRIPT exactly as natives pronounce it, for Persian speakers (use Persian vowel marks َ ِ ُ where they help, no Latin letters, no meaning, no explanation).`, messages: [{ role: 'user', content: `Give the Persian-script pronunciation of each item, same order. JSON: {"p":["..."]}\n${JSON.stringify(chunk)}` }] });
       const arr = (typeof r === 'string' ? JSON.parse(r) : r)?.p || []; for (let n = 0; n < chunk.length; n++) { const p = String(arr[n] || '').trim(); if (!p) continue; idb.set(key(chunk[n]), p); miss.filter(el => el.dataset.pron === chunk[n]).forEach(el => show(el, p)); }
+    } catch (e) { console.warn(e); return; } }
+}
+
+/* ترجمهٔ فارسی برای جمله‌هایی که ترجمه ندارند (مثلاً مکالمه‌ها) — یک بار ساخته و ذخیره می‌شود */
+async function tlFillTr(v, topic) {
+  const els = $$('[data-tr]', v); if (!els.length) return;
+  const dia = tlDia()[2], key = t => 'tr:' + dia + ':' + hashStr(t), show = (el, p) => { if (p) { el.textContent = p; el.hidden = false; } };
+  const miss = []; for (const el of els) { const p = await idb.get(key(el.dataset.tr)); if (p) show(el, p); else miss.push(el); }
+  const texts = [...new Set(miss.map(el => el.dataset.tr))]; if (!texts.length || !hasAI() && !firstKeyed()) return;
+  const ctx = $$('.tl-t', v).map(x => x.textContent).join('\n').slice(0, 3000);
+  for (let o = 0; o < texts.length; o += 25) { const chunk = texts.slice(o, o + 25);
+    try { const r = await ai({ temp: 0.2, max: 3500, system: `You are a professional ${tlDia()[0]}→Persian translator for a language course (lesson topic: ${topic}). Translate each line into natural, fluent, everyday Persian (محاوره‌ای مؤدبانه), faithful to the meaning and tone in this dialogue context. No transliteration, no notes.`, messages: [{ role: 'user', content: `Context (whole dialogue):\n${ctx}\n\nTranslate each item into Persian, same order. JSON: {"t":["..."]}\n${JSON.stringify(chunk)}` }] });
+      const arr = (typeof r === 'string' ? JSON.parse(r) : r)?.t || []; for (let n = 0; n < chunk.length; n++) { const p = String(arr[n] || '').trim(); if (!p) continue; idb.set(key(chunk[n]), p); miss.filter(el => el.dataset.tr === chunk[n]).forEach(el => show(el, p)); }
     } catch (e) { console.warn(e); return; } }
 }
