@@ -785,6 +785,7 @@ routes.path = () => {
   ${U.custom.length ? `<div class="sec">درس‌های خودم</div><div class="units">${U.custom.map(c => unitCard({ ...c, idx: 1000, baseWords: c.words })).join('')}</div>` : ''}<a class="btn line wide" href="#tool/import">+ افزودن درس از کتاب خودم یا ساخت درس تازه</a></div>`;
 };
 routes.course = id => {
+  if (tl() !== 'en') return go('arc'); // در زبان‌های دیگر، دوره‌های همان زبان
   const us = courseUnits(id); if (!us.length) return go('path');
   setTop((COVER[id] || [])[2] || 'دوره', true);
   view().innerHTML = `<div class="stack"><div class="course-head">${courseCover(id, true)}</div>
@@ -820,15 +821,15 @@ routes.home = () => {
   <div class="users">${board.map((x, i) => `<button class="ucard${x.u.id === G.active ? ' on' : ''}" data-u="${x.u.id}"><div class="row"><span style="font-weight:900;width:20px">${['🥇', '🥈', '🥉'][i] || faNum(i + 1)}</span><span class="avatar">${avHTML(x.u)}</span><b class="grow">${esc(x.u.name)}</b><span class="pill acc num">${faNum(x.w)}</span></div>
     <div class="small muted">درس ${faNum((ALL_UNITS.find(u => !x.d.units[u.id]?.mastered)?.idx ?? 0) + 1)} از ${faNum(ALL_UNITS.length)} · ${faNum(Object.values(x.d.srs).filter(s => s.box >= 4).length)} واژهٔ تثبیت‌شده · ${rankOf(x.d.xp)}</div>
     <div class="bar"><i style="width:${Math.round(masteredCount(x.d) / ALL_UNITS.length * 100)}%"></i></div></button>`).join('')}</div>` : ''}
-  <div class="card stack"><div class="row"><b class="grow">پیشرفت من</b><span class="pill">${rankOf(U.xp)} · ${faNum(U.xp)} امتیاز</span></div>
+  ${tl() !== 'en' ? tlProgressCard() : ''}${tl() !== 'en' ? '' : `<div class="card stack"><div class="row"><b class="grow">پیشرفت من</b><span class="pill">${rankOf(U.xp)} · ${faNum(U.xp)} امتیاز</span></div>
     <div class="grid2 small"><span>درس‌های قبول‌شده: <b class="num">${faNum(p.mastered)}</b> از ${faNum(ALL_UNITS.length)}</span><span>واژه‌های تثبیت‌شده: <b>${faNum(learnedCount())}</b></span>
     <span>سرعت: <b>${faNum(p.perWeek)}</b> درس در هفته</span><span>${p.eta ? `پیش‌بینی پایان سطح متوسط: <b>${jLabel(p.eta, true)}</b>` : 'پیش‌بینی بعد از اولین درس'}</span></div>
-    ${U.badges.length ? `<div class="row">${U.badges.map(b => { const x = BADGES.find(y => y.id === b); return x ? `<span class="pill mark" title="${x.fa}">${x.ic} ${x.fa}</span>` : ''; }).join('')}</div>` : ''}</div>
-  ${(() => { const f = forecast(); const m = f.milestones.find(x => !x.done); return m ? `<a class="card row" href="#vision" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span style="font-size:30px">🔭</span><div class="grow"><b>چشم‌انداز تو</b><div class="small">با همین سرعت، تا <b>${jLabel(m.date, true)}</b> می‌توانی ${esc(m.t)}.</div></div><span class="muted">›</span></a>` : ''; })()}
-  ${shelfHTML('دوره‌های آموزشی', 'یک دوره را بزن تا درس‌هایش را ببینی', [...LEVELS, ...WORD_TRACK].map(l => l.id))}
-  <div class="sec">درس‌های پیش رو <small><a href="#path">همهٔ درس‌ها ›</a></small></div><div class="units">${ALL_UNITS.slice(cur.idx, cur.idx + 4).map(unitCard).join('')}${unitCard(currentWS())}</div>
+    ${U.badges.length ? `<div class="row">${U.badges.map(b => { const x = BADGES.find(y => y.id === b); return x ? `<span class="pill mark" title="${x.fa}">${x.ic} ${x.fa}</span>` : ''; }).join('')}</div>` : ''}</div>`}
+  ${tl() !== 'en' ? '' : (() => { const f = forecast(); const m = f.milestones.find(x => !x.done); return m ? `<a class="card row" href="#vision" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span style="font-size:30px">🔭</span><div class="grow"><b>چشم‌انداز تو</b><div class="small">با همین سرعت، تا <b>${jLabel(m.date, true)}</b> می‌توانی ${esc(m.t)}.</div></div><span class="muted">›</span></a>` : ''; })()}
+  ${tl() !== 'en' ? tlHomeBottom() : `${shelfHTML('دوره‌های آموزشی', 'یک دوره را بزن تا درس‌هایش را ببینی', [...LEVELS, ...WORD_TRACK].map(l => l.id))}
+  <div class="sec">درس‌های پیش رو <small><a href="#path">همهٔ درس‌ها ›</a></small></div><div class="units">${ALL_UNITS.slice(cur.idx, cur.idx + 4).map(unitCard).join('')}${unitCard(currentWS())}</div>`}
   <a class="btn line wide" href="#tool/import">+ افزودن درس از کتاب خودم یا ساخت درس تازه با هوش مصنوعی</a>
-  ${!U.placement ? `<a class="btn ghost wide" href="#placement">تعیین سطح با هوش مصنوعی</a>` : ''}
+  ${!U.placement && tl() === 'en' ? `<a class="btn ghost wide" href="#placement">تعیین سطح با هوش مصنوعی</a>` : ''}
   </div>`;
   $$('[data-u]').forEach(b => b.onclick = () => { loadUser(b.dataset.u); router(); });
   $$('[data-tk]').forEach(li => li.onclick = () => { const k = isoDay() + '|' + li.dataset.tk; U.mdone = U.mdone || {}; if (U.mdone[k]) delete U.mdone[k]; else { U.mdone[k] = 1; addXP(3); toast('آفرین! در برنامهٔ امروز علامت خورد ✓'); } saveU(); routes.home(); });
