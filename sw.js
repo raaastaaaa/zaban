@@ -1,5 +1,5 @@
 /* زبان رستا — کار آفلاین و سرعت: پوستهٔ برنامه از حافظه باز می‌شود */
-const V = 'zd-v93';
+const V = 'zd-v94';
 const SHELL = ['./', 'index.html', 'styles.css', 'wsmeta.js', 'data.js', 'app.js', 'library.js', 'dict.js', 'extras.js', 'learn.js', 'leitner.js', 'news.js', 'lessons.js', 'book.js', 'audio.js', 'courses.js', 'listen.js', 'flash.js', 'workbook.js', 'story.js', 'tlcourse.js', 'abc.js', 'vroom.js', 'live.js', 'supabase.js', 'online.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'vazir-400.woff2', 'vazir-700.woff2', 'vazir-800.woff2', 'vazir-latin-400.woff2', 'vazir-latin-700.woff2', 'vazir-latin-800.woff2', 'lexend-400.woff2', 'lexend-600.woff2'];
 const grab = async (c, u, n = 3) => { for (let i = 0; i < n; i++) { try { const r = await fetch(new Request(u, { cache: 'reload' })); if (r.ok) { const b = await r.clone().blob(); if (b.size || /\/$/.test(u)) return c.put(u, r); } } catch { } } };
 // نصب نسخهٔ تازه فایل‌به‌فایل و با تکرار؛ اینترنت کند دیگر به‌روزرسانی را گیر نمی‌اندازد

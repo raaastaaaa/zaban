@@ -817,6 +817,7 @@ routes.home = () => {
     <ul class="tasks">${tasks.map(t => `<li class="${taskDone(t) ? 'done' : ''}" data-tk="${esc(t.k || '')}" style="cursor:pointer"><span class="chk">${taskDone(t) ? '✓' : ''}</span><span class="grow">${esc(t.t)}</span>${taskLink(t) ? `<a href="${taskLink(t)}" class="small" onclick="event.stopPropagation()">برو ›</a>` : ''}</li>`).join('')}</ul>
     <div class="row"><a class="btn" href="${tl() !== 'en' ? (curIdx() === 0 && typeof ABC !== 'undefined' && ABC[tl()] && !abcDone() ? '#abc' : '#aru/' + curUnits()[curIdx()][0]) : '#unit/' + cur.id}">${tl() !== 'en' && curIdx() === 0 && typeof ABC !== 'undefined' && ABC[tl()] && !abcDone() ? '🔤 شروع از الفبا' : 'ادامهٔ یادگیری'}</a><a class="btn" style="background:#fff;color:#0c5f5d" href="#live/lesson">📞 کلاس زنده</a><a class="btn ghost" style="background:transparent;color:inherit;box-shadow:inset 0 0 0 1.5px currentColor" href="#leitner">🗃️ لایتنر${due ? ' · ' + faNum(due) + ' امروز' : ''}</a></div>
   </div>
+  <a class="card row" href="#flash/smart/words/mix" style="text-decoration:none;color:inherit"><span style="font-size:30px">🧠</span><div class="grow"><b>مرور هوشمند امروز</b><div class="small muted"><span id="hsm">…</span> کارت منتظر توست؛ اشتباه‌ها بیشتر تکرار می‌شوند.</div></div><span class="muted">›</span></a>
   <div class="card stack tl-card"><b>🌐 زبانی که یاد می‌گیری</b><div class="seg" id="tlsel">${[['en', '🇬🇧 انگلیسی'], ...Object.entries(TLANGS).map(([k, L]) => [k, L.flag + ' ' + L.fa])].map(([k, t]) => `<button data-v="${k}" class="${tl() === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     ${tl() !== 'en' ? `<div class="row" style="gap:6px;flex-wrap:wrap"><span class="small">لهجه/گونه:</span>${Object.entries(tlInfo().v).map(([k, d]) => `<button class="pill ${tlDia() === d ? 'acc' : ''}" data-tlv="${k}">${d[1]}</button>`).join('')}</div>
     <span class="small muted">معلم زنده، دورهٔ کامل ${esc(tlInfo().fa)} از پایه تا پیشرفته (هر درس با طراح درس کامل)، «بگو چه می‌خواهی یاد بگیری»، واژه‌های موضوعی، افعال، دیکشنری و گفتگو حالا به ${esc(tlFa())} است — توضیح فارسی + تلفظ به خط فارسی.</span>
@@ -1595,6 +1596,7 @@ const TOOLS = {
 };
 
 /* ───────── من: آمار، حافظه، اشتباه‌ها ───────── */
+document.addEventListener('click', async e => { if (!e.target.closest('#logout')) return; if (!confirm('از حسابت خارج می‌شوی. پیشرفتت روی سرور محفوظ است. ادامه می‌دهی؟')) return; try { await sb().auth.signOut(); } catch { } try { OP = null; } catch { } if (U) { delete U.online; saveU(); } location.hash = ''; router(); });
 routes.me = () => {
   setTop('من'); const p = paceInfo(); const last = [...Array(14)].map((_, i) => addDays(isoDay(), -13 + i)); const mx = Math.max(10, ...last.map(d => U.log[d]?.min || 0));
   view().innerHTML = `<div class="stack">
@@ -1603,6 +1605,7 @@ routes.me = () => {
   <div><div class="small muted">دقیقه‌های مطالعه در ۱۴ روز اخیر</div><div style="display:flex;align-items:flex-end;gap:4px;height:70px">${last.map(d => `<div title="${jLabel(d)}: ${Math.round(U.log[d]?.min || 0)}" style="flex:1;background:${d === isoDay() ? 'var(--mark)' : 'var(--accent)'};opacity:${U.log[d]?.min ? 1 : .2};height:${Math.max(4, (U.log[d]?.min || 0) / mx * 100)}%;border-radius:4px 4px 0 0"></div>`).join('')}</div></div>
   <button class="btn ghost" id="coach">نظر معلم دربارهٔ پیشرفتم</button><div id="co"></div></div>
   <div class="grid2"><a class="btn ghost" href="#dm">💬 پیام خصوصی</a><a class="btn ghost" href="#rooms">🗣️ انجمن زبان‌آموزان</a></div>
+  <button class="btn bad wide" id="logout">🚪 خروج از حساب</button>
   ${(() => { const b = aiBudget(); return `<div class="card stack" style="gap:8px"><div class="row" style="justify-content:space-between"><b>اعتبار هوش مصنوعی</b>${b.unlimited ? '<span class="pill ok">مدیر · نامحدود</span>' : `<span class="pill acc">${faNum(Math.max(0, Math.round(b.left / (b.daily + b.bank || 1) * 100)))}٪ مانده</span>`}</div>
   ${b.unlimited ? `<span class="small muted">مصرف امروز حدود ${b.spent.toFixed(3)} دلار</span>` : `<div class="bar"><i style="width:${Math.min(100, Math.round(b.spent / (b.daily + b.bank || 1) * 100))}%"></i></div><span class="small muted">سهم روزانه ${b.daily} دلار · مصرف امروز ${b.spent.toFixed(3)} دلار · ذخیره از روزهای قبل ${b.bank.toFixed(2)} دلار</span><span class="tiny muted">هر روز که کمتر استفاده کنی، باقی‌مانده برای روزهای بعد ذخیره می‌شود (تا سقف ۳۰ روز).</span>`}</div>`; })()}
   ${isAdminHere() ? '<a class="card row" href="#admin" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span style="font-size:26px">🛠</span><div class="grow"><b>پنل مدیریت</b><div class="small muted">کاربران، مصرف هوش مصنوعی، زمان مطالعه، پیام به کاربران و مدیریت انجمن</div></div><span>›</span></a>' : ''}
