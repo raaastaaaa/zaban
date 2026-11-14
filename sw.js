@@ -1,6 +1,6 @@
 /* زبان رستا — کار آفلاین و سرعت: پوستهٔ برنامه از حافظه باز می‌شود */
-const V = 'zd-v94';
-const SHELL = ['./', 'index.html', 'styles.css', 'wsmeta.js', 'data.js', 'app.js', 'library.js', 'dict.js', 'extras.js', 'learn.js', 'leitner.js', 'news.js', 'lessons.js', 'book.js', 'audio.js', 'courses.js', 'listen.js', 'flash.js', 'workbook.js', 'story.js', 'tlcourse.js', 'abc.js', 'vroom.js', 'live.js', 'supabase.js', 'online.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'vazir-400.woff2', 'vazir-700.woff2', 'vazir-800.woff2', 'vazir-latin-400.woff2', 'vazir-latin-700.woff2', 'vazir-latin-800.woff2', 'lexend-400.woff2', 'lexend-600.woff2'];
+const V = 'zd-v95';
+const SHELL = ['./', 'index.html', 'styles.css', 'wsmeta.js', 'data.js', 'app.js', 'library.js', 'dict.js', 'extras.js', 'learn.js', 'leitner.js', 'news.js', 'lessons.js', 'book.js', 'audio.js', 'courses.js', 'listen.js', 'flash.js', 'workbook.js', 'story.js', 'tlcourse.js', 'dars.js', 'abc.js', 'vroom.js', 'live.js', 'supabase.js', 'online.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'vazir-400.woff2', 'vazir-700.woff2', 'vazir-800.woff2', 'vazir-latin-400.woff2', 'vazir-latin-700.woff2', 'vazir-latin-800.woff2', 'lexend-400.woff2', 'lexend-600.woff2'];
 const grab = async (c, u, n = 3) => { for (let i = 0; i < n; i++) { try { const r = await fetch(new Request(u, { cache: 'reload' })); if (r.ok) { const b = await r.clone().blob(); if (b.size || /\/$/.test(u)) return c.put(u, r); } } catch { } } };
 // نصب نسخهٔ تازه فایل‌به‌فایل و با تکرار؛ اینترنت کند دیگر به‌روزرسانی را گیر نمی‌اندازد
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(async c => { const q = [...SHELL]; await Promise.all(Array.from({ length: 4 }, async () => { while (q.length) await grab(c, q.shift()); })); }).then(() => self.skipWaiting())); });
@@ -9,6 +9,7 @@ self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Pr
 self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
+  if (/\/audio_dars\//.test(u.pathname)) return; // درس‌های صوتی بلند: مستقیم از شبکه (پرش در فایل) یا از نسخهٔ آفلاینِ داخل برنامه
   if (u.origin === location.origin && (e.request.mode === 'navigate' || /\.(js|css|html|webmanifest)$/.test(u.pathname))) { // کد برنامه: اول شبکه (نسخهٔ تازه)، بی‌اینترنت از حافظه
     // سرعت: فوراً از حافظهٔ همین نسخه باز می‌شود؛ نسخهٔ تازه فقط با عوض شدن V (کل مجموعه با هم) می‌آید تا فایل‌های دو نسخه قاطی نشوند
     const net = () => fetch(e.request, { cache: 'no-cache' }).then(r => { if (r.ok) { const cp = r.clone(); caches.open(V).then(c => c.put(e.request, cp)); } return r; });

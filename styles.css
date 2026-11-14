@@ -603,3 +603,11 @@ body.tl-ar .fc-t{direction:rtl;font-family:"Noto Naskh Arabic","Amiri","Vazirmat
 .bk-line .fc-chk{width:22px;height:22px;flex:0 0 auto;margin:10px 0 0 8px;accent-color:var(--accent)}
 
 .tools-sec{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}.tools-h{font-size:16px}
+/* ───── درس با معلم (صوتی) ───── */
+.dars-player .dp-play{min-width:64px;font-size:22px;border-radius:50%;height:64px}
+.dp-bar input[type=range]{width:100%;accent-color:var(--mark)}
+.ds-t{margin:0;line-height:2.05;padding:4px 8px;border-radius:10px}
+.ds-e,.ds-q{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:10px;background:var(--sunk)}
+.ds-q{justify-content:space-between;background:var(--accent-soft)}
+.ds-t.on,.ds-e.on,.ds-q.on{background:var(--mark);color:var(--mark-ink)}
+.ds-ch{background:none;border:0;border-top:1px dashed var(--line);padding:8px 0;color:inherit;font:inherit;cursor:pointer;width:100%}
