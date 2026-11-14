@@ -45,7 +45,8 @@ addEventListener('hashchange', () => { if (!location.hash.startsWith('#theater/'
 const VOICES = ['Kore', 'Puck', 'Charon', 'Aoede', 'Fenrir', 'Leda'];
 const sceneImg = (s, b, i) => `https://image.pollinations.ai/prompt/${encodeURIComponent(`cinematic storybook illustration, ${s.img}, warm light, no text, no letters`)}?width=640&height=400&nologo=true&seed=${parseInt(hashStr(b.id), 36) % 9000 + i}`;
 async function storyList() { return (await idb.get('stories:' + G.active)) || []; }
-routes.theater = async (id) => {
+routes.theater = () => go('tools');
+const _theaterOld = async (id) => {
   if (id) return playStory(id);
   setTop('داستان‌های صوتی'); const v = view(); const list = await storyList();
   const cur = currentUnit();
@@ -193,7 +194,8 @@ function forecast() {
   ].map(([ic, t, idx]) => ({ ic, t, idx, done: idx < cur.idx || isMastered(ALL_UNITS[idx]), date: at(idx) }));
   return { avgMin: Math.round(avgMin), daysPerUnit: +daysPerUnit.toFixed(1), milestones, dailyMin: Math.round(dailyMin) };
 }
-routes.vision = () => {
+routes.vision = () => go('tools');
+const _visionOld = () => {
   setTop('چشم‌انداز من', true); const f = forecast(); const v = view();
   v.innerHTML = `<div class="stack"><div class="today"><b style="font-size:18px">🔭 با همین سرعت به کجا می‌رسی؟</b><span class="muted">بر اساس ${faNum(f.avgMin)} دقیقه مطالعهٔ روزانهٔ اخیرت و سرعت قبولی در درس‌ها (هر درس حدود ${faNum(f.daysPerUnit)} روز).</span></div>
   ${f.milestones.map(m => `<div class="card row" style="flex-wrap:nowrap"><span style="font-size:28px">${m.ic}</span><div class="grow"><b>${esc(m.t)}</b><div class="small muted">${m.done ? 'رسیدی ✓' : 'پیش‌بینی: ' + jLabel(m.date, true)}</div></div>${m.done ? '<span class="pill ok">✓</span>' : ''}</div>`).join('')}

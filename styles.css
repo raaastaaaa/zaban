@@ -601,3 +601,5 @@ body.tl-ar .fc-t{direction:rtl;font-family:"Noto Naskh Arabic","Amiri","Vazirmat
 
 .fc-pick{margin-bottom:8px}
 .bk-line .fc-chk{width:22px;height:22px;flex:0 0 auto;margin:10px 0 0 8px;accent-color:var(--accent)}
+
+.tools-sec{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}.tools-h{font-size:16px}

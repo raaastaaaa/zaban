@@ -431,11 +431,13 @@ async function say(text, lang = 'en', emotion = 'cheerful', btn) {
   const engine = lang === 'fa' ? G.settings.voiceFa : G.settings.voiceEn;
   try {
     // صدای فارسی: همه‌جا یک صدای واحد (Gemini)؛ بستهٔ آفلاین فقط وقتی اینترنت یا کلید نیست
+    const T = window._enCtx ? 'en' : tl(); // صفحه‌های دورهٔ انگلیسی همیشه با صدای انگلیسی (حتی اگر زبان دیگری انتخاب شده باشد)
     if (lang === 'fa' && engine !== 'browser' && navigator.onLine) { try { await playBlob(await cloudTTS(engine, text, lang, emotion), tok); return; } catch (e) { if (e.message !== 'NOKEY') console.warn(e); } }
-    if (tl() === 'en') { const f = lang === 'en' ? await enPackUrl(text) : await faPackUrl(text); if (f) { await playUrl(f, tok); return; } }
-    if (tl() !== 'en' && lang === 'en') { const f = await packUrl(text); if (f) { await playUrl(f, tok); return; } }
-    if (tl() !== 'en' && lang === 'en') { try { await playBlob(await cloudTTS(G.settings.voiceFa === 'browser' ? 'gemini' : G.settings.voiceFa, text, tl(), emotion), tok); return; } catch (e) { } await browserSay(text, tlDia()[2]); return; }
+    if (T === 'en') { const f = lang === 'en' ? await enPackUrl(text) : await faPackUrl(text); if (f) { await playUrl(f, tok); return; } }
+    if (T !== 'en' && lang === 'en') { const f = await packUrl(text); if (f) { await playUrl(f, tok); return; } }
+    if (T !== 'en' && lang === 'en') { try { await playBlob(await cloudTTS(G.settings.voiceFa === 'browser' ? 'gemini' : G.settings.voiceFa, text, tl(), emotion), tok); return; } catch (e) { } await browserSay(text, tlDia()[2]); return; }
     if (engine !== 'browser') { try { await playBlob(await cloudTTS(engine, text, lang, emotion), tok); return; } catch (e) { if (e.message !== 'NOKEY') console.warn(e); } }
+    if (lang === 'en' && T === 'en' && typeof edgeTTS === 'function' && navigator.onLine) { try { await playBlob(await edgeTTS(text, edgeVoice(G.settings.accent === 'UK' ? 'en-GB' : 'en-US')), tok); return; } catch { } } // همان صدای بستهٔ آفلاین
     if (lang === 'en') { await browserSay(text, 'en'); return; }
     // فارسی با صدای مرورگر: بخش‌های انگلیسی با صدای انگلیسی
     const parts = text.split(/([A-Za-z][A-Za-z0-9'’,.!?\- ]*[A-Za-z0-9.!?])/).filter(s => s.trim());
@@ -665,8 +667,9 @@ function router() {
   if (!U) loadUser(G.active);
   if (!U.online && !window.TEST_MODE && !/access_token|type=recovery/.test(location.hash)) return viewWelcome('in', true); // بدون حساب نمی‌شود وارد برنامه شد
   routeGen++; const [r, ...args] = (location.hash.slice(1) || 'home').split('/');
+  window._enCtx = ['unit', 'lesson', 'cards', 'quiz', 'exam', 'teach', 'talk', 'dialog', 'practice', 'sleep', 'myradio', 'grammar', 'gclass', 'verbs', 'path', 'course'].includes(r);
   if (['unit', 'lesson', 'cards', 'quiz', 'teach', 'talk', 'dialog', 'exam', 'practice', 'sleep', 'myradio'].includes(r) && args[0]) { const gu = unitById(decodeURIComponent(args[0])); if (!gu) { location.hash = 'home'; return; } if (gu.idx < 1000 && !isOpen(gu)) { toast(`این درس هنوز قفل است؛ اول درس قبلی را با نمرهٔ ${faNum(G.settings.passScore)} قبول شو.`); location.hash = 'home'; return; } }
-  if (['role', 'gclass'].includes(r) && !args[0]) { location.hash = r === 'role' ? 'chat' : 'grammar'; return; }
+  if (['role', 'gclass'].includes(r) && !args[0]) { location.hash = r === 'role' ? 'tools' : 'grammar'; return; }
   $$('nav.bottom a').forEach(a => a.classList.toggle('on', a.dataset.r === ({ unit: 'home', cards: 'home', quiz: 'home', teach: 'home', talk: 'chat', role: 'chat', dialog: 'home', exam: 'home', tool: 'tools', dict: 'tools', guide: 'me', settings: 'me', theater: 'library', practice: 'home', vision: 'home', rooms: 'chat', path: 'home', u: 'home', admin: 'me', dm: 'chat', grammar: 'tools', gclass: 'tools', verbs: 'tools', wtopics: 'tools', feedback: 'tools', live: 'home', progress: 'me', leitner: 'tools', lesson: 'home', listen: 'tools', vclass: 'tools', news: 'tools', sleep: 'home', myradio: 'chat', music: 'tools', users: 'me', placement: 'home', book: 'library', read: 'library', talkfree: 'chat', coach: 'chat' }[r] || r)));
   { const a0 = decodeURIComponent(args[0] || ''); const lv = wsLevelOf(a0) || (r === 'course' && WORD_TRACK.some(l => l.id === a0) ? a0 : null); if (lv && !WS_UNITS.some(u => u.level === lv && u.baseWords.length)) { view().innerHTML = loading('واژه‌ها را باز می‌کنم…'); const h = location.hash; return wsLoad(lv).then(() => { if (location.hash === h) router(); }); } }
   (routes[r] || routes.home)(...args.map(decodeURIComponent));
@@ -831,7 +834,6 @@ routes.home = () => {
     <div class="grid2 small"><span>درس‌های قبول‌شده: <b class="num">${faNum(p.mastered)}</b> از ${faNum(ALL_UNITS.length)}</span><span>واژه‌های تثبیت‌شده: <b>${faNum(learnedCount())}</b></span>
     <span>سرعت: <b>${faNum(p.perWeek)}</b> درس در هفته</span><span>${p.eta ? `پیش‌بینی پایان سطح متوسط: <b>${jLabel(p.eta, true)}</b>` : 'پیش‌بینی بعد از اولین درس'}</span></div>
     ${U.badges.length ? `<div class="row">${U.badges.map(b => { const x = BADGES.find(y => y.id === b); return x ? `<span class="pill mark" title="${x.fa}">${x.ic} ${x.fa}</span>` : ''; }).join('')}</div>` : ''}</div>`}
-  ${tl() !== 'en' ? '' : (() => { const f = forecast(); const m = f.milestones.find(x => !x.done); return m ? `<a class="card row" href="#vision" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span style="font-size:30px">🔭</span><div class="grow"><b>چشم‌انداز تو</b><div class="small">با همین سرعت، تا <b>${jLabel(m.date, true)}</b> می‌توانی ${esc(m.t)}.</div></div><span class="muted">›</span></a>` : ''; })()}
   ${tl() !== 'en' ? tlHomeBottom() : `${shelfHTML('دوره‌های آموزشی', 'یک دوره را بزن تا درس‌هایش را ببینی', [...LEVELS, ...WORD_TRACK].map(l => l.id))}
   <div class="sec">درس‌های پیش رو <small><a href="#path">همهٔ درس‌ها ›</a></small></div><div class="units">${ALL_UNITS.slice(cur.idx, cur.idx + 4).map(unitCard).join('')}${unitCard(currentWS())}</div>`}
   <a class="btn line wide" href="#tool/import">+ افزودن درس از کتاب خودم یا ساخت درس تازه با هوش مصنوعی</a>
@@ -1104,7 +1106,8 @@ JSON {"reply":"your English reply","fa":"Persian translation of your reply","fix
 };
 
 /* گپ آزاد */
-routes.chat = () => {
+routes.chat = () => go('home'); // بخش «گفتگو با هوش مصنوعی» حذف شد
+const _chatOld = () => {
   setTop('گفتگو با هوش مصنوعی'); const v = view();
   v.innerHTML = `<div class="stack"><div class="tools">
     ${Object.entries(COACH).map(([k, m]) => `<a class="tool" href="#coach/${k}"><span class="ic">${m[0]}</span><b>${m[1]}</b><span>${m[2]}</span></a>`).join('')}
@@ -1129,7 +1132,7 @@ const COACH = {
 };
 routes.coach = mode => {
   if (mode === 'live') return go('live');
-  const m = COACH[mode]; if (!m) return go('chat'); setTop(m[1], true); const v = view(); if (needAI(v)) return;
+  const m = COACH[mode]; if (!m) return go('home'); setTop(m[1], true); const v = view(); if (needAI(v)) return;
   convo(v, {
     key: 'coach:' + mode, intro: 'Start now: greet me by name in one short line and begin.',
     extraTop: `<div class="notice soft small">${esc(m[2])} می‌توانی بنویسی یا با میکروفون جواب بدهی.</div>`,
@@ -1174,7 +1177,7 @@ JSON {"reply":"your line","fa":"Persian translation","fixes":[{"wrong":"","right
 };
 
 /* ───────── مکالمهٔ درس (دیالوگ + سایه‌خوانی) ───────── */
-routes.dialog = async id => {
+routes.dialog = async (id, fresh) => {
   const u = unitById(id); setTop('مکالمهٔ درس · ' + u.fa, true); const v = view();
   const key = 'dlg:' + u.id;
   const render = d => {
@@ -1189,16 +1192,18 @@ routes.dialog = async id => {
       card.querySelector('[data-m]').append(micButton(t => { const s = similarity(t, l.en); card.querySelector('[data-r]').innerHTML = `گفتی: <span class="en">${esc(t)}</span> · ${faNum(s)}٪ ${s >= 75 ? '✅' : '🔁'}`; if (s >= 75) { ok.add(card.dataset.i); addXP(3); if (ok.size >= Math.ceil(d.lines.length / 2)) markStep(u, 'dialog'); saveU(); } }));
     });
     $('#pa', v).onclick = async () => { for (const l of d.lines) { if (!(await say(l.en, 'en', l.emotion))) break; await sleep(300); } };
-    $('#nw', v).onclick = () => { delete G.cache[key]; saveG('cache'); routes.dialog(id); };
+    $('#nw', v).onclick = () => { delete G.cache[key]; saveG('cache'); routes.dialog(id, true); };
   };
-  if (G.cache[key]) return render(G.cache[key]);
+  if (!fresh && G.cache[key]) return render(G.cache[key]);
+  // پیش‌فرض: مکالمهٔ آمادهٔ همان درس (فوری، آفلاین و با صدای آماده)؛ «مکالمهٔ تازه» با هوش مصنوعی ساخته می‌شود
+  if (!fresh) { try { const L = await lessonGet(u); const ls = L?.conversation?.lines || []; if (ls.length) { const names = [...new Set(ls.map(l => l.who))]; return render({ title: L.conversation.title || u.en, setting: L.conversation.setting || '', lines: ls.map(l => ({ who: names.indexOf(l.who) % 2 ? 'B' : 'A', name: l.who, en: l.en, fa: l.fa, emotion: 'cheerful' })) }); } } catch { } }
   if (needAI(v)) return; v.innerHTML = loading('در حال نوشتن مکالمهٔ درس…');
   try {
     const prev = ALL_UNITS.filter(x => x.idx < u.idx).slice(-3).flatMap(x => pick(unitWords(x), 3).map(w => w.w));
     const r = await ai({ system: 'You write natural, realistic ESL dialogues for adults. Correct, idiomatic English.', messages: [{ role: 'user', content: `Write a natural dialogue (10-12 lines), using a wide variety of the real everyday expressions natives use in this situation (not just one standard phrase each), for unit "${u.en}", CEFR level ${u.cefr || 'A2'}, practicing grammar "${u.gram}". Use many of these words: ${unitWords(u).map(w => w.w).join(', ')}. Also naturally reuse a few words from earlier units: ${prev.join(', ')}. Setting in everyday real life. JSON {"title":"","setting":"Persian one line","lines":[{"who":"A|B","name":"","en":"","fa":"Persian translation","emotion":"cheerful|calm|surprised|excited|serious"}],"phrases":[{"en":"key useful phrase","fa":""}]}` }] });
     if (!Array.isArray(r.lines) || !r.lines.length) throw new Error('مکالمه کامل ساخته نشد؛ دوباره امتحان کن.');
     G.cache[key] = r; saveG('cache'); render(r);
-  } catch (e) { v.innerHTML = ''; aiErr(e); }
+  } catch (e) { v.innerHTML = `<div class="card stack"><b>ساختن مکالمهٔ تازه الان ممکن نشد.</b><span class="muted small">اینترنت را بررسی کن و دوباره امتحان کن.</span><a class="btn" href="#unit/${u.id}/conv">مکالمهٔ آمادهٔ درس</a></div>`; aiErr(e); }
 };
 
 /* ───────── آزمون نهایی درس (شرط باز شدن درس بعد) ───────── */
@@ -1466,31 +1471,33 @@ setInterval(() => { // یادآور درون‌برنامه‌ای
 
 /* ───────── ابزارها ───────── */
 routes.tools = () => {
-  setTop('ابزارها'); const T = [
-    ['listen', '🎧', 'شنیدن روزانه: رادیو و خبر', 'رادیوی زندهٔ آمریکایی یا بریتانیایی، خبر واقعی امروز به زبان ساده و برنامهٔ شنیداری روزانه.'],
-    ['leitner', '🗃️', 'جعبهٔ لایتنر', 'کارت‌های امروز، تازه و آموخته‌شده؛ دسته‌ها و افزودن کارت دستی.'],
-    ['grammar', '📐', 'گرامر کامل', 'همهٔ زمان‌ها و مباحث از مقدماتی تا متوسط با توضیح فارسی، مثال صوتی و تمرین.'],
-    ['feedback', '💡', 'انتقادات و پیشنهادات', 'ایده، درخواست یا ایرادی دیدی؟ با صدا یا متن به مدیر برنامه بگو.'],
-    ['wtopics', '🗂️', 'واژه‌ها بر اساس موضوع', 'هر موضوعی بنویس (فرودگاه، ترید، پوشاک…)؛ همهٔ واژه‌ها با رسمی/عامیانه، کاربرد و مثال.'],
-    ['verbs', '🔁', 'افعال کاربردی', 'فعل‌های پرکاربرد دسته‌بندی‌شده با سه شکل فعل، معنی، مثال و آزمون.'],
-    ['story', '🎧', 'داستان صوتی هر درس', 'برای هر درس یک داستان کوتاه با واژه‌ها و سطح همان درس؛ صدای بومی آفلاین، متن، ترجمه و سؤال'],
-    ['wb', '📘', 'کتاب تمرین', 'برای هر سطح و هر درس: گزینه، جای خالی، ترجمه، تبدیل، مرتب‌کردن و پیدا کردن غلط — درست سبز، غلط خط‌خورده با جواب درست و توضیح'],
-    ['flash', '🃏', 'فلش‌کارت دوطرفه', 'فارسی⇄انگلیسی/عربی برای واژه، جمله، فعل و گرامر از همهٔ درس‌ها و موضوع‌ها؛ لایتنر جدا برای هر جهت، با صدا و آفلاین'],
-    ['listen', '🎧', 'استودیوی شنیداری', 'رادیو، اخبار، داستان یا پادکست ساختگی دقیقاً در سطح و درس تو — با مدت دلخواه (۵ تا ۴۵ دقیقه) و سؤال درک مطلب؛ انگلیسی و عربی'],
-    ['theater', '🎬', 'تئاتر داستان صوتی', 'داستان با سناریو، صحنه‌های تصویری، صداپیشه و موسیقی متن، با واژه‌های خودت.'],
-    ['practice', '✍️', 'تمرین آفلاین و هوشمند', 'جای خالی، مرتب کردن، دیکته، ترجمه و جواب‌نویسی با تصحیح؛ و تمرین مشابه برای هر اشتباه.'],
-    ['vision', '🔭', 'چشم‌انداز من', 'با همین سرعت کی به کجا می‌رسی؛ تاریخ‌ها روی تقویم شمسی.'],
-    ['dict', '📕', 'دیکشنری کامل', 'انگلیسی↔فارسی با تلفظ آمریکایی و بریتانیایی، معانی، همنشین‌ها، اصطلاحات و اشتباه‌های رایج.'],
-    ['howto', '🤔', '«چطور بگم؟»', 'جملهٔ فارسی بنویس؛ انگلیسی طبیعی در دو حالت رسمی و خودمانی بگیر.'],
-    ['fix', '📝', 'اصلاح نوشته', 'متن انگلیسی‌ات با توضیح فارسی هر اشتباه اصلاح می‌شود.'],
-    ['story', '📖', 'داستان با لغت‌های ضعیفم', 'داستانی کوتاه با همان واژه‌هایی که در فلش‌کارت یادت نمی‌ماند.'],
-    ['mistakes', '🔍', 'تحلیل اشتباه‌هایم', 'الگوی اشتباه‌هایت را توضیح می‌دهد و تمرین تازه می‌دهد.'],
-    ['photo', '📷', 'عکس بگیر، یاد بگیر', 'از هر چیزی دور و برت عکس بگیر؛ نامش را به انگلیسی یاد بگیر و به فلش‌کارت‌ها اضافه کن.'],
-    ['shadow', '🎯', 'مربی تلفظ و لهجه', 'صدایت را ضبط کن؛ می‌گوید کدام صدا را اشتباه گفتی، چرا (تأثیر فارسی) و زبان و لب را چطور بگذاری.'],
-    ['import', '📥', 'درس از کتاب خودم', 'لغت‌های هر درس کتابت را وارد کن یا با AI درس تازه بساز.'],
-    ['role', '🎭', 'نقش‌آفرینی موقعیت‌های واقعی', 'موقعیت‌های واقعی زندگی روزمره.']
-  ];
-  view().innerHTML = `<div class="tools">${T.map(([k, ic, t, d]) => `<a class="tool" href="#${['role', 'dict', 'theater', 'vision', 'grammar', 'verbs', 'wtopics', 'feedback', 'leitner', 'listen', 'wb', 'story'].includes(k) ? k : k === 'practice' ? 'practice/' + currentUnit().id : 'tool/' + k}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>`;
+  setTop('ابزارها'); const L = tl() === 'en' ? 'انگلیسی' : tlInfo().fa; const en = tl() === 'en';
+  // هر ابزار فقط یک بار و در گروه خودش
+  const G_ = [
+    ['🧠 مرور و حفظ کردن', [
+      ['#flash', '🃏', 'فلش‌کارت', `فارسی⇄${L}؛ واژه، جمله و فعل از همهٔ درس‌ها. نابلدها خودشان روزهای بعد برمی‌گردند.`],
+      ['#leitner', '🗃️', 'جعبهٔ لایتنر', 'کارت‌های امروز، تازه و آموخته‌شده؛ افزودن کارت دستی.'],
+      ['#wtopics', '🗂️', 'واژه‌ها بر اساس موضوع', 'هر موضوعی بنویس (فرودگاه، خرید، پوشاک…)؛ همهٔ واژه‌ها با کاربرد و مثال.'],
+      en && ['#verbs', '🔁', 'افعال کاربردی', 'فعل‌های پرکاربرد با سه شکل فعل، معنی، مثال و آزمون.']]],
+    ['🎧 شنیدن', [
+      ['#listen', '📻', 'رادیو، خبر و استودیوی شنیداری', 'رادیوی زنده، خبر امروز به زبان ساده، و برنامهٔ شنیداری در سطح خودت (۵ تا ۴۵ دقیقه).'],
+      ['#story', '🎧', 'داستان صوتی هر درس', 'داستان کوتاه با واژه‌های همان درس؛ صدای بومی آفلاین، متن، ترجمه و سؤال.'],
+      ['#tool/story', '📖', 'داستان با واژه‌های ضعیفم', 'داستانی کوتاه با همان واژه‌هایی که در فلش‌کارت یادت نمی‌ماند.']]],
+    ['📐 گرامر و تمرین', [
+      en && ['#grammar', '📐', 'گرامر کامل', 'همهٔ زمان‌ها و مباحث با توضیح فارسی، مثال صوتی و تمرین.'],
+      ['#wb', '📘', 'کتاب تمرین', 'برای هر درس: گزینه، جای خالی، ترجمه، مرتب‌کردن؛ غلط‌ها با جواب درست و توضیح.'],
+      en && ['#practice/' + currentUnit().id, '✍️', 'تمرین هوشمند', 'دیکته، ترجمه و جواب‌نویسی با تصحیح؛ و تمرین مشابه برای هر اشتباه.'],
+      ['#tool/mistakes', '🔍', 'تحلیل اشتباه‌هایم', 'الگوی اشتباه‌هایت را توضیح می‌دهد و تمرین تازه می‌دهد.']]],
+    ['🗣️ صحبت و تلفظ', [
+      ['#tool/shadow', '🎯', 'مربی تلفظ و لهجه', 'صدایت را ضبط کن؛ می‌گوید کدام صدا را اشتباه گفتی و زبان و لب را چطور بگذاری.'],
+]],
+    ['🧰 ابزارهای کمکی', [
+      ['#dict', '📕', 'دیکشنری', `${L}↔فارسی با تلفظ، معانی، همنشین‌ها و اصطلاحات.`],
+      ['#tool/howto', '🤔', '«چطور بگم؟»', `جملهٔ فارسی بنویس؛ ${L}ِ طبیعی در حالت رسمی و خودمانی بگیر.`],
+      ['#tool/fix', '📝', 'اصلاح نوشته', `متن ${L}ات با توضیح فارسی هر اشتباه اصلاح می‌شود.`],
+      ['#tool/photo', '📷', 'عکس بگیر، یاد بگیر', `از هر چیزی عکس بگیر؛ نامش را به ${L} یاد بگیر و به فلش‌کارت‌ها اضافه کن.`],
+      en && ['#tool/import', '📥', 'درس از کتاب خودم', 'لغت‌های کتاب خودت را وارد کن یا درس تازه بساز.']]]];
+  view().innerHTML = `<div class="stack">${G_.map(([gt, its]) => `<div class="tools-sec"><b class="tools-h">${gt}</b><div class="tools">${its.filter(Boolean).map(([h, ic, t, d]) => `<a class="tool" href="${h}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div></div>`).join('')}</div>`;
 };
 routes.tool = k => (TOOLS[k] || routes.tools)();
 const TOOLS = {
@@ -1595,6 +1602,7 @@ routes.me = () => {
   <div class="grid2 small"><span>درس‌های قبول: <b>${faNum(p.mastered)}</b></span><span>واژهٔ تثبیت‌شده: <b>${faNum(learnedCount())}</b></span><span>کل مطالعه: <b>${faNum(p.minutes)}</b> دقیقه</span><span>روزهای پیاپی: <b>${faNum(streakOf(U))}</b></span></div>
   <div><div class="small muted">دقیقه‌های مطالعه در ۱۴ روز اخیر</div><div style="display:flex;align-items:flex-end;gap:4px;height:70px">${last.map(d => `<div title="${jLabel(d)}: ${Math.round(U.log[d]?.min || 0)}" style="flex:1;background:${d === isoDay() ? 'var(--mark)' : 'var(--accent)'};opacity:${U.log[d]?.min ? 1 : .2};height:${Math.max(4, (U.log[d]?.min || 0) / mx * 100)}%;border-radius:4px 4px 0 0"></div>`).join('')}</div></div>
   <button class="btn ghost" id="coach">نظر معلم دربارهٔ پیشرفتم</button><div id="co"></div></div>
+  <div class="grid2"><a class="btn ghost" href="#dm">💬 پیام خصوصی</a><a class="btn ghost" href="#rooms">🗣️ انجمن زبان‌آموزان</a></div>
   ${(() => { const b = aiBudget(); return `<div class="card stack" style="gap:8px"><div class="row" style="justify-content:space-between"><b>اعتبار هوش مصنوعی</b>${b.unlimited ? '<span class="pill ok">مدیر · نامحدود</span>' : `<span class="pill acc">${faNum(Math.max(0, Math.round(b.left / (b.daily + b.bank || 1) * 100)))}٪ مانده</span>`}</div>
   ${b.unlimited ? `<span class="small muted">مصرف امروز حدود ${b.spent.toFixed(3)} دلار</span>` : `<div class="bar"><i style="width:${Math.min(100, Math.round(b.spent / (b.daily + b.bank || 1) * 100))}%"></i></div><span class="small muted">سهم روزانه ${b.daily} دلار · مصرف امروز ${b.spent.toFixed(3)} دلار · ذخیره از روزهای قبل ${b.bank.toFixed(2)} دلار</span><span class="tiny muted">هر روز که کمتر استفاده کنی، باقی‌مانده برای روزهای بعد ذخیره می‌شود (تا سقف ۳۰ روز).</span>`}</div>`; })()}
   ${isAdminHere() ? '<a class="card row" href="#admin" style="text-decoration:none;color:inherit;flex-wrap:nowrap"><span style="font-size:26px">🛠</span><div class="grow"><b>پنل مدیریت</b><div class="small muted">کاربران، مصرف هوش مصنوعی، زمان مطالعه، پیام به کاربران و مدیریت انجمن</div></div><span>›</span></a>' : ''}
