@@ -388,7 +388,7 @@ async function cloudTTS0(engine, text, lang, emotion) {
     budgetGuard();
     if (engine === 'gemini') {
       const c = { key: gemKey() }; if (!c.key) throw new Error('NOKEY');
-      const d = await gemFetch([G.settings.geminiTtsModel, ...TTS_FALLBACK], 'generateContent', { contents: [{ parts: [{ text: ttsFix(text, lang) }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: G.settings.geminiVoice } } } } }, c.key);
+      const d = await gemFetch([G.settings.geminiTtsModel || TTS_FALLBACK[0]], 'generateContent', /* فقط یک مدل: پریدن بین مدل‌ها صدا را عوض می‌کرد */ { contents: [{ parts: [{ text: ttsFix(text, lang) }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: G.settings.geminiVoice } } } } }, c.key);
       const part = d.candidates?.[0]?.content?.parts?.find(p => p.inlineData); if (!part) throw new Error('صدا ساخته نشد');
       const m = /rate=(\d+)/.exec(part.inlineData.mimeType || ''); blob = pcmToWav(part.inlineData.data, m ? +m[1] : 24000);
     } else {

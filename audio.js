@@ -92,7 +92,23 @@ async function edgeTTS(text, voice, rate) {
   const blob = await r.blob(); idb.set(key, blob).catch(() => { }); return blob;
 }
 /* اگر صدای Gemini (سهمیهٔ روزانه) تمام شد، به‌جای صدای رباتیِ مرورگر از صدای طبیعی Microsoft استفاده شود */
+/* متن فارسیِ معلم که جملهٔ انگلیسی/آلمانی/ترکی دارد: هر تکه با صدای درست خودش (فارسی با معلم، خارجی با گویندهٔ بومی) */
+async function edgeMixed(text, faVoice, tVoice) {
+  const re = /[A-Za-zÀ-žğışçöüÄÖÜß][A-Za-zÀ-žğışçöüÄÖÜß0-9'’ ,.!?\-]*[A-Za-zÀ-žğışçöüÄÖÜß0-9.!?]|[A-Za-z]/g; const parts = []; let i = 0, m;
+  while ((m = re.exec(text))) { if (m[0].trim().length < 2) continue; if (m.index > i) parts.push([faVoice, text.slice(i, m.index)]); parts.push([tVoice, m[0]]); i = m.index + m[0].length; }
+  parts.push([faVoice, text.slice(i)]); const P = parts.map(([v, t]) => [v, t.replace(/[«»"']/g, ' ').trim()]).filter(([, t]) => /[\p{L}\p{N}]/u.test(t));
+  if (P.length <= 1) return edgeTTS(text, faVoice);
+  const blobs = await Promise.all(P.map(([v, t]) => edgeTTS(t, v))); return new Blob(blobs, { type: 'audio/mpeg' });
+}
+/* قفل صدا: صدایی که شروع شد عوض نمی‌شود. اگر صدای اصلی (Gemini) تمام شد، تا ۶ ساعت فقط صدای Microsoft — بدون رفت‌وبرگشت وسط کلاس */
+const VLOCK_K = 'zd:voiceLock'; const vLocked = () => { try { return +localStorage.getItem(VLOCK_K) > Date.now(); } catch { return false; } };
+const vLock = () => { try { localStorage.setItem(VLOCK_K, String(Date.now() + 6 * 3600000)); } catch { } };
 const _cloudTTS0 = cloudTTS0;
 cloudTTS0 = async function (engine, text, lang, emotion) {
+  const male = /Charon|Puck|Fenrir|Orus/.test(G.settings.geminiVoice);
+  const edge = () => { const loc = lang === 'fa' ? 'fa-IR' : lang === 'en' ? targetLoc() : (tlDia()[2] || 'en-US');
+    if (lang === 'fa' && tl() !== 'ar' && tl() !== 'zh') return edgeMixed(text, edgeVoice('fa-IR', male), edgeVoice(targetLoc(), male));
+    return edgeTTS(text, edgeVoice(loc, male)); };
+  if (engine === 'gemini' && vLocked()) { try { return await edge(); } catch (e) { /* اگر سرور صدا در دسترس نبود، همان مسیر قبلی */ } }
   try { return await _cloudTTS0(engine, text, lang, emotion); }
-  catch (e) { const loc = lang === 'fa' ? 'fa-IR' : lang === 'en' ? targetLoc() : (tlDia()[2] || 'en-US'); try { return await edgeTTS(text, edgeVoice(loc, /Charon|Puck|Fenrir|Orus/.test(G.settings.geminiVoice))); } catch { throw e; } } };
+  catch (e) { if (engine === 'gemini' && !/NOKEY/.test(e?.message || '')) vLock(); const loc = lang === 'fa' ? 'fa-IR' : lang === 'en' ? targetLoc() : (tlDia()[2] || 'en-US'); try { return await edgeTTS(text, edgeVoice(loc, /Charon|Puck|Fenrir|Orus/.test(G.settings.geminiVoice))); } catch { throw e; } } };
